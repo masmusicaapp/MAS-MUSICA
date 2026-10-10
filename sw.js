@@ -19,33 +19,17 @@ const ESTATICOS = [
 ];
 
 self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(CACHE).then(cache => cache.addAll(ESTATICOS))
-  );
   self.skipWaiting();
 });
 
 self.addEventListener('activate', event => {
   event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.map(k => { if (k !== CACHE) return caches.delete(k); }))
-    ).then(() => self.clients.claim())
+    caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k))))
+      .then(() => self.registration.unregister())
+      .then(() => self.clients.claim())
   );
 });
 
 self.addEventListener('fetch', event => {
-  const req = event.request;
-  if (req.method !== 'GET') return;
-
-  /* Red primero: la app necesita el servidor (reservas en tiempo real),
-     así los cambios llegan al instante. La caché solo es respaldo offline. */
-  event.respondWith(
-    fetch(req).then(res => {
-      if (res.ok && new URL(req.url).origin === location.origin) {
-        const copy = res.clone();
-        caches.open(CACHE).then(cache => cache.put(req, copy));
-      }
-      return res;
-    }).catch(() => caches.match(req))
-  );
+  event.respondWith(fetch(event.request));
 });

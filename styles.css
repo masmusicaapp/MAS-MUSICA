@@ -275,12 +275,15 @@ h3.sub {
 label { display: block; margin: 10px 0; font-size: .9rem; color: var(--muted); }
 label.check { display: flex; align-items: center; gap: 8px; color: var(--text); margin: 0; }
 label.check input[type="checkbox"] { width: 18px; height: 18px; flex: 0 0 auto; accent-color: var(--accent); }
-input, select {
+input, select, textarea {
   width: 100%; margin-top: 5px;
   background: var(--panel2); border: 1px solid var(--line); border-radius: 9px;
   color: var(--text); padding: 9px 11px; font-size: .95rem;
+  font-family: inherit;
+  box-sizing: border-box;
 }
-input:focus, select:focus { outline: 2px solid var(--accent); }
+textarea { resize: vertical; min-height: 80px; }
+input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); }
 
 .success { text-align: center; padding: 20px 0; display: grid; gap: 8px; justify-items: center; }
 .ok-mark {
@@ -2225,3 +2228,281 @@ body:has(#splash:not(.fuera)) #dock-container {
   font-weight: 700;
   box-shadow: 0 2px 8px rgba(230, 57, 70, 0.3);
 }
+
+/* ==========================================================================
+   MEJORAS DE ALINEACIÓN Y PULIDO VISUAL: PANELES DUEÑO Y ADMINISTRADOR
+   ========================================================================== */
+
+/* Barra de pestañas horizontal: limpia con scroll suave y sin cortes */
+.admin-tabs {
+  gap: 4px;
+  padding: 4px 6px;
+  background: var(--panel2);
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  margin-bottom: 20px;
+}
+.admin-tab {
+  border-radius: 8px;
+  border-bottom: none !important;
+  padding: 8px 14px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--muted);
+  transition: all 0.15s ease;
+}
+.admin-tab:hover {
+  background: var(--soft);
+  color: var(--text);
+}
+.admin-tab.active {
+  background: var(--accent);
+  color: var(--on-accent, #fff) !important;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(0, 160, 56, 0.28);
+}
+.admin-tab .pill {
+  margin-left: 4px;
+}
+
+/* Encabezados y barras de acción */
+.panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+.panel-head h2 {
+  font-size: 1.35rem;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Contenedor responsivo para tablas */
+.table-wrap, #usuarios-list, #stats-table, #solicitudes-list {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-top: 10px;
+  border-radius: 12px;
+}
+
+/* Tablas estilizadas: sin texto desbordado ni quiebres raros */
+.tabla, table {
+  width: 100%;
+  min-width: 600px;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.tabla th, table th {
+  background: var(--panel2);
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+.tabla td, table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+  font-size: 0.9rem;
+}
+.tabla tr:last-child td, table tr:last-child td {
+  border-bottom: none;
+}
+.tabla tr:hover, table tbody tr:hover {
+  background: var(--soft2);
+}
+
+/* Columna de acciones en tablas */
+.acciones-td {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+/* Tarjetas de estadísticas de los paneles */
+.stats-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.stat {
+  background: var(--panel2);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: transform 0.12s;
+}
+.stat:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent);
+}
+.stat span {
+  font-size: 0.8rem;
+  color: var(--muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin: 0;
+}
+.stat strong, .stat b {
+  font-size: 1.55rem;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Items de reservas en panel de dueño */
+.res-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  background: var(--panel2);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 14px 18px;
+  margin-bottom: 10px;
+  transition: border-color 0.15s;
+}
+.res-item:hover {
+  border-color: var(--accent);
+}
+.res-item .res-time {
+  font-weight: 800;
+  color: var(--accent2);
+  font-size: 1.05rem;
+  min-width: 120px;
+  text-align: left;
+  border-right: none;
+  padding: 0;
+}
+.res-item .res-info {
+  flex: 2;
+  min-width: 200px;
+}
+.res-item .res-price {
+  font-weight: 800;
+  font-size: 1.1rem;
+  color: var(--text);
+  min-width: 90px;
+  text-align: right;
+}
+.res-item .res-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Fila de horarios semanal en panel de dueño */
+.hora-fila {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 14px;
+  background: var(--panel2);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  margin-bottom: 8px;
+}
+.hora-fila strong {
+  min-width: 110px;
+  font-size: 0.95rem;
+}
+.hora-fila .check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  font-size: 0.88rem;
+  cursor: pointer;
+}
+.hora-fila input[type="time"] {
+  width: auto;
+  min-width: 115px;
+  padding: 6px 10px;
+  margin: 0;
+  border-radius: 8px;
+}
+
+/* Bloqueos y formularios de filtro */
+.block-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  background: var(--panel2);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 18px;
+  align-items: end;
+  margin-bottom: 18px;
+}
+.block-form label {
+  margin: 0;
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+.block-form .btn {
+  margin-top: 0;
+  height: 42px;
+}
+
+/* Header del panel con switcher de salas */
+#panel-mis-salas-bar select {
+  width: auto;
+  min-width: 200px;
+  margin: 0;
+  padding: 6px 12px;
+  font-weight: 600;
+}
+
+/* Ajustes de administración: botones segmented y campos */
+.aj-seg {
+  display: flex;
+  gap: 4px;
+  background: var(--panel2);
+  padding: 4px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  width: fit-content;
+  margin-top: 8px;
+}
+.aj-seg button {
+  background: transparent;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.aj-seg button.on {
+  background: var(--accent);
+  color: var(--on-accent, #fff);
+  font-weight: 700;
+}
+

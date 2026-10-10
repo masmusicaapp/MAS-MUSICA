@@ -50,7 +50,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@500;600;700&family=Barlow+Condensed:ital,wght@1,900&display=swap">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
       integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
-<link rel="stylesheet" href="styles.css?v=4.2">
+<link rel="stylesheet" href="styles.css?v=4.6">
 </head>
 <body>
 
@@ -239,14 +239,14 @@
 <!-- ============ PANEL DEL DUEÑO DE LA SALA ============ -->
 <main id="view-panel" hidden>
   <div class="panel">
-    <div class="panel-head" style="align-items:flex-start;flex-wrap:wrap;gap:10px">
-      <div>
-        <h2 style="margin:0 0 4px">🎛️ Panel de Administración</h2>
-        <div id="panel-mis-salas-bar" style="display:flex;align-items:center;gap:8px;margin-top:6px">
+    <div class="panel-head" style="align-items:center;flex-wrap:wrap;gap:14px;border-bottom:1px solid var(--line);padding-bottom:16px;margin-bottom:18px">
+      <div style="flex:1;min-width:240px">
+        <h2 style="margin:0 0 4px;font-size:1.4rem">🎛️ Panel de Mi Sala</h2>
+        <div id="panel-mis-salas-bar" style="display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap">
           <!-- Selector dinámico de salas -->
         </div>
       </div>
-      <div style="display:flex;gap:8px">
+      <div style="display:flex;gap:8px;align-items:center">
         <button class="btn btn-primary btn-sm" id="btn-panel-add-room">＋ Agregar sala</button>
         <button class="btn btn-sm" id="btn-exit-panel">← Volver</button>
       </div>
@@ -404,12 +404,15 @@
 
 <!-- ============ PANEL DE ADMINISTRACIÓN ============ -->
 <main id="view-admin" hidden>
-  <header class="admin-head">
-    <span class="admin-head-ico">👑</span>
-    <div class="admin-head-txt">
-      <h1>Administración central</h1>
-      <p class="muted small">Control total de Más Música · <span id="admin-head-user"></span></p>
+  <header class="admin-head" style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding-bottom:14px;margin-bottom:18px">
+    <div style="display:flex;align-items:center;gap:12px">
+      <span class="admin-head-ico">👑</span>
+      <div class="admin-head-txt">
+        <h1 style="margin:0 0 2px">Administración Central</h1>
+        <p class="muted small" style="margin:0">Control total de Más Música · <span id="admin-head-user"></span></p>
+      </div>
     </div>
+    <button class="btn btn-sm" onclick="salirAdmin()">← Volver a la app</button>
   </header>
   <nav class="admin-tabs">
     <button class="admin-tab" data-tab="solicitudes">📥 Solicitudes <span class="pill" id="pill-solicitudes" hidden>0</span></button>
@@ -430,15 +433,16 @@
   <section id="tab-solicitudes" class="tab">
     <div class="panel">
       <div class="panel-head">
-        <h2>📥 Solicitudes de salas</h2>
-        <div class="row">
+        <h2>📥 Solicitudes y Revisión de Salas</h2>
+        <div class="row wrap" id="solicitudes-filtro-btns" style="gap:6px;margin:0">
           <button class="btn btn-sm" data-estado-sol="todas">Todas</button>
-          <button class="btn btn-sm" data-estado-sol="pendiente">Pendientes</button>
+          <button class="btn btn-sm btn-primary" data-estado-sol="pendiente">Pendientes</button>
           <button class="btn btn-sm" data-estado-sol="aprobada">Aprobadas</button>
+          <button class="btn btn-sm" data-estado-sol="suspendida">Suspendidas</button>
           <button class="btn btn-sm" data-estado-sol="rechazada">Rechazadas</button>
         </div>
       </div>
-      <p class="muted small">Las salas registradas por usuarios quedan <strong>pendientes de aprobación</strong> hasta que las revises.</p>
+      <p class="muted small">Revisá las salas registradas por los dueños. Podés <strong>aprobarlas</strong>, <strong>pedir correcciones</strong>, <strong>suspenderlas</strong> temporalmente o <strong>rechazarlas</strong>.</p>
       <div id="solicitudes-list"></div>
     </div>
   </section>
@@ -795,6 +799,6 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-<script src="app.js?v=4.2"></script>
+<script src="app.js?v=4.6"></script>
 </body>
 </html>
