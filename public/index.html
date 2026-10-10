@@ -50,7 +50,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@500;600;700&family=Barlow+Condensed:ital,wght@1,900&display=swap">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
       integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
-<link rel="stylesheet" href="styles.css?v=4.0">
+<link rel="stylesheet" href="styles.css?v=4.1">
 </head>
 <body>
 
@@ -419,6 +419,7 @@
     <button class="admin-tab" data-tab="salas">🎸 Salas</button>
     <button class="admin-tab" data-tab="horarios">🕐 Horarios</button>
     <button class="admin-tab" data-tab="bloqueos">🚫 Bloqueos</button>
+    <button class="admin-tab" data-tab="finanzas">💰 Finanzas (+MÚSICA)</button>
     <button class="admin-tab" data-tab="estadisticas">📊 Estadísticas</button>
     <button class="admin-tab" data-tab="ajustes">⚙️ Ajustes</button>
     <button class="admin-tab" data-tab="lugar">📷 Lugar</button>
@@ -523,6 +524,39 @@
       </div>
       <h3 class="sub">Bloqueos activos</h3>
       <div id="blocks-list"></div>
+    </div>
+  </section>
+
+  
+  <section id="tab-finanzas" class="tab" hidden>
+    <div class="panel">
+      <div class="panel-head">
+        <h2>💰 Finanzas e Ingresos de la Plataforma (+MÚSICA)</h2>
+        <button class="btn btn-sm" id="btn-refresh-finanzas">🔄 Actualizar</button>
+      </div>
+      <p class="muted">Métricas consolidadas de facturación por comisiones de reservas (5%) y cobro recurrente de suscripciones a salas.</p>
+
+      <div class="stats-cards" id="finanzas-kpis">
+        <!-- Tarjetas dinámicas generadas en app.js -->
+      </div>
+
+      <h3 class="sub" style="margin-top:24px">Suscripciones activas de salas</h3>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Dueño / Establecimiento</th>
+              <th>Plan</th>
+              <th>Salas en uso</th>
+              <th>Abono Mensual</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody id="finanzas-subs-tabla">
+            <!-- Filas dinámicas -->
+          </tbody>
+        </table>
+      </div>
     </div>
   </section>
 
@@ -761,6 +795,6 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-<script src="app.js?v=4.0"></script>
+<script src="app.js?v=4.1"></script>
 </body>
 </html>

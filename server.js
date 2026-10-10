@@ -1525,6 +1525,56 @@ async function handleApi(req, res, url, parts) {
     return sendJson(res, 401, { error: 'PIN incorrecto o sin permisos de administrador' });
   }
 
+
+  // Panel de Finanzas de la Plataforma (+MÚSICA): comisiones 5% + suscripciones
+  if (method === 'GET' && url.pathname === '/api/admin/finanzas') {
+    const ahora = Date.now();
+    const subs = state.subscriptions || [];
+    
+    // Ingresos recurrentes mensuales por suscripciones (MRR)
+    let totalMRRSuscripciones = 0;
+    const suscripcionesDetalle = subs.map(s => {
+      const u = (state.users || []).find(x => x.id === s.userId);
+      const planInfo = PLANES_CONFIG[s.plan] || PLANES_CONFIG.emprendedor;
+      const costo = planInfo.precioMensual + ((s.salasExtra || 0) * PLANES_CONFIG.sala_extra.precioMensual);
+      totalMRRSuscripciones += costo;
+      const salasCount = (state.rooms || []).filter(r => r.ownerId === s.userId).length;
+      return {
+        id: s.id,
+        duenioNombre: u ? u.nombre : 'Usuario ' + s.userId,
+        duenioEmail: u ? u.email : '',
+        plan: s.plan,
+        nombrePlan: planInfo.nombre,
+        salasUsadas: salasCount,
+        limiteSalas: planInfo.maxSalas + (s.salasExtra || 0),
+        costoMensual: costo,
+        estado: s.estado || 'activo',
+        vencimiento: s.proximoVencimiento || (ahora + 30 * 86400000)
+      };
+    });
+
+    // Ingresos por comisiones del 5% del servicio
+    let totalComisionesPlataforma = 0;
+    let totalBrutoReservas = 0;
+    (state.reservations || []).forEach(r => {
+      if (r.estado !== 'cancelada') {
+        totalBrutoReservas += (r.total_amount || r.total || 0);
+        totalComisionesPlataforma += (r.service_fee || r.comision || Math.round((r.total || 0) * 0.05));
+      }
+    });
+
+    return sendJson(res, 200, {
+      moneda: 'ARS',
+      totalBrutoReservas,
+      totalComisionesPlataforma,
+      totalMRRSuscripciones,
+      ingresosTotalesPlataforma: totalComisionesPlataforma + totalMRRSuscripciones,
+      totalSuscripcionesActivas: subs.length,
+      suscripciones: suscripcionesDetalle,
+      totalSalasRegistradas: (state.rooms || []).length
+    });
+  }
+
   if (method === 'GET' && url.pathname === '/api/admin/verify') {
     return sendJson(res, 200, { ok: true });
   }

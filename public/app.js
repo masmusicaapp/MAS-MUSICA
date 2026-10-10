@@ -3684,7 +3684,7 @@ function renderAdminTab(tab) {
     salas: renderSalasAdmin,
     horarios: renderHorariosAdmin,
     bloqueos: renderBloqueosAdmin,
-    estadisticas: renderStats,
+    finanzas: renderFinanzasAdmin, estadisticas: renderStats,
     ajustes: renderAjustes,
     lugar: renderLugarAdmin,
     bandas: renderBandasAdmin,
@@ -5229,4 +5229,69 @@ function modalAgregarSalaPropia() {
       toast(e.message, 'error');
     }
   };
+}
+
+
+/* ---------- Finanzas de la plataforma SUPER_ADMIN ---------- */
+async function renderFinanzasAdmin() {
+  const kpis = $('#finanzas-kpis');
+  const tbody = $('#finanzas-subs-tabla');
+  if (!kpis || !tbody) return;
+
+  kpis.innerHTML = '<p class="muted">Cargando métricas financieras…</p>';
+  try {
+    const data = await api('/api/admin/finanzas', { admin: true });
+    
+    kpis.innerHTML = `
+      <div class="stat" style="border-top:3px solid var(--accent)">
+        <span>💵 Ingresos Totales Plataforma</span>
+        <strong style="color:var(--accent);font-size:1.4rem">${fmtMoney(data.ingresosTotalesPlataforma)}</strong>
+      </div>
+      <div class="stat">
+        <span>🔄 Recurrente Suscripciones (MRR)</span>
+        <strong>${fmtMoney(data.totalMRRSuscripciones)}</strong>
+      </div>
+      <div class="stat">
+        <span>🎟️ Comisiones por Reservas (5%)</span>
+        <strong>${fmtMoney(data.totalComisionesPlataforma)}</strong>
+      </div>
+      <div class="stat">
+        <span>💎 Suscripciones Activas</span>
+        <strong>${data.totalSuscripcionesActivas}</strong>
+      </div>
+      <div class="stat">
+        <span>🎸 Salas en la Plataforma</span>
+        <strong>${data.totalSalasRegistradas}</strong>
+      </div>
+    `;
+
+    if (!data.suscripciones || !data.suscripciones.length) {
+      tbody.innerHTML = '<tr><td colspan="5" class="muted text-center" style="padding:16px">No hay suscripciones registradas aún.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = data.suscripciones.map(s => `
+      <tr>
+        <td>
+          <strong>${esc(s.duenioNombre)}</strong><br>
+          <span class="muted small">${esc(s.duenioEmail || '')}</span>
+        </td>
+        <td>
+          <span class="badge" style="background:var(--bg-subtle, rgba(255,255,255,0.08))">${esc(s.nombrePlan)}</span>
+        </td>
+        <td>
+          <strong>${s.salasUsadas}</strong> de ${s.limiteSalas} salas
+        </td>
+        <td>
+          <strong style="color:var(--accent)">${fmtMoney(s.costoMensual)}</strong> / mes
+        </td>
+        <td>
+          <span class="badge" style="background:#2a9d8f;color:#fff">🟢 Activa</span>
+        </td>
+      </tr>
+    `).join('');
+
+  } catch (e) {
+    kpis.innerHTML = `<p class="muted" style="color:#e63946">Error cargando finanzas: ${esc(e.message)}</p>`;
+  }
 }
