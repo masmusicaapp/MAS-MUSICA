@@ -297,6 +297,8 @@ function renderMineRapido() {
 function renderPerfilMine() {
   const host = $('#mine-band-profile');
   if (!host) return;
+  /* El administrador general solo controla la plataforma: no tiene banda ni salas personales */
+  if (esSuper()) { host.hidden = true; host.innerHTML = ''; return; }
   if (esDueño() && miSala) return renderPerfilSala();
   const mias = misReservas();
   let banda = null;
@@ -2665,6 +2667,14 @@ function renderPerfilCuenta() {
       </div>
     </div>`;
 
+  /* Para SUPER_ADMIN no se muestran salas favoritas; su cuenta es exclusivamente de control */
+  if (esSuper()) {
+    fav.hidden = true;
+    fav.innerHTML = '';
+    notif.hidden = true;
+    notif.innerHTML = '';
+    return;
+  }
   const salones = salasPublicas().filter(r => (yo.favoritos || []).includes(r.id));
   fav.hidden = false;
   fav.innerHTML = `
@@ -2694,7 +2704,7 @@ function formularioPerfil() {
     <label>Nombre y apellido<input id="pe-nombre" maxlength="60" value="${esc(yo.nombre)}"></label>
     <label>Teléfono<input id="pe-tel" maxlength="30" value="${esc(yo.telefono || '')}"></label>
     <label>Localidad o zona<input id="pe-loc" maxlength="80" value="${esc(yo.localidad || '')}"></label>
-    <label>Mis instrumentos (separados por coma)<input id="pe-inst" maxlength="200" value="${esc((yo.instrumentos || []).join(', '))}"></label>
+    ${esSuper() ? '' : `<label>Mis instrumentos (separados por coma)<input id="pe-inst" maxlength="200" value="${esc((yo.instrumentos || []).join(', '))}"></label>`}
     <label>Email<input value="${esc(yo.email)}" disabled></label>
     <div class="sala-foto-edit" id="pe-preview">${yo.foto ? `<img src="${esc(yo.foto)}" alt="">` : '<span class="sala-chip-foto" style="width:60px;height:60px;font-size:1.6rem">🎸</span>'}</div>
     <label>Nueva foto de perfil<input type="file" id="pe-foto" accept="image/*"></label>
@@ -2717,7 +2727,7 @@ function formularioPerfil() {
       nombre: $('#pe-nombre').value.trim(),
       telefono: $('#pe-tel').value.trim(),
       localidad: $('#pe-loc').value.trim(),
-      instrumentos: $('#pe-inst').value.split(',').map(s => s.trim()).filter(Boolean),
+      instrumentos: $('#pe-inst') ? $('#pe-inst').value.split(',').map(s => s.trim()).filter(Boolean) : [],
     };
     if (nuevaFoto) body.foto = nuevaFoto;
     try {
