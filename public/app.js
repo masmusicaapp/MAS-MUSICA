@@ -3710,21 +3710,27 @@ function renderAdminTab(tab) {
 }
 
 /* ---------- Solicitudes de salas (aprobación) ---------- */
-let filtroSolicitudes = 'pendiente';
+let filtroSolicitudes = 'todas';
 let listaSolicitudes = null;
 
 function renderSolicitudes() {
   const cont = $('#solicitudes-list');
   if (!cont) return;
+
+  /* Resaltar botón de filtro activo */
+  $$('[data-estado-sol]').forEach(b => {
+    b.classList.toggle('btn-primary', b.dataset.estadoSol === filtroSolicitudes);
+  });
+
   if (!listaSolicitudes) {
-    cont.innerHTML = '<p class="muted">Cargando solicitudes…</p>';
+    cont.innerHTML = '<p class="muted">Cargando salas…</p>';
     api('/api/admin/solicitudes', { admin: true })
       .then(data => { listaSolicitudes = data.salas; renderSolicitudes(); })
       .catch(e => { cont.innerHTML = `<p class="muted">${esc(e.message)}</p>`; });
     return;
   }
   const lista = listaSolicitudes.filter(r => filtroSolicitudes === 'todas' || r.estado === filtroSolicitudes);
-  const orden = { pendiente: 0, rechazada: 1, suspendida: 2, aprobada: 3 };
+  const orden = { pendiente: 0, suspendida: 1, rechazada: 2, aprobada: 3 };
   lista.sort((a, b) => (orden[a.estado] - orden[b.estado]) || ((b.solicitud && b.solicitud.fecha) - (a.solicitud && a.solicitud.fecha)));
   const ETIQUETA = { pendiente: '🕒 Pendiente', aprobada: '🟢 Aprobada', rechazada: '⛔ Rechazada', suspendida: '⏸ Suspendida' };
   cont.innerHTML = lista.length ? lista.map(r => `
@@ -3735,23 +3741,87 @@ function renderSolicitudes() {
           <strong>${esc(r.name)}</strong>
           <span class="muted small">${esc([r.localidad, r.direccion].filter(Boolean).join(' · '))}</span>
           <span class="muted small">👤 ${r.duenio ? esc(r.duenio.nombre + ' (@' + r.duenio.usuario + ')') : 'Sin dueño asignado'}${r.duenio && r.duenio.telefono ? ' · 📞 ' + esc(r.duenio.telefono) : ''}</span>
-          <span class="muted small">${fmtMoney(r.price)}/h · 👥 ${r.capacity} · enviada ${r.solicitud && r.solicitud.fecha ? fechaCorta(r.solicitud.fecha) : '—'}</span>
+          <span class="muted small">${fmtMoney(r.price)}/h · 👥 ${r.capacity} · ${r.solicitud && r.solicitud.fecha ? 'Enviada ' + fechaCorta(r.solicitud.fecha) : 'Registrada'}</span>
         </div>
-        <span class="badge ${r.estado === 'aprobada' ? '' : 'badge-next'}">${ETIQUETA[r.estado]}</span>
+        <span class="badge ${r.estado === 'aprobada' ? '' : r.estado === 'suspendida' ? 'badge-past' : 'badge-next'}">${ETIQUETA[r.estado] || r.estado}</span>
       </div>
       ${r.descripcion ? `<p class="sol-desc">${esc(r.descripcion)}</p>` : ''}
       ${Object.values(r.equipos || {}).filter(Boolean).length ? `<div class="ficha-chips">${Object.entries(r.equipos).filter(([, v]) => v).map(([, v]) => `<span class="chip">${esc(v.slice(0, 28))}</span>`).join('')}</div>` : ''}
-      ${r.solicitud && r.solicitud.motivo ? `<p class="muted small">📝 ${esc(r.solicitud.motivo)}</p>` : ''}
-      <div class="row wrap">
+      ${r.solicitud && r.solicitud.motivo ? `<p class="muted small" style="margin-top:6px">📝 <em>${esc(r.solicitud.motivo)}</em></p>` : ''}
+      <div class="row wrap" style="margin-top:12px;gap:8px">
         ${r.estado === 'pendiente' ? `
-          <button class="btn btn-primary btn-sm" data-sol-ok="${r.id}">✅ Aprobar</button>
+          <button class="btn btn-primary btn-sm" data-sol-ok="${r.id}">✅ Aprobar y publicar</button>
           <button class="btn btn-sm" data-sol-corr="${r.id}">✏️ Pedir correcciones</button>
-          <button class="btn btn-sm btn-danger" data-sol-no="${r.id}">⛔ Rechazar</button>` : `
-          <button class="btn btn-sm" data-sol-ok="${r.id}">🟢 Activar / aprobar</button>
-          <button class="btn btn-sm btn-danger" data-sol-no="${r.id}">${r.estado === 'suspendida' ? '⛔ Rechazar' : '⏸ Suspender'}</button>`}
+          <button class="btn btn-sm btn-danger" data-sol-susp="${r.id}" data-action="rechazar">⛔ Rechazar</button>` :
+        r.estado === 'aprobada' ? `
+          <button class="btn btn-sm btn-danger" data-sol-susp="${r.id}" data-action="suspender">⏸ Suspender sala</button>
+          <button class="btn btn-sm" data-sol-susp="${r.id}" data-action="rechazar">⛔ Dar de baja</button>` : `
+          <button class="btn btn-primary btn-sm" data-sol-ok="${r.id}">🟢 Reactivar / Aprobar</button>
+          <button class="btn btn-sm btn-danger" data-sol-susp="${r.id}" data-action="rechazar">⛔ Rechazar definitivamente</button>`}
         <button class="btn btn-sm" data-sol-editar="${r.id}">✏️ Editar datos</button>
       </div>
-    </div>`).join('') : '<p class="muted">No hay salas con ese estado.</p>';
+    </div>`).join('') : '<p class="muted">No hay salas con este estado actualmente.</p>';
+}
+
+function modalSuspenderSala(id, accion) {
+  const sala = (listaSolicitudes || []).find(r => r.id === id);
+  const nombre = sala ? sala.name : 'la sala';
+  const esSusp = accion === 'suspender';
+  const titulo = esSusp ? `⏸ Suspender “${esc(nombre)}”` : `⛔ Rechazar “${esc(nombre)}”`;
+  const desc = esSusp
+    ? 'La sala dejará de estar disponible para reservas hasta que la reactives. El dueño recibirá un aviso.'
+    : 'La solicitud será rechazada y la sala quedará marcada como no aprobada.';
+
+  openModal(`
+    <h3 style="margin-top:0">${titulo}</h3>
+    <p class="muted small">${desc}</p>
+    <label>Motivo de la ${esSusp ? 'suspensión' : 'baja'} (se le envía al dueño) *
+      <textarea id="modal-susp-motivo" rows="3" placeholder="Ej.: Mantenimiento edilicio, datos incompletos..." style="width:100%"></textarea>
+    </label>
+    <div class="row wrap" style="justify-content:flex-end;margin-top:16px;gap:8px">
+      <button class="btn" id="modal-susp-cancelar">Cancelar</button>
+      <button class="btn btn-danger" id="modal-susp-confirmar">${esSusp ? 'Confirmar suspensión' : 'Confirmar rechazo'}</button>
+    </div>
+  `);
+
+  $('#modal-susp-cancelar').onclick = closeModal;
+  $('#modal-susp-confirmar').onclick = async () => {
+    const motivo = ($('#modal-susp-motivo').value || '').trim();
+    if (!motivo) {
+      toast('Por favor escribe un motivo breve para avisarle al dueño', 'warn');
+      return;
+    }
+    closeModal();
+    await accionSolicitud(id, accion, motivo);
+  };
+}
+
+function modalCorregirSala(id) {
+  const sala = (listaSolicitudes || []).find(r => r.id === id);
+  const nombre = sala ? sala.name : 'la sala';
+
+  openModal(`
+    <h3 style="margin-top:0">✏️ Pedir correcciones para “${esc(nombre)}”</h3>
+    <p class="muted small">Indicale al dueño qué datos debe corregir (precios, fotos, dirección, etc.).</p>
+    <label>Detalle de las correcciones requeridas *
+      <textarea id="modal-corr-motivo" rows="3" placeholder="Ej.: Por favor añade fotos reales de la sala y aclara la dirección exacta..." style="width:100%"></textarea>
+    </label>
+    <div class="row wrap" style="justify-content:flex-end;margin-top:16px;gap:8px">
+      <button class="btn" id="modal-corr-cancelar">Cancelar</button>
+      <button class="btn btn-primary" id="modal-corr-confirmar">Enviar pedido</button>
+    </div>
+  `);
+
+  $('#modal-corr-cancelar').onclick = closeModal;
+  $('#modal-corr-confirmar').onclick = async () => {
+    const motivo = ($('#modal-corr-motivo').value || '').trim();
+    if (!motivo) {
+      toast('Por favor escribe las correcciones requeridas', 'warn');
+      return;
+    }
+    closeModal();
+    await accionSolicitud(id, 'corregir', motivo);
+  };
 }
 
 async function accionSolicitud(id, accion, motivo) {
@@ -3759,12 +3829,16 @@ async function accionSolicitud(id, accion, motivo) {
     const data = await api(`/api/admin/solicitudes/${id}`, { method: 'PUT', body: { accion, motivo } });
     state = data.state;
     listaSolicitudes = null;
-    renderAdminTab('solicitudes');
+    renderSolicitudes();
     renderRooms();
+    const pend = (state.rooms || []).filter(r => r.estado === 'pendiente').length;
+    const pill = $('#pill-solicitudes');
+    if (pill) { pill.hidden = !pend; pill.textContent = pend; }
     toast(
-      accion === 'aprobar' ? 'Sala aprobada y publicada ✓' :
-      accion === 'rechazar' ? 'Sala rechazada' :
-      accion === 'corregir' ? 'Le pedimos correcciones al dueño' : 'Sala actualizada',
+      accion === 'aprobar' ? 'Sala aprobada y publicada con éxito ✓' :
+      accion === 'rechazar' ? 'Sala rechazada ✓' :
+      accion === 'suspender' ? 'Sala suspendida temporalmente' :
+      accion === 'corregir' ? 'Correcciones enviadas al dueño ✓' : 'Sala actualizada',
       'ok');
     await cargarNotificaciones();
   } catch (e) { toast(e.message, 'error'); }
@@ -4044,9 +4118,10 @@ function renderSalasAdmin() {
       <div class="price">${fmtMoney(r.price)}<span> /hora</span></div>
       <div class="cap">👥 Hasta ${r.capacity} ${r.capacity === 1 ? 'persona' : 'personas'}</div>
       <ul class="feats">${r.features.length ? r.features.map(f => `<li>${esc(f)}</li>`).join('') : '<li>Sin características</li>'}</ul>
-      <div class="row wrap">
-        <button class="btn btn-sm" data-edit-room="${r.id}">Editar</button>
-        <button class="btn btn-sm" data-toggle-room="${r.id}">${r.activo === false ? 'Activar' : 'Desactivar'}</button>
+      <div class="row wrap" style="gap:6px">
+        <button class="btn btn-sm" data-edit-room="${r.id}">✏️ Editar</button>
+        <button class="btn btn-sm" data-toggle-room="${r.id}">${r.activo === false ? '🟢 Activar' : '⏸ Desactivar'}</button>
+        <button class="btn btn-sm" data-revisar-room="${r.id}">🔍 Revisión / Estado</button>
         <button class="btn btn-sm btn-danger" data-del-room="${r.id}">Eliminar</button>
       </div>
     </article>`).join('')
@@ -4853,19 +4928,11 @@ function wireAdmin() {
     const ok = e.target.closest('[data-sol-ok]');
     if (ok) return accionSolicitud(ok.dataset.solOk, 'aprobar');
     const corr = e.target.closest('[data-sol-corr]');
-    if (corr) {
-      const motivo = prompt('¿Qué tenés que corregir? Se le avisa al dueño de la sala:');
-      if (motivo) accionSolicitud(corr.dataset.solCorr, 'corregir', motivo);
-      return;
-    }
+    if (corr) return modalCorregirSala(corr.dataset.solCorr);
+    const susp = e.target.closest('[data-sol-susp]');
+    if (susp) return modalSuspenderSala(susp.dataset.solSusp, susp.dataset.action || 'suspender');
     const no = e.target.closest('[data-sol-no]');
-    if (no) {
-      const sala = (listaSolicitudes || []).find(r => r.id === no.dataset.solNo);
-      const motivo = prompt(`¿Por qué ${sala && sala.estado === 'pendiente' ? 'rechazás' : 'suspendés'} “${sala ? sala.name : 'la sala'}”?`, '');
-      if (motivo === null) return;
-      const accion = sala && sala.estado === 'pendiente' ? 'rechazar' : (sala && sala.estado === 'suspendida' ? 'rechazar' : 'desactivar');
-      return accionSolicitud(no.dataset.solNo, accion, motivo);
-    }
+    if (no) return modalSuspenderSala(no.dataset.solNo, 'rechazar');
     const ed = e.target.closest('[data-sol-editar]');
     if (ed) return formularioSala(ed.dataset.solEditar);
   };
@@ -4908,6 +4975,13 @@ function wireAdmin() {
   $('#salas-grid-admin').onclick = e => {
     const ed = e.target.closest('[data-edit-room]');
     if (ed) return formularioSala(ed.dataset.editRoom);
+    const rev = e.target.closest('[data-revisar-room]');
+    if (rev) {
+      filtroSolicitudes = 'todas';
+      listaSolicitudes = null;
+      renderAdminTab('solicitudes');
+      return;
+    }
     const tg = e.target.closest('[data-toggle-room]');
     if (tg) {
       const r = state.rooms.find(x => x.id === tg.dataset.toggleRoom);

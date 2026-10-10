@@ -50,7 +50,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@500;600;700&family=Barlow+Condensed:ital,wght@1,900&display=swap">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
       integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
-<link rel="stylesheet" href="styles.css?v=4.5">
+<link rel="stylesheet" href="styles.css?v=4.6">
 </head>
 <body>
 
@@ -433,15 +433,16 @@
   <section id="tab-solicitudes" class="tab">
     <div class="panel">
       <div class="panel-head">
-        <h2>📥 Solicitudes de salas</h2>
-        <div class="row">
+        <h2>📥 Solicitudes y Revisión de Salas</h2>
+        <div class="row wrap" id="solicitudes-filtro-btns" style="gap:6px;margin:0">
           <button class="btn btn-sm" data-estado-sol="todas">Todas</button>
-          <button class="btn btn-sm" data-estado-sol="pendiente">Pendientes</button>
+          <button class="btn btn-sm btn-primary" data-estado-sol="pendiente">Pendientes</button>
           <button class="btn btn-sm" data-estado-sol="aprobada">Aprobadas</button>
+          <button class="btn btn-sm" data-estado-sol="suspendida">Suspendidas</button>
           <button class="btn btn-sm" data-estado-sol="rechazada">Rechazadas</button>
         </div>
       </div>
-      <p class="muted small">Las salas registradas por usuarios quedan <strong>pendientes de aprobación</strong> hasta que las revises.</p>
+      <p class="muted small">Revisá las salas registradas por los dueños. Podés <strong>aprobarlas</strong>, <strong>pedir correcciones</strong>, <strong>suspenderlas</strong> temporalmente o <strong>rechazarlas</strong>.</p>
       <div id="solicitudes-list"></div>
     </div>
   </section>
@@ -798,6 +799,6 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-<script src="app.js?v=4.5"></script>
+<script src="app.js?v=4.6"></script>
 </body>
 </html>
