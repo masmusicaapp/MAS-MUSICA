@@ -587,13 +587,26 @@ function reglasPago(state) {
   };
 }
 
-/* El servidor calcula todo: total, seña, comisión (se descuenta de la seña) y saldo */
+/* Modelo de negocio oficial +MÚSICA:
+ * room_price: valor base sala + alquiler instrumentos
+ * service_fee: 5% a cargo del músico (ingreso bruto plataforma)
+ * total_amount: room_price + service_fee
+ */
 function calcularPago(room, startMin, endMin, alquiler, regs) {
   const horas = (endMin - startMin) / 60;
-  const total = Math.round(room.price * horas) + (alquiler || []).reduce((s, a) => s + a.total, 0);
-  const sena = Math.min(total, Math.round(total * regs.senaPorcentaje / 100));
-  const comision = Math.min(sena, Math.round(total * regs.comisionPorcentaje / 100));
-  return { total, sena, comision, paraSala: sena - comision, saldo: total - sena };
+  const room_price = Math.round(room.price * horas) + (alquiler || []).reduce((s, a) => s + a.total, 0);
+  const service_fee = Math.round(room_price * 0.05);
+  const total_amount = room_price + service_fee;
+  return {
+    room_price,
+    service_fee,
+    total_amount,
+    total: total_amount,
+    sena: total_amount,
+    comision: service_fee,
+    paraSala: room_price,
+    saldo: 0
+  };
 }
 
 async function mpFetch(ruta, opciones = {}) {
@@ -1070,7 +1083,7 @@ async function handleApi(req, res, url, parts) {
       console.error('[pagos] no se pudo crear el pago:', e.message);
       return sendJson(res, 502, { error: 'No pudimos iniciar el pago. Probá de nuevo en unos minutos.' });
     }
-    Object.assign(pago, { total: reservation.total, sena: reservation.sena, saldo: reservation.saldo, venceEn: reservation.venceEn });
+    Object.assign(pago, { room_price: reservation.room_price, service_fee: reservation.service_fee, total_amount: reservation.total_amount, total: reservation.total, sena: reservation.sena, saldo: reservation.saldo, venceEn: reservation.venceEn });
     state.reservations.push(reservation);
     if (u) avisar(state, u.id, 'Falta pagar la seña', `${room.name} · ${fmtFechaCorta(date)} · ${start}–${end}. Tenés ${regs.minutosPago} min para pagarla`, 'info', { reservaId: reservation.id, roomId: room.id });
     persist(state);
