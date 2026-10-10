@@ -5115,10 +5115,14 @@ async function init() {
   startPolling();
   cerrarSplash();
 
-  /* Service worker (solo en contextos seguros: HTTPS o localhost) */
-  if ('serviceWorker' in navigator &&
-      (location.protocol === 'https:' || ['localhost', '127.0.0.1'].includes(location.hostname))) {
-    navigator.serviceWorker.register('sw.js').catch(() => {});
+  /* Service worker: desregistrar para evitar que los celulares retengan código viejo */
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(registrations => {
+      for (const reg of registrations) reg.unregister();
+    }).catch(() => {});
+    if ('caches' in window) {
+      caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).catch(() => {});
+    }
   }
 
   /* Instalación como app (PWA) */
