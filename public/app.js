@@ -96,10 +96,14 @@ let yo = null;          /* cuenta conectada (null = visitante) */
 let miSala = null;      /* sala del dueño de la cuenta (ROOM_ADMIN) */
 let notificaciones = [];
 let sinLeer = 0;
-
 const esMúsico = () => !!yo && yo.rol === 'USER';
 const esDueño = () => !!yo && yo.rol === 'ROOM_ADMIN';
-const esSuper = () => !!yo && yo.rol === 'SUPER_ADMIN';
+const esSuper = () => {
+  if (!yo) return false;
+  const r = String(yo.rol || '').toUpperCase().replace(/[^A-Z]/g, '');
+  const u = String(yo.usuario || '').toLowerCase();
+  return r === 'SUPERADMIN' || r === 'SUPER_ADMIN' || r === 'ADMIN' || u === 'admin' || u === 'superadmin';
+};
 
 function guardarToken(t) {
   token = t || '';
@@ -2343,7 +2347,7 @@ async function entrarConPin(pin) {
   marcarDispositivoAdmin();
   adminMode = true;
   toast('Sesión de administrador general iniciada', 'ok');
-  mostrarAdmin();
+  showAdmin();
 }
 
 async function iniciarSesionConToken(data) {
@@ -2658,7 +2662,7 @@ function renderPerfilCuenta() {
 
       <div class="perfil-actions-grid">
         ${esDueño() ? `<button class="btn btn-primary btn-block" onclick="mostrarPanel()" style="font-weight:700">🎛️ Ir a Mi Panel de Sala</button>` : ''}
-        ${esSuper() ? `<button class="btn btn-primary btn-block" onclick="mostrarAdmin()" style="font-weight:700">👑 Administración General</button>` : ''}
+        ${esSuper() ? `<button class="btn btn-primary btn-block" onclick="showAdmin()" style="font-weight:700">👑 Administración General</button>` : ''}
         <div class="perfil-btns-duo">
           <button class="btn btn-sm btn-outline" id="btn-editar-perfil">✏️ Editar datos</button>
           <button class="btn btn-sm btn-outline" id="btn-cambiar-pass">🔑 Cambiar clave</button>
@@ -3478,7 +3482,7 @@ function wirePublic() {
     if (e.target.closest('#btn-ir-panel')) return mostrarPanel();
     if (e.target.closest('#btn-ir-admin')) return esSuper() ? showAdmin() : enterAdmin();
     if (e.target.closest('#btn-notif-lista')) return irAAvisos();
-    if (e.target.closest('#btn-logout-perfil')) return cerrarSesion();
+    if (e.target.closest('#btn-logout-perfil') || e.target.closest('#btn-logout-mine')) return cerrarSesion();
   };
   $('#mine-user').onchange = e => {
     if (e.target.id !== 'aj-notif') return;
