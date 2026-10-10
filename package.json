@@ -1,0 +1,10 @@
+{
+  "name": "mas-musica-salas-ensayo",
+  "version": "2.0.0",
+  "description": "Sistema de reservas para salas de ensayo (backend incluido, sin dependencias)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "license": "MIT"
+}
