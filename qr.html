@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QR — Más Música para celular</title>
+<link rel="icon" href="assets/musica_plus_logo_sinfondo.png">
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh;
+    font-family: "Barlow", "Segoe UI", system-ui, sans-serif;
+    background: radial-gradient(900px 500px at 50% -10%, #14263f 0%, #0d1b2f 60%);
+    color: #f4f5f2;
+    display: grid; place-items: center;
+    padding: 24px;
+  }
+  .card {
+    background: #16263d; border: 1px solid #243752; border-radius: 20px;
+    padding: 28px; text-align: center; max-width: 420px; width: 100%;
+    box-shadow: 0 24px 70px rgba(0, 0, 0, .5);
+  }
+  .card img.logo { max-width: 200px; margin-bottom: 14px; }
+  h1 { font-size: 1.15rem; margin: 0 0 6px; }
+  .muted { color: #9aa3c0; font-size: .9rem; }
+  .qr {
+    background: #fff; border-radius: 16px; padding: 14px;
+    display: inline-block; margin: 16px 0;
+  }
+  .qr img { display: block; width: 280px; height: 280px; }
+  .url {
+    background: #1e3350; border: 1px solid #243752; border-radius: 10px;
+    padding: 10px 14px; font-weight: 700; color: #22c55e;
+    word-break: break-all; margin: 4px 0 14px;
+  }
+  ol { text-align: left; padding-left: 20px; display: grid; gap: 6px; color: #9aa3c0; font-size: .88rem; }
+  .note { font-size: .78rem; color: #9aa3c0; margin-top: 14px; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <img class="logo" src="assets/musica_plus_logo_sinfondo.png" alt="Logo">
+    <h1>Ver en tu celular</h1>
+    <p class="muted">Escanea con la cámara del celular (misma red Wi-Fi)</p>
+    <div class="qr"><img id="qr-img" alt="QR de la aplicación"></div>
+    <div class="url" id="url"></div>
+    <ol>
+      <li>Conecta el celular a la <strong>misma red Wi-Fi</strong> que esta computadora.</li>
+      <li>Abre la cámara y apunta al QR (o toca el enlace de arriba).</li>
+      <li>Si no abre, escribe la URL en el navegador del celular.</li>
+    </ol>
+    <p class="note">⚠️ Si el celular no carga la página, permite "Node.js" en el Firewall de Windows (red privada). La IP puede cambiar si el router reinicia (DHCP).</p>
+  </div>
+  <script>
+    (function () {
+      var host = location.hostname;
+      var url = 'http://' + host + ':3000';
+      document.getElementById('url').textContent = url;
+      document.getElementById('qr-img').src =
+        'https://api.qrserver.com/v1/create-qr-code/?size=560x560&margin=8&data=' + encodeURIComponent(url);
+    })();
+  </script>
+</body>
+</html>
