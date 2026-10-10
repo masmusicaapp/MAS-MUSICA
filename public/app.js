@@ -1752,6 +1752,16 @@ function renderConfirm() {
   });
 
   $('#bk-confirm').onclick = confirmBooking;
+  const btnCancelStep = $('#btn-cancelar-paso-reserva');
+  if (btnCancelStep) {
+    btnCancelStep.onclick = () => {
+      if (confirm('¿Deseas cancelar esta reserva y volver al inicio?')) {
+        sel.range = null;
+        goStep(1);
+        setNav('inicio');
+      }
+    };
+  }
   const btnLogin = $('#bk-login');
   if (btnLogin) btnLogin.onclick = () => { closeModal(); pantallaAuth('inicio'); };
   if (!$('#bk-name').value) $('#bk-name').focus();
@@ -2925,6 +2935,16 @@ function renderPanelEstado() {
 function renderPanelSala() {
   const r = panelDatos.room;
   $('#ps-name').value = r.name || '';
+  const chkActivo = $('#ps-activo');
+  const txtActivo = $('#ps-activo-txt');
+  if (chkActivo) {
+    chkActivo.checked = r.activo !== false;
+    const actualizarTxt = () => {
+      if (txtActivo) txtActivo.textContent = chkActivo.checked ? '🟢 Sala abierta para reservas' : '⛔ Sala cerrada / pausada';
+    };
+    chkActivo.onchange = actualizarTxt;
+    actualizarTxt();
+  }
   $('#ps-price').value = r.price || 0;
   $('#ps-descripcion').value = r.descripcion || '';
   $('#ps-direccion').value = r.direccion || '';
@@ -2964,6 +2984,7 @@ async function guardarPanelSala() {
   const body = {
     roomId: panelDatos.room.id,
     name: $('#ps-name').value.trim(),
+    activo: $('#ps-activo') ? $('#ps-activo').checked : true,
     price: Number($('#ps-price').value),
     capacity: Number($('#ps-capacity').value),
     descripcion: $('#ps-descripcion').value.trim(),
