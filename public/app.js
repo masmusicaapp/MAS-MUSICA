@@ -377,7 +377,7 @@ function renderPerfilSala() {
 }
 
 /* ---------- Sección de integrantes (abajo del perfil) ---------- */
-function renderIntegrantesBanda() {
+function renderIntegrantesBanda() { return; // deshabilitado
   const host = $('#mine-integrantes');
   if (!host) return;
   /* Los integrantes acompañan al perfil de la banda; en el de la sala no aplican */
@@ -2630,21 +2630,28 @@ function renderPerfilCuenta() {
 
   box.hidden = false;
   box.innerHTML = `
-    <div class="aj-cuenta" style="padding:16px 14px">
-      <div class="user-avatar aj-avatar" style="width:52px;height:52px;font-size:1.4rem">
-        ${yo.foto ? `<img src="${esc(yo.foto)}" alt="${esc(yo.nombre)}">` : esc((yo.nombre || '?').trim().charAt(0).toUpperCase())}
-      </div>
-      <div class="aj-cuenta-txt">
-        <strong style="font-size:1.15rem">${esc(yo.nombre)}</strong>
-        <span class="muted small">@${esc(yo.usuario)}${yo.localidad ? ' · ' + esc(yo.localidad) : ''}</span>
-        <span class="aj-badges" style="margin-top:4px">
-          <span class="badge">${esDueño() ? '🎛️ Dueño de sala' : esSuper() ? '👑 Administrador' : '🎸 Músico'}</span>
-        </span>
-        <div class="row wrap" style="gap:10px;margin-top:12px">
-          <button class="btn btn-sm btn-primary" id="btn-editar-perfil">✏️ Editar perfil</button>
-          <button class="btn btn-sm" id="btn-cambiar-pass">🔑 Clave</button>
-          <button class="btn btn-sm btn-ghost" id="btn-logout-mine">Cerrar sesión</button>
+    <div class="perfil-card-modern">
+      <div class="perfil-header-row">
+        <div class="user-avatar perfil-avatar-modern">
+          ${yo.foto ? `<img src="${esc(yo.foto)}" alt="${esc(yo.nombre)}">` : esc((yo.nombre || '?').trim().charAt(0).toUpperCase())}
         </div>
+        <div class="perfil-info-modern">
+          <h2 class="perfil-nombre">${esc(yo.nombre)}</h2>
+          <span class="perfil-usuario">@${esc(yo.usuario)}${yo.localidad ? ' · ' + esc(yo.localidad) : ''}</span>
+          <div class="perfil-tag-row">
+            <span class="badge badge-rol">${esDueño() ? '🎛️ Dueño de Sala' : esSuper() ? '👑 Administrador' : '🎸 Músico'}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="perfil-actions-grid">
+        ${esDueño() ? `<button class="btn btn-primary btn-block" onclick="mostrarPanel()" style="font-weight:700">🎛️ Ir a Mi Panel de Sala</button>` : ''}
+        ${esSuper() ? `<button class="btn btn-primary btn-block" onclick="mostrarAdmin()" style="font-weight:700">👑 Administración General</button>` : ''}
+        <div class="perfil-btns-duo">
+          <button class="btn btn-sm btn-outline" id="btn-editar-perfil">✏️ Editar datos</button>
+          <button class="btn btn-sm btn-outline" id="btn-cambiar-pass">🔑 Cambiar clave</button>
+        </div>
+        <button class="btn btn-sm btn-danger-soft btn-block" id="btn-logout-mine">Cerrar sesión</button>
       </div>
     </div>`;
 
