@@ -2534,58 +2534,37 @@ function renderPanelAjustes() {
   const bod = $('#ajustes-sheet-body');
   if (!bod) return;
   const sub = $('#ajustes-sheet-sub');
-  const instrumentos = (yo.instrumentos || []).join(', ');
-  const mias = misReservas();
-  const nProx = mias.filter(r => !esPasada(r) && r.estado !== 'cancelada').length;
-  const nHist = mias.filter(r => esPasada(r) || r.estado === 'cancelada').length;
-  const nFav = (yo.favoritos || []).length;
   const prefAvisos = localStorage.getItem('mm-avisos-toast') !== '0';
   const tTema = temaActual();
-  if (sub) sub.textContent = yo ? `@${yo.usuario} · configuración` : 'Configuración y preferencias';
+  if (sub) sub.textContent = yo ? `@${yo.usuario}` : 'Configuración';
   bod.innerHTML = `
     <p class="aj-lbl" style="margin-top:6px">Mi cuenta</p>
     <div class="aj-card">
-      ${filaAj('datos', ICO_AJ.persona, 'Datos personales', yo.email || '')}
-      ${filaAj('pass', ICO_AJ.candado, 'Contraseña')}
-      ${filaAj('inst', ICO_AJ.nota, 'Mis instrumentos', instrumentos || 'Agregá los que tocás')}
-      ${esDueño() ? filaAj('panel', ICO_AJ.panel, 'Mi panel de sala', miSala ? `${esc(miSala.name)} · ${miSala.estado}` : '') : ''}
+      ${filaAj('datos', ICO_AJ.persona, 'Editar mis datos', yo.email || '')}
+      ${filaAj('pass', ICO_AJ.candado, 'Cambiar contraseña')}
+      ${esDueño() ? filaAj('panel', ICO_AJ.panel, 'Mi panel de sala', miSala ? esc(miSala.name) : '') : ''}
       ${esSuper() ? filaAj('admin', ICO_AJ.engranaje, 'Panel de administración') : ''}
     </div>
 
     <p class="aj-lbl">Preferencias</p>
     <div class="aj-card">
+      <div class="aj-row aj-apariencia">
+        ${svgAj(ICO_AJ.luna)}
+        <span class="aj-txt">Apariencia</span>
+        <span class="aj-seg">
+          <button type="button" data-tema="oscuro" ${tTema === 'oscuro' ? 'class="on"' : ''}>Oscuro</button>
+          <button type="button" data-tema="claro" ${tTema === 'claro' ? 'class="on"' : ''}>Claro</button>
+          <button type="button" data-tema="auto" ${tTema === 'auto' ? 'class="on"' : ''}>Auto</button>
+        </span>
+      </div>
       <label class="aj-row" for="aj-notif">
         ${svgAj(ICO_AJ.campana)}
         <span class="aj-txt">Notificaciones de reservas</span>
         <input type="checkbox" id="aj-notif" ${prefAvisos ? 'checked' : ''}>
       </label>
-      ${filaAj('zona', ICO_AJ.pin, 'Mi zona', yo.localidad || 'Sin definir')}
-      ${filaAj('avisos', ICO_AJ.buzon, 'Mis avisos', sinLeer ? `${sinLeer} sin leer` : notificaciones.length ? `${notificaciones.length} avisos` : 'Sin avisos')}
-      <div class="aj-row aj-apariencia">
-        ${svgAj(ICO_AJ.luna)}
-        <span class="aj-txt">Apariencia</span>
-        <span class="aj-seg">
-          <button type="button" data-tema="auto" ${tTema === 'auto' ? 'class="on"' : ''}>Automático</button>
-          <button type="button" data-tema="claro" ${tTema === 'claro' ? 'class="on"' : ''}>Claro</button>
-          <button type="button" data-tema="oscuro" ${tTema === 'oscuro' ? 'class="on"' : ''}>Oscuro</button>
-        </span>
-      </div>
     </div>
 
-    <p class="aj-lbl">Mis reservas</p>
-    <div class="aj-card">
-      ${filaAj('proximas', ICO_AJ.cal, 'Próximas reservas', `${nProx} reserva${nProx === 1 ? '' : 's'}`)}
-      ${filaAj('historial', ICO_AJ.reloj, 'Historial', `${nHist} reserva${nHist === 1 ? '' : 's'}`)}
-      ${filaAj('favoritas', ICO_AJ.corazon, 'Salas favoritas', `${nFav} guardada${nFav === 1 ? '' : 's'}`)}
-    </div>
-
-    <p class="aj-lbl">Ayuda</p>
-    <div class="aj-card">
-      ${filaAj('ayuda', ICO_AJ.ayuda, 'Ayuda y contacto')}
-      ${filaAj('terminos', ICO_AJ.doc, 'Términos y condiciones')}
-    </div>
-
-    <button class="aj-salir" id="btn-logout-perfil">
+    <button class="aj-salir" id="btn-logout-perfil" style="margin-top:24px">
       ${svgAj(ICO_AJ.salir, 'aj-ico', 20)} Cerrar sesión
     </button>`;
 }
@@ -2631,11 +2610,10 @@ function renderPerfilCuenta() {
     box.hidden = false;
     box.innerHTML = `
       <div class="panel-head"><h2>Mi perfil</h2></div>
-      <p class="muted">No iniciaste sesión. Creá tu cuenta para guardar tus reservas, tus salas favoritas y recibir avisos.</p>
+      <p class="muted">Iniciá sesión para ver tus reservas y tus salas favoritas.</p>
       <div class="row wrap">
         <button class="btn btn-primary" data-auth="login">Iniciar sesión</button>
-        <button class="btn" data-auth="musico">Crear cuenta de músico</button>
-        <button class="btn" data-auth="duenio">Registrar mi sala</button>
+        <button class="btn" data-auth="musico">Crear cuenta</button>
       </div>`;
     fav.hidden = true;
     notif.hidden = true;
@@ -2643,41 +2621,22 @@ function renderPerfilCuenta() {
   }
 
   box.hidden = false;
-  const instrumentos = (yo.instrumentos || []).join(', ');
   box.innerHTML = `
-    <div class="panel-head"><h2>Mis datos</h2></div>
-    <div class="aj-cuenta">
-      <div class="user-avatar aj-avatar">${yo.foto ? `<img src="${esc(yo.foto)}" alt="${esc(yo.nombre)}">` : esc((yo.nombre || '?').trim().charAt(0).toUpperCase())}</div>
+    <div class="aj-cuenta" style="padding:16px 14px">
+      <div class="user-avatar aj-avatar" style="width:52px;height:52px;font-size:1.4rem">
+        ${yo.foto ? `<img src="${esc(yo.foto)}" alt="${esc(yo.nombre)}">` : esc((yo.nombre || '?').trim().charAt(0).toUpperCase())}
+      </div>
       <div class="aj-cuenta-txt">
-        <strong>${esc(yo.nombre)}</strong>
-        <span>@${esc(yo.usuario)}${yo.localidad ? ' · ' + esc(yo.localidad) : ''}</span>
-        <span class="aj-badges">
-          <span class="badge">${esDueño() ? '🎛️ Dueño de sala' : esSuper() ? '👑 Administración general' : '🎸 Músico'}</span>
-          ${miSala ? `<span class="badge ${miSala.estado === 'aprobada' ? '' : 'badge-next'}">Sala: ${esc(miSala.name)} · ${miSala.estado}</span>` : ''}
+        <strong style="font-size:1.15rem">${esc(yo.nombre)}</strong>
+        <span class="muted small">@${esc(yo.usuario)}${yo.localidad ? ' · ' + esc(yo.localidad) : ''}</span>
+        <span class="aj-badges" style="margin-top:4px">
+          <span class="badge">${esDueño() ? '🎛️ Dueño de sala' : esSuper() ? '👑 Administrador' : '🎸 Músico'}</span>
         </span>
-        <div class="row wrap" style="gap:12px;margin-top:8px">
-          <button class="aj-editar" id="btn-editar-perfil">✏️ Editar perfil</button>
-          <button class="aj-editar" id="btn-cambiar-pass">🔑 Cambiar contraseña</button>
+        <div class="row wrap" style="gap:10px;margin-top:12px">
+          <button class="btn btn-sm btn-primary" id="btn-editar-perfil">✏️ Editar perfil</button>
+          <button class="btn btn-sm" id="btn-cambiar-pass">🔑 Clave</button>
+          <button class="btn btn-sm btn-ghost" id="btn-logout-mine">Cerrar sesión</button>
         </div>
-      </div>
-    </div>
-
-    <p class="aj-lbl">Datos</p>
-    <div class="aj-card">
-      <div class="aj-row aj-dato">${svgAj(ICO_AJ.buzon)}
-        <span class="aj-txt">Email<small>${esc(yo.email || 'Sin email')}</small></span>
-      </div>
-      <div class="aj-row aj-dato">${svgAj(ICO_AJ.telefono)}
-        <span class="aj-txt">Teléfono<small>${esc(yo.telefono || 'Sin cargar')}</small></span>
-      </div>
-      <div class="aj-row aj-dato">${svgAj(ICO_AJ.pin)}
-        <span class="aj-txt">Localidad<small>${esc(yo.localidad || 'Sin definir')}</small></span>
-      </div>
-      <div class="aj-row aj-dato">${svgAj(ICO_AJ.nota)}
-        <span class="aj-txt">Instrumentos<small>${instrumentos || 'No agregaste ninguno'}</small></span>
-      </div>
-      <div class="aj-row aj-dato">${svgAj(ICO_AJ.cal)}
-        <span class="aj-txt">Cuenta creada<small>${yo.createdAt ? fechaCorta(yo.createdAt) : '—'}</small></span>
       </div>
     </div>`;
 
@@ -2685,15 +2644,14 @@ function renderPerfilCuenta() {
   fav.hidden = false;
   fav.innerHTML = `
     <div class="panel-head"><h2>♥️ Mis salas favoritas</h2>
-      <button class="btn btn-sm" id="fav-ver">Ver salas</button>
+      <button class="btn btn-sm" id="fav-ver">Ver todas</button>
     </div>
     ${salones.length
       ? `<div class="mini-fotos">${salones.map(r => `<button class="fav-item" data-ir-sala="${r.id}">
           ${r.foto ? `<img src="${esc(r.foto)}" alt="">` : '<span class="sala-chip-foto">🎸</span>'}
           <span>${esc(r.name)}<small>${fmtMoney(r.price)}/h</small></span></button>`).join('')}</div>`
-      : '<p class="muted small">Todavía no guardaste ninguna sala. Tocá el ♡ en una sala para guardarla acá.</p>'}`;
+      : '<p class="muted small">Tocá el ♡ en una sala para guardarla acá y reservarla más rápido.</p>'}`;
 
-  /* Los avisos viven en la campana y en el panel de Ajustes del engranaje */
   notif.hidden = true;
   notif.innerHTML = '';
 }
