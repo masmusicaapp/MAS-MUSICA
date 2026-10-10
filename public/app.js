@@ -5159,3 +5159,46 @@ async function cambiarPlan(planId) {
     toast(e.message, 'error');
   }
 }
+
+
+/* Modal para agregar una nueva sala al complejo */
+function modalAgregarSalaPropia() {
+  const sub = panelDatos.suscripcion;
+  if (sub && !sub.puedeCrearSala) {
+    alert(`Has alcanzado el límite de ${sub.limiteSalas} salas de tu ${sub.nombrePlan}. Ve a la pestaña "💎 Mi suscripción" para ampliar tu plan.`);
+    return;
+  }
+  openModal(`
+    <div style="padding:10px">
+      <h3>＋ Agregar nueva sala</h3>
+      <p class="muted small">Crea una nueva sala o cabina de ensayo para tu establecimiento.</p>
+      <div style="margin:14px 0">
+        <label>Nombre de la sala *<input id="new-sala-name" placeholder="Ej.: Sala B, Sala Acústica, Cabina 3" maxlength="60"></label>
+        <label style="margin-top:10px">Precio por hora ($) *<input id="new-sala-price" type="number" value="${panelDatos.room.price || 15000}" min="1000" step="500"></label>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px">
+        <button class="btn" onclick="closeModal()">Cancelar</button>
+        <button class="btn btn-primary" id="btn-confirm-add-sala">Crear sala</button>
+      </div>
+    </div>
+  `);
+  $('#btn-confirm-add-sala').onclick = async () => {
+    const name = $('#new-sala-name').value.trim();
+    const price = Number($('#new-sala-price').value);
+    if (!name) { toast('Escribe el nombre de la sala', 'warn'); return; }
+    try {
+      const res = await api('/api/rooms/' + encodeURIComponent(panelDatos.room.id) + '/nueva-sala', {
+        method: 'POST',
+        body: { name, price }
+      });
+      toast('¡Sala “' + name + '” creada con éxito!', 'ok');
+      closeModal();
+      state = res.state;
+      miSala = res.room;
+      await cargarPanel();
+      renderPanelTab('sala');
+    } catch (e) {
+      toast(e.message, 'error');
+    }
+  };
+}

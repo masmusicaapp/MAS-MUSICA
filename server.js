@@ -1466,6 +1466,38 @@ async function handleApi(req, res, url, parts) {
     }
 
 
+
+    // Crear una nueva sala para este dueño (dentro del límite de su suscripción)
+    if (method === 'POST' && accion === 'nueva-sala') {
+      const subInfo = getSuscripcionUsuario(state, u.id);
+      if (!subInfo.puedeCrearSala) {
+        return sendJson(res, 403, { 
+          error: `Alcanzaste el límite de ${subInfo.limiteSalas} salas de tu ${subInfo.nombrePlan}. Mejora tu plan para agregar más salas.` 
+        });
+      }
+      const nombreSala = String(body.name || '').trim();
+      if (!nombreSala) return sendJson(res, 400, { error: 'Escribe el nombre de la sala' });
+
+      const nueva = salaNueva({
+        id: uid(),
+        name: nombreSala,
+        price: Math.max(1, parseInt(body.price || 10000, 10)),
+        ownerId: u.id,
+        estado: 'aprobada', // Los dueños aprobados pueden habilitar subsala de inmediato
+        activo: true,
+        direccion: room.direccion || '',
+        localidad: room.localidad || '',
+        telefono: room.telefono || u.telefono || '',
+        lat: room.lat || null,
+        lng: room.lng || null
+      });
+
+      state.rooms.push(nueva);
+      avisar(state, u.id, 'Sala creada', `Agregaste exitosamente “${nueva.name}”.`, 'ok');
+      persist(state);
+      return sendJson(res, 201, { state: publicState(state), room: nueva });
+    }
+
     // Cambiar plan de suscripción
     if (method === 'POST' && accion === 'plan') {
       const nuevoPlan = String(body.plan || '').toLowerCase();

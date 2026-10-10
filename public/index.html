@@ -50,7 +50,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@500;600;700&family=Barlow+Condensed:ital,wght@1,900&display=swap">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
       integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
-<link rel="stylesheet" href="styles.css?v=3.7">
+<link rel="stylesheet" href="styles.css?v=3.8">
 </head>
 <body>
 
@@ -237,9 +237,17 @@
 <!-- ============ PANEL DEL DUEÑO DE LA SALA ============ -->
 <main id="view-panel" hidden>
   <div class="panel">
-    <div class="panel-head">
-      <h2>🎛️ Mi sala de ensayo</h2>
-      <button class="btn btn-sm" id="btn-exit-panel">← Volver</button>
+    <div class="panel-head" style="align-items:flex-start;flex-wrap:wrap;gap:10px">
+      <div>
+        <h2 style="margin:0 0 4px">🎛️ Panel de Administración</h2>
+        <div id="panel-mis-salas-bar" style="display:flex;align-items:center;gap:8px;margin-top:6px">
+          <!-- Selector dinámico de salas -->
+        </div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-primary btn-sm" id="btn-panel-add-room">＋ Agregar sala</button>
+        <button class="btn btn-sm" id="btn-exit-panel">← Volver</button>
+      </div>
     </div>
     <div id="panel-estado"></div>
     <nav class="admin-tabs">
@@ -745,6 +753,6 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-<script src="app.js?v=3.7"></script>
+<script src="app.js?v=3.8"></script>
 </body>
 </html>
