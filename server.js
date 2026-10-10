@@ -116,6 +116,46 @@ const HORAS_DEFAULT = {
   '5': { open: '10:00', close: '22:00' },
   '6': { open: '11:00', close: '20:00' },
 };
+
+/* ========================================================
+ * PLANES COMERCIALES Y SUSCRIPCIONES (Documento Base v1.0)
+ * ======================================================== */
+const PLANES_CONFIG = {
+  emprendedor: { id: 'emprendedor', nombre: 'Plan Emprendedor', maxSalas: 2, precioMensual: 25000, moneda: 'ARS' },
+  estudio:      { id: 'estudio',      nombre: 'Plan Estudio',      maxSalas: 5, precioMensual: 40000, moneda: 'ARS' },
+  multisala:    { id: 'multisala',    nombre: 'Plan Multisala',    maxSalas: 10, precioMensual: 60000, moneda: 'ARS' },
+  sala_extra:   { id: 'sala_extra',   nombre: 'Sala Adicional',    precioMensual: 5000, moneda: 'ARS' }
+};
+
+function getSuscripcionUsuario(state, userId) {
+  state.subscriptions = state.subscriptions || [];
+  let sub = state.subscriptions.find(s => s.userId === userId);
+  if (!sub) {
+    // Plan por defecto al registrarse como ROOM_ADMIN
+    sub = {
+      id: uid(),
+      userId,
+      plan: 'emprendedor',
+      salasExtra: 0,
+      estado: 'activo', // activo, cancelado, vencido
+      fechaInicio: Date.now(),
+      proximoVencimiento: Date.now() + 30 * 24 * 3600 * 1000
+    };
+    state.subscriptions.push(sub);
+  }
+  const planInfo = PLANES_CONFIG[sub.plan] || PLANES_CONFIG.emprendedor;
+  const limiteSalas = planInfo.maxSalas + (sub.salasExtra || 0);
+  const salasActuales = (state.rooms || []).filter(r => r.ownerId === userId).length;
+  return {
+    ...sub,
+    nombrePlan: planInfo.nombre,
+    precioMensual: planInfo.precioMensual + ((sub.salasExtra || 0) * PLANES_CONFIG.sala_extra.precioMensual),
+    limiteSalas,
+    salasActuales,
+    puedeCrearSala: salasActuales < limiteSalas
+  };
+}
+
 const REGlas_DEFAULT = { cancelacionHoras: 0, turnos: [30, 60, 90, 120], avisoHoras: 24, senaPorcentaje: 30, comisionPorcentaje: 8, minutosPago: 15 };
 
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
@@ -856,6 +896,10 @@ async function handleApi(req, res, url, parts) {
       if (logo) sala.foto = logo;
     }
     duenio.telefono = String(s.telefono || duenio.telefono).slice(0, 30);
+    const subInfo = getSuscripcionUsuario(state, duenio.id);
+    if (!subInfo.puedeCrearSala) {
+      return sendJson(res, 403, { error: `Alcanzaste el límite de ${subInfo.limiteSalas} salas de tu ${subInfo.nombrePlan}. Mejora tu plan para agregar más salas.` });
+    }
     state.rooms.push(sala);
     avisar(state, duenio.id, 'Solicitud enviada', `Revisamos los datos de “${sala.name}”. Te avisamos cuando sea aprobada.`, 'info');
     const token = crearSesion(state, duenio.id);
@@ -1299,6 +1343,8 @@ async function handleApi(req, res, url, parts) {
         bloques: state.blocks.filter(b => b.roomId === room.id).sort((a, b) => b.date.localeCompare(a.date)),
         duenio: duenioUser ? usuarioPublico(duenioUser) : null,
         misSalas: u.rol === 'ROOM_ADMIN' ? state.rooms.filter(r => r.ownerId === u.id) : [],
+        suscripcion: getSuscripcionUsuario(state, u.id),
+        planesDisponibles: PLANES_CONFIG,
         resumen: {
           hoy: reservas.filter(r => r.date === hoy && activas(r)).length,
           proximas: futuras.length,
@@ -1417,6 +1463,25 @@ async function handleApi(req, res, url, parts) {
       if (r.userId) avisar(state, r.userId, 'Reserva cancelada por la sala', `${room.name} · ${fmtFechaCorta(r.date)} ${r.start}–${r.end}`, 'warn', { reservaId: r.id, roomId: r.roomId });
       persist(state);
       return sendJson(res, 200, { state: publicState(state) });
+    }
+
+
+    // Cambiar plan de suscripción
+    if (method === 'POST' && accion === 'plan') {
+      const nuevoPlan = String(body.plan || '').toLowerCase();
+      if (!['emprendedor', 'estudio', 'multisala'].includes(nuevoPlan)) {
+        return sendJson(res, 400, { error: 'Plan no válido' });
+      }
+      const salasExtras = Math.max(0, parseInt(body.salasExtra || 0, 10));
+      const sub = state.subscriptions.find(s => s.userId === u.id);
+      if (sub) {
+        sub.plan = nuevoPlan;
+        sub.salasExtra = salasExtras;
+        sub.fechaCambio = Date.now();
+      }
+      avisar(state, u.id, 'Plan actualizado', `Tu suscripción se actualizó al ${PLANES_CONFIG[nuevoPlan].nombre}.`, 'ok');
+      persist(state);
+      return sendJson(res, 200, { state: publicState(state), suscripcion: getSuscripcionUsuario(state, u.id) });
     }
 
     return sendJson(res, 404, { error: 'Endpoint no encontrado' });

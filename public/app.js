@@ -2889,10 +2889,10 @@ async function cargarPanel() {
 function renderPanelTab(tab) {
   panelTab = tab;
   $$('.admin-tab[data-ptab]').forEach(b => b.classList.toggle('active', b.dataset.ptab === tab));
-  ['sala', 'disponibilidad', 'reservas', 'datos'].forEach(t => { $('#ptab-' + t).hidden = t !== tab; });
+  ['sala', 'disponibilidad', 'reservas', 'datos', 'plan'].forEach(t => { const el = $('#ptab-' + t); if(el) el.hidden = t !== tab; });
   if (!panelDatos) return;
   renderPanelEstado();
-  ({ sala: renderPanelSala, disponibilidad: renderPanelDisponibilidad, reservas: renderPanelReservas, datos: renderPanelDatos }[tab])();
+  ({ sala: renderPanelSala, disponibilidad: renderPanelDisponibilidad, reservas: renderPanelReservas, datos: renderPanelDatos, plan: renderPanelPlan }[tab])();
 }
 
 function renderPanelEstado() {
@@ -5119,3 +5119,43 @@ async function init() {
   }, 1500);
 })();
 document.addEventListener('DOMContentLoaded', init);
+
+/* --- Mi Suscripción y Planes --- */
+function renderPanelPlan() {
+  if (!panelDatos || !panelDatos.suscripcion) return;
+  const sub = panelDatos.suscripcion;
+  const cont = $('#plan-actual-card');
+  if (!cont) return;
+  const usoPct = Math.min(100, Math.round((sub.salasActuales / sub.limiteSalas) * 100));
+  cont.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+      <div>
+        <span class="badge" style="background:var(--accent);color:#fff">PLAN ACTIVO</span>
+        <h3 style="margin:6px 0 2px">${esc(sub.nombrePlan)}</h3>
+        <p class="muted small">Costo mensual: ${fmtMoney(sub.precioMensual)} / mes</p>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:1.1rem;font-weight:bold">${sub.salasActuales} de ${sub.limiteSalas} salas</div>
+        <span class="muted small">${sub.puedeCrearSala ? 'Puedes registrar más salas' : 'Límite de salas alcanzado'}</span>
+      </div>
+    </div>
+    <div style="background:var(--border);height:8px;border-radius:4px;margin:12px 0;overflow:hidden">
+      <div style="background:var(--accent);width:${usoPct}%;height:100%"></div>
+    </div>
+  `;
+}
+
+async function cambiarPlan(planId) {
+  if (!confirm('¿Deseas cambiar tu suscripción al ' + planId.toUpperCase() + '?')) return;
+  try {
+    const res = await api('/api/rooms/' + encodeURIComponent(panelDatos.room.id) + '/plan', {
+      method: 'POST',
+      body: { plan: planId }
+    });
+    toast('¡Suscripción actualizada con éxito!', 'ok');
+    panelDatos.suscripcion = res.suscripcion;
+    renderPanelPlan();
+  } catch (e) {
+    toast(e.message, 'error');
+  }
+}
