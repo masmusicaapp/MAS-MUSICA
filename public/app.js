@@ -1016,23 +1016,52 @@ function actualizarMapaSiSeVe() {
 }
 
 /* ---------- Resumen del Inicio: estadísticas ---------- */
-/* Promociones activas en el Inicio público: las ve cualquier usuario, con o sin sesión */
+/* Enlaces a redes: uno o más, separados por espacio o coma. Solo se aceptan http(s). */
+function parseRedes(txt) {
+  return String(txt || '').split(/[\s,]+/).map(t => t.trim()).filter(Boolean).map(t => {
+    try {
+      const x = new URL(/^https?:\/\//i.test(t) ? t : 'https://' + t);
+      return /^https?:$/.test(x.protocol) && x.hostname.includes('.') ? x.href : '';
+    } catch (e) { return ''; }
+  }).filter(Boolean);
+}
+const nombreRed = href => {
+  const h = new URL(href).hostname.replace(/^www\./, '');
+  if (/instagram/.test(h)) return 'Instagram';
+  if (/facebook|fb\.com/.test(h)) return 'Facebook';
+  if (/tiktok/.test(h)) return 'TikTok';
+  if (/youtube|youtu\.be/.test(h)) return 'YouTube';
+  if (/wa\.me|whatsapp/.test(h)) return 'WhatsApp';
+  if (/^x\.com$|twitter/.test(h)) return 'X';
+  return h;
+};
+function linksRedesHTML(txt) {
+  const links = parseRedes(txt);
+  return links.length ? `<div class="promo-links">${links.map(href =>
+    `<a class="promo-link" href="${esc(href)}" target="_blank" rel="noopener">${esc(nombreRed(href))}</a>`).join('')}</div>` : '';
+}
+
+/* Bloque de promociones: el flyer es lo principal; debajo, solo título, un detalle y los enlaces */
+function promosBloqueHTML(lista, vacio) {
+  if (!lista.length) return vacio ? `<p class="muted small">${esc(vacio)}</p>` : '';
+  return `<div class="promo-grid">${lista.map(p => `
+    <article class="promo-hero" data-promo-id="${esc(p.id)}" role="button" tabindex="0" title="Ver promoción">
+      ${p.flyer ? `<img class="promo-hero-img" src="${esc(p.flyer)}" alt="Flyer de ${esc(p.titulo)}">` : ''}
+      <div class="promo-hero-info">
+        <strong>${esc(p.titulo)}</strong>
+        ${p.texto ? `<span>${esc(p.texto)}</span>` : ''}
+        ${linksRedesHTML(p.redes)}
+      </div>
+    </article>`).join('')}</div>`;
+}
+
+/* Inicio público: promociones activas, visibles para todos (con o sin sesión) */
 function promosInicioHTML() {
   const lista = promosActivas();
   if (!lista.length) return '';
   return `<div class="promos-publico">
     <h3 class="promos-tit">🎉 Promociones y novedades</h3>
-    ${lista.map(p => {
-      const red = safeUrl(p.redes);
-      return `<article class="promo-pub" data-promo-id="${esc(p.id)}" role="button" tabindex="0" title="Ver promoción">
-        ${p.flyer ? `<img class="promo-pub-img" src="${esc(p.flyer)}" alt="Flyer de ${esc(p.titulo)}">` : ''}
-        <div class="promo-pub-txt">
-          <strong>${esc(p.titulo)}</strong>
-          ${p.texto ? `<span>${esc(p.texto)}</span>` : ''}
-          ${red ? `<a class="promo-pub-red" href="${esc(red)}" target="_blank" rel="noopener">🔗 Ver en redes</a>` : ''}
-        </div>
-      </article>`;
-    }).join('')}
+    ${promosBloqueHTML(lista)}
   </div>`;
 }
 
@@ -2460,11 +2489,10 @@ function itemPromo(p) {
 function abrirPromo(id) {
   const p = (state.promociones || []).find(x => x.id === id);
   if (!p) return;
-  const red = safeUrl(p.redes);
   openModal(`<h3>${esc(p.titulo)}</h3>
     ${p.flyer ? `<img class="promo-flyer-img" src="${esc(p.flyer)}" alt="Flyer de ${esc(p.titulo)}">` : ''}
-    <p>${esc(p.texto)}</p>
-    ${red ? `<p><a class="btn btn-sm" href="${esc(red)}" target="_blank" rel="noopener">🔗 Ver en redes</a></p>` : ''}
+    ${p.texto ? `<p>${esc(p.texto)}</p>` : ''}
+    ${linksRedesHTML(p.redes)}
     <div class="row"><button class="btn" onclick="closeModal()">Cerrar</button></div>`);
 }
 
@@ -3003,22 +3031,15 @@ function renderPanelInicio() {
 
       <section class="inicio-card ancha">
         <h3>🎉 Promociones activas <span class="muted small">(${promos.length})</span></h3>
-        ${promos.length ? promos.map(p => `
-          <div class="promo-admin-card">
-            ${p.flyer ? `<img class="promo-thumb" src="${esc(p.flyer)}" alt="Flyer de ${esc(p.titulo)}">` : ''}
-            <div class="res-info">
-              <strong>${esc(p.titulo)}</strong>
-              <div class="muted small">${esc(p.texto)}</div>
-              ${safeUrl(p.redes) ? `<div class="small">🔗 <a href="${esc(safeUrl(p.redes))}" target="_blank" rel="noopener">Ver en redes</a></div>` : ''}
-            </div>
-          </div>`).join('')
-          : '<p class="muted small">No hay promociones activas en este momento.</p>'}
+        ${promosBloqueHTML(promos, 'No hay promociones activas en este momento.')}
       </section>
     </div>`;
 
   cont.onclick = e => {
     const g = e.target.closest('[data-goto-ptab]');
-    if (g) renderPanelTab(g.dataset.gotoPtab);
+    if (g) return renderPanelTab(g.dataset.gotoPtab);
+    const pp = e.target.closest('[data-promo-id]');
+    if (pp && !e.target.closest('a')) abrirPromo(pp.dataset.promoId);
   };
 }
 
@@ -4720,23 +4741,16 @@ function renderInicioAdmin() {
 
       <section class="inicio-card ancha">
         <h3>🎉 Promociones activas <span class="muted small">(${promos.length})</span></h3>
-        ${promos.length ? promos.map(p => `
-          <div class="promo-admin-card">
-            ${p.flyer ? `<img class="promo-thumb" src="${esc(p.flyer)}" alt="Flyer de ${esc(p.titulo)}">` : ''}
-            <div class="res-info">
-              <strong>${esc(p.titulo)}</strong>
-              <div class="muted small">${esc(p.texto)}</div>
-              ${safeUrl(p.redes) ? `<div class="small">🔗 <a href="${esc(safeUrl(p.redes))}" target="_blank" rel="noopener">Ver en redes</a></div>` : ''}
-            </div>
-          </div>`).join('')
-          : '<p class="muted">No hay promociones activas. Cuando actives una, aparece acá.</p>'}
+        ${promosBloqueHTML(promos, 'No hay promociones activas. Cuando actives una, aparece acá.')}
         <div class="inicio-pie"><button class="btn btn-sm" data-goto="promociones">Administrar promociones</button></div>
       </section>
     </div>`;
 
   cont.onclick = e => {
     const g = e.target.closest('[data-goto]');
-    if (g) renderAdminTab(g.dataset.goto);
+    if (g) return renderAdminTab(g.dataset.goto);
+    const pp = e.target.closest('[data-promo-id]');
+    if (pp && !e.target.closest('a')) abrirPromo(pp.dataset.promoId);
   };
 }
 
@@ -4753,7 +4767,7 @@ function renderPromocionesAdmin() {
         <strong>${esc(p.titulo)} ${p.activa === false ? '<span class="badge badge-past">Inactiva</span>' : '<span class="badge">Activa</span>'}</strong>
         <div class="muted small">${esc(p.texto)}</div>
         <div class="muted small">Desde ${f(p.desde)} hasta ${f(p.hasta)}</div>
-        ${safeUrl(p.redes) ? `<div class="muted small">🔗 <a href="${esc(safeUrl(p.redes))}" target="_blank" rel="noopener">Ver en redes</a></div>` : ''}
+        ${linksRedesHTML(p.redes) ? `<div class="muted small">${linksRedesHTML(p.redes)}</div>` : ''}
       </div>
       <div class="res-actions">
         <button class="btn btn-sm" data-edit-promo="${p.id}">Editar</button>
@@ -4780,7 +4794,7 @@ function formularioPromocion(id) {
       <div id="pr-flyer-prev">${p.flyer ? `<img src="${esc(p.flyer)}" alt="Flyer actual">` : ''}</div>
       <label class="check" id="pr-quitar-wrap" ${p.flyer ? '' : 'hidden'}><input type="checkbox" id="pr-quitar"> Quitar el flyer</label>
     </div>
-    <label>Enlace a redes (Instagram, Facebook, etc.)<input id="pr-redes" maxlength="300" value="${esc(p.redes || '')}" placeholder="https://instagram.com/..."></label>
+    <label>Enlaces a redes (uno o más, separados por espacio)<input id="pr-redes" maxlength="500" value="${esc(p.redes || '')}" placeholder="instagram.com/tu_sala facebook.com/tu_sala"></label>
     <label class="check"><input type="checkbox" id="pr-activa" ${p.activa !== false ? 'checked' : ''}> Mostrar en el Inicio</label>
     <div class="row">
       <button class="btn btn-primary" id="pr-guardar">💾 Guardar</button>
@@ -4805,8 +4819,7 @@ function formularioPromocion(id) {
   $('#pr-guardar').onclick = async () => {
     const titulo = $('#pr-titulo').value.trim();
     if (!titulo) { toast('Escribí el título', 'warn'); return; }
-    let redes = $('#pr-redes').value.trim();
-    if (redes && !/^https?:\/\//i.test(redes)) redes = 'https://' + redes;
+    const redes = parseRedes($('#pr-redes').value).join(' ');
     const body = {
       titulo,
       texto: $('#pr-texto').value.trim(),
