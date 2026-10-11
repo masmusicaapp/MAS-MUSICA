@@ -251,6 +251,7 @@ function defaultState() {
     users: [],
     sessions: [],
     notificaciones: [],
+    mensajes: [],
     promociones: demoPromociones(),
     rooms: [
       salaNueva({ id: 'r1', estado: 'aprobada', name: 'Sala 1', price: 15000, capacity: 4, features: ['Batería completa', 'Amplificadores'] }),
@@ -310,6 +311,8 @@ function loadState() {
       if (!Array.isArray(data.sessions)) { data.sessions = []; cambiado = true; }
       if (!Array.isArray(data.notificaciones)) { data.notificaciones = []; cambiado = true; }
       if (!Array.isArray(data.promociones)) { data.promociones = demoPromociones(); cambiado = true; }
+      if (!Array.isArray(data.mensajes)) { data.mensajes = []; cambiado = true; }
+      (data.users || []).forEach(u => { if (!Array.isArray(u.following)) { u.following = []; cambiado = true; } });
       /* Avisos de cuentas que ya no existen (se limpian al borrar una cuenta) */
       const avisosPrevios = (data.notificaciones || []).length;
       data.notificaciones = (data.notificaciones || []).filter(n => (data.users || []).some(u => u.id === n.userId));
@@ -1523,7 +1526,9 @@ async function handleApi(req, res, url, parts) {
 
   /* ======================= ADMINISTRACIÓN GENERAL ======================= */
 
-  if (!esSuper(state, req)) {
+  /* La Comunidad la usan los músicos (rol USER): se atiende al final, antes del 404,
+     así que no pasa por este guard. Todo lo demás de aquí abajo es solo administración. */
+  if (!esSuper(state, req) && P !== 'comunidad') {
     return sendJson(res, 401, { error: 'PIN incorrecto o sin permisos de administrador' });
   }
 
@@ -1856,10 +1861,136 @@ async function handleApi(req, res, url, parts) {
       users: state.users,
       sessions: [],
       notificaciones: [],
+      mensajes: [],
       rooms: [], reservations: [], blocks: [], instruments: [], placePhotos: [], bands: [],
     };
     persist(limpio);
     return sendJson(res, 200, { state: publicState(limpio) });
+  }
+
+  /* ======================= COMUNIDAD (solo músicos) ======================= */
+  if (P === 'comunidad') {
+    const u = sesionActual(state, req);
+    if (!u || u.rol !== 'USER') return sendJson(res, 403, { error: 'La comunidad es solo para cuentas de músico' });
+    const txt = s => String(s == null ? '' : s).trim();
+    const low = s => txt(s).toLowerCase();
+    const musicoMini = x => ({
+      id: x.id, nombre: x.nombre, usuario: x.usuario, foto: x.foto || '',
+      localidad: x.localidad || '',
+      instrumentos: Array.isArray(x.instrumentos) ? x.instrumentos.slice(0, 12) : [],
+    });
+    const sigoA = (mi, id) => Array.isArray(mi.following) && mi.following.includes(id);
+    const seguidoresDe = id => (state.users || []).filter(x => Array.isArray(x.following) && x.following.includes(id)).length;
+    const musicosActivos = () => (state.users || []).filter(x => x.rol === 'USER' && x.id !== u.id && x.activo !== false && !x.bloqueado);
+
+    /* Directorio de músicos (con buscador y filtro por zona) */
+    if (method === 'GET' && url.pathname === '/api/comunidad/musicos') {
+      const q = low(url.searchParams.get('q'));
+      const zona = low(url.searchParams.get('zona'));
+      let lista = musicosActivos().map(x => Object.assign(musicoMini(x), {
+        siguiendo: sigoA(u, x.id),
+        seguidores: seguidoresDe(x.id),
+        meSigue: sigoA(x, u.id),
+      }));
+      if (q) lista = lista.filter(m => low(m.nombre).includes(q) || low(m.usuario).includes(q) || m.instrumentos.some(i => low(i).includes(q)));
+      if (zona) lista = lista.filter(m => low(m.localidad).includes(zona));
+      const miZona = low(u.localidad);
+      lista.sort((a, b) => {
+        const za = miZona && low(a.localidad) === miZona ? 0 : 1;
+        const zb = miZona && low(b.localidad) === miZona ? 0 : 1;
+        if (za !== zb) return za - zb;
+        return String(a.nombre).localeCompare(String(b.nombre));
+      });
+      return sendJson(res, 200, { musicos: lista.slice(0, 300), miLocalidad: u.localidad || '' });
+    }
+
+    /* Seguir / dejar de seguir */
+    if (method === 'POST' && url.pathname === '/api/comunidad/seguir') {
+      const otro = musicosActivos().find(x => x.id === txt(body.userId));
+      if (!otro) return sendJson(res, 404, { error: 'Músico no encontrado' });
+      if (!Array.isArray(u.following)) u.following = [];
+      const i = u.following.indexOf(otro.id);
+      let siguiendo;
+      if (i >= 0) { u.following.splice(i, 1); siguiendo = false; }
+      else {
+        u.following.push(otro.id); siguiendo = true;
+        avisar(state, otro.id, 'Nuevo seguidor', `@${u.usuario} empezó a seguirte.`, 'info');
+      }
+      persist(state);
+      return sendJson(res, 200, { siguiendo, seguidores: seguidoresDe(otro.id) });
+    }
+
+    /* Bandeja de conversaciones */
+    if (method === 'GET' && url.pathname === '/api/comunidad/conversaciones') {
+      const msgs = (state.mensajes || []).filter(m => m.de === u.id || m.para === u.id);
+      const por = {};
+      msgs.forEach(m => {
+        const otroId = m.de === u.id ? m.para : m.de;
+        const c = por[otroId] = por[otroId] || { userId: otroId, ultimo: null, sinLeer: 0 };
+        if (!c.ultimo || m.fecha > c.ultimo.fecha) c.ultimo = m;
+        if (m.para === u.id && !m.leido) c.sinLeer++;
+      });
+      const conversaciones = Object.keys(por).map(k => {
+        const c = por[k];
+        const otro = (state.users || []).find(x => x.id === c.userId) || {};
+        return {
+          userId: c.userId,
+          nombre: otro.nombre || 'Músico',
+          usuario: otro.usuario || '',
+          foto: otro.foto || '',
+          localidad: otro.localidad || '',
+          ultimo: c.ultimo ? { texto: c.ultimo.texto, fecha: c.ultimo.fecha, mio: c.ultimo.de === u.id } : null,
+          sinLeer: c.sinLeer,
+        };
+      }).sort((a, b) => ((b.ultimo && b.ultimo.fecha) || 0) - ((a.ultimo && a.ultimo.fecha) || 0));
+      return sendJson(res, 200, {
+        conversaciones,
+        sinLeer: msgs.filter(m => m.para === u.id && !m.leido).length,
+      });
+    }
+
+    /* Hilo de mensajes con un músico (marca como leídos los recibidos) */
+    if (method === 'GET' && url.pathname === '/api/comunidad/mensajes') {
+      const otro = musicosActivos().find(x => x.id === txt(url.searchParams.get('con')));
+      if (!otro) return sendJson(res, 404, { error: 'Músico no encontrado' });
+      let cambio = false;
+      (state.mensajes || []).forEach(m => {
+        if (m.de === otro.id && m.para === u.id && !m.leido) { m.leido = true; cambio = true; }
+      });
+      if (cambio) persist(state);
+      const hilo = (state.mensajes || [])
+        .filter(m => (m.de === u.id && m.para === otro.id) || (m.de === otro.id && m.para === u.id))
+        .sort((a, b) => a.fecha - b.fecha)
+        .map(m => ({ id: m.id, texto: m.texto, fecha: m.fecha, mio: m.de === u.id }));
+      return sendJson(res, 200, { musico: musicoMini(otro), mensajes: hilo, siguiendo: sigoA(u, otro.id) });
+    }
+
+    /* Enviar mensaje */
+    if (method === 'POST' && url.pathname === '/api/comunidad/mensajes') {
+      const otro = musicosActivos().find(x => x.id === txt(body.para));
+      const texto = txt(body.texto).slice(0, 600);
+      if (!otro) return sendJson(res, 404, { error: 'Músico no encontrado' });
+      if (!texto) return sendJson(res, 400, { error: 'Escribí un mensaje' });
+      state.mensajes = state.mensajes || [];
+      const m = { id: uid(), de: u.id, para: otro.id, texto, fecha: Date.now(), leido: false };
+      state.mensajes.push(m);
+      avisar(state, otro.id, `Mensaje de @${u.usuario}`, texto.slice(0, 120), 'info');
+      persist(state);
+      return sendJson(res, 201, { mensaje: { id: m.id, texto: m.texto, fecha: m.fecha, mio: true } });
+    }
+
+    /* A quiénes sigo y quiénes me siguen */
+    if (method === 'GET' && url.pathname === '/api/comunidad/siguiendo') {
+      const sigo = (u.following || [])
+        .map(id => musicosActivos().find(x => x.id === id))
+        .filter(Boolean).map(musicoMini);
+      const meSiguen = (state.users || [])
+        .filter(x => x.rol === 'USER' && x.id !== u.id && x.activo !== false && !x.bloqueado && sigoA(x, u.id))
+        .map(musicoMini);
+      return sendJson(res, 200, { sigo, meSiguen });
+    }
+
+    return sendJson(res, 404, { error: 'Endpoint de comunidad no encontrado' });
   }
 
   return sendJson(res, 404, { error: 'Endpoint no encontrado' });
