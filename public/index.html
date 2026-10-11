@@ -147,6 +147,7 @@
         <h2>🎸 Elige tu sala</h2>
         <div class="row">
           <button class="btn btn-sm" id="btn-filtro-fav">♡ Favoritas</button>
+          <button class="btn btn-sm" id="btn-ver-instrumentos">🎸 Instrumentos y lugar</button>
           <button class="btn btn-sm" id="btn-ver-mapa">🗺 Ver en el mapa</button>
           <button class="btn btn-sm" id="btn-back-1">← Cambiar fecha</button>
         </div>
@@ -229,6 +230,38 @@
     </div>
     <div id="tab-lugar-fotos" class="lugar-pane" hidden>
       <div id="place-grid" class="place-grid"></div>
+    </div>
+  </div>
+</main>
+
+<!-- ============ COMUNIDAD (solo músicos) ============ -->
+<main id="view-comunidad" hidden>
+  <div class="panel">
+    <div class="panel-head">
+      <h2>👥 Comunidad</h2>
+      <p class="muted small">Conectá con músicos cercanos: seguilos, escribiles y armá tu próxima banda.</p>
+    </div>
+    <nav class="comu-tabs">
+      <button class="comu-tab active" data-comu-tab="musicos">🎸 Músicos</button>
+      <button class="comu-tab" data-comu-tab="mensajes">💬 Mensajes<span class="comu-badge" id="comu-msg-badge" hidden>0</span></button>
+      <button class="comu-tab" data-comu-tab="siguiendo">⭐ Siguiendo</button>
+    </nav>
+    <div id="comu-pane-musicos" class="comu-pane">
+      <label class="buscador-mine">Buscar por nombre, usuario o instrumento
+        <input id="comu-buscar" maxlength="60" placeholder="Ej.: guitarra" autocomplete="off">
+      </label>
+      <div class="comu-filtros">
+        <button class="btn btn-sm" id="comu-zona">📍 Mi zona</button>
+        <span class="muted small" id="comu-zona-nota"></span>
+      </div>
+      <div id="comu-lista" class="comu-lista"></div>
+    </div>
+    <div id="comu-pane-mensajes" class="comu-pane" hidden>
+      <div id="comu-chats" class="comu-chats"></div>
+      <div id="comu-chat" class="comu-chat" hidden></div>
+    </div>
+    <div id="comu-pane-siguiendo" class="comu-pane" hidden>
+      <div id="comu-siguiendo"></div>
     </div>
   </div>
 </main>
@@ -747,13 +780,14 @@
       </div>
       <span class="nav-center-label">Mapa</span>
     </button>
-    <button class="nav-btn" id="nav-instrumentos" data-nav="instrumentos" title="Instrumentos">
+    <button class="nav-btn" id="nav-comunidad" data-nav="comunidad" title="Comunidad de músicos" hidden>
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-        <path d="M9 18V6l11-2v12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        <circle cx="6.5" cy="18" r="2.8" stroke="currentColor" stroke-width="2" fill="none"/>
-        <circle cx="17.5" cy="16" r="2.8" stroke="currentColor" stroke-width="2" fill="none"/>
+        <circle cx="9" cy="8" r="3.2" stroke="currentColor" stroke-width="2"/>
+        <circle cx="17" cy="9.5" r="2.4" stroke="currentColor" stroke-width="2"/>
+        <path d="M3.5 19c0-3 2.7-5 5.5-5s5.5 2 5.5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <path d="M15.5 14.4c2.2.3 4 2 4 4.6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
       </svg>
-      <span>Instrumentos</span>
+      <span>Comunidad</span>
     </button>
     <button class="nav-btn" id="nav-mine" data-nav="perfil" title="Mi perfil">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
