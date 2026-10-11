@@ -1912,13 +1912,6 @@ function mostrarLugar() {
   renderLugarTab('instrumentos');
 }
 
-function volverDeLugar() {
-  ocultarVistas();
-  $('#view-lugar').hidden = true;
-  $('#view-public').hidden = false;
-  setNav('inicio');
-}
-
 /* ---------- Barra inferior (5 opciones) ---------- */
 function setNav(nav) {
   navActual = nav;
@@ -3686,7 +3679,6 @@ function wirePublic() {
     const b = e.target.closest('[data-band]');
     if (b) verPerfilBanda(b.dataset.band);
   });
-  $('#btn-back-lugar').onclick = volverDeLugar;
   $$('.lugar-tab').forEach(b => { b.onclick = () => renderLugarTab(b.dataset.lugarTab); });
   /* Sala actual (esquina superior): tocar abre sus horarios */
   $('#sala-actual').onclick = () => elegirSala(sel.roomId);
