@@ -2018,6 +2018,8 @@ function ocultarVistas() {
 /* Botones del header según el rol conectado */
 function actualizarBarraSesion() {
   document.body.classList.toggle('modo-control', esCuentaControl());
+  const naAdmin = $('#nav-admin');
+  if (naAdmin) naAdmin.hidden = !esSuper();
   if (!yo) {
     $('#btn-panel').hidden = true;
     $('#btn-notif').hidden = true;
@@ -3694,6 +3696,7 @@ function wirePublic() {
     mapa: irMapa,
     instrumentos: irInstrumentos,
     perfil: irMisReservas,
+    admin: () => (esSuper() ? showAdmin() : enterAdmin()),
   };
   $$('#dock-container [data-nav]').forEach(b => {
     b.onclick = () => ACCIONES_NAV[b.dataset.nav]();

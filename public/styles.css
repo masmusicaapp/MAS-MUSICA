@@ -2177,3 +2177,61 @@ body.modo-control #ficha-fav,
 body.modo-control #mine-favoritas,
 body.modo-control #mine-integrantes,
 body.modo-control label:has(> #pd-instrumentos) { display: none !important; }
+
+/* =====================================================================
+   RISEL LATERAL DE ESCRITORIO (5 opciones): ícono + etiqueta, alineado
+   con el menú del panel de administración
+   ===================================================================== */
+@media (min-width: 1024px) {
+  :root { --riel: clamp(228px, 16vw, 262px); }
+  body:has(#dock-container:not([hidden])) { padding-left: var(--riel); }
+
+  .dock-container {
+    top: 0; bottom: auto; left: 0; right: auto;
+    width: var(--riel); height: 100vh; height: 100dvh;
+    max-width: none; margin: 0; padding: 18px 10px;
+    align-items: stretch; justify-content: flex-start;
+    background: transparent;
+  }
+  .bottom-nav {
+    display: flex; flex-direction: column; gap: 4px;
+    width: 100%; height: 100%; padding: 10px;
+    background: var(--pop); border: 1px solid var(--line); border-radius: 18px;
+    box-shadow: none; grid-template-columns: none;
+  }
+
+  /* Cada opción: una fila con ícono y texto a la izquierda */
+  .nav-btn, .nav-btn-center {
+    flex-direction: row; justify-content: flex-start; align-items: center;
+    gap: 10px; width: 100%; height: 48px; padding: 0 12px;
+    border-radius: 12px; font-size: .92rem; font-weight: 600; letter-spacing: 0; white-space: nowrap;
+    color: var(--muted); text-align: left;
+    transition: background .15s ease, color .15s ease;
+  }
+  .nav-btn svg { width: 20px; height: 20px; flex: none; }
+  .nav-btn:hover, .nav-btn-center:hover { background: rgba(0, 160, 56, .1); color: var(--text); }
+  .nav-btn:active, .nav-btn-center:active { transform: none; }
+  .nav-btn.active, .nav-btn-center.active {
+    background: rgba(0, 160, 56, .18); color: var(--accent2); font-weight: 700;
+    box-shadow: inset 3px 0 0 var(--accent);
+  }
+  .nav-btn.active svg, .nav-btn-center.active svg { color: var(--accent2); }
+
+  /* "Mapa" deja de ser un círculo que sobresale y queda como una fila más */
+  .nav-btn-center { padding-bottom: 0; justify-content: flex-start; }
+  .nav-circle-btn {
+    position: static; width: 30px; height: 30px; border-width: 0; border-radius: 9px;
+    background: var(--accent); box-shadow: none; flex: none;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .nav-circle-btn svg { width: 16px; height: 16px; }
+  .nav-btn-center.active .nav-circle-btn { background: var(--accent); box-shadow: none; }
+  .nav-center-label { font-size: inherit; }
+  .home-indicator { display: none; }
+}
+
+/* Opción Administración: solo en el riel de escritorio (el celular mantiene las 5 opciones) */
+#nav-admin { display: none; }
+@media (min-width: 1024px) {
+  #nav-admin:not([hidden]) { display: flex; }
+}
