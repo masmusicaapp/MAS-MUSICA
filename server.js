@@ -191,6 +191,8 @@ function demoPromociones() {
     id: uid(),
     titulo: '🎉 Bienvenido a Más Música',
     texto: 'Reservá tu sala de ensayo online, guardá tus salas favoritas y gestioná tus reservas desde la app.',
+    flyer: '',
+    redes: '',
     activa: true,
     desde: Date.now(),
     hasta: Date.now() + 1000 * 60 * 60 * 24 * 90,
@@ -1719,12 +1721,14 @@ async function handleApi(req, res, url, parts) {
   // ---------- Promociones y novedades (se resumen en el Inicio) ----------
 
   if (method === 'POST' && url.pathname === '/api/promociones') {
-    const { titulo, texto, activa, desde, hasta } = body;
+    const { titulo, texto, activa, desde, hasta, flyer, redes } = body;
     if (!titulo || !String(titulo).trim()) return sendJson(res, 400, { error: 'Escribí el título' });
     const promo = {
       id: uid(),
       titulo: String(titulo).trim().slice(0, 80),
       texto: String(texto || '').slice(0, 400),
+      flyer: flyer ? String(flyer) : '',      // flyer de la promo (imagen dataURL)
+      redes: redes ? String(redes).slice(0, 500) : '',  // enlaces a redes (separados por espacio)
       activa: activa !== false,
       desde: parseInt(desde, 10) || Date.now(),
       hasta: parseInt(hasta, 10) || (Date.now() + 1000 * 60 * 60 * 24 * 30),
@@ -1743,6 +1747,8 @@ async function handleApi(req, res, url, parts) {
     } else {
       if (body.titulo !== undefined) promo.titulo = String(body.titulo).trim().slice(0, 80) || promo.titulo;
       if (body.texto !== undefined) promo.texto = String(body.texto).slice(0, 400);
+      if (body.flyer !== undefined) promo.flyer = body.flyer ? String(body.flyer) : '';
+      if (body.redes !== undefined) promo.redes = String(body.redes).slice(0, 500);
       if (body.activa !== undefined) promo.activa = body.activa === true;
       if (body.desde !== undefined) promo.desde = parseInt(body.desde, 10) || promo.desde;
       if (body.hasta !== undefined) promo.hasta = parseInt(body.hasta, 10) || promo.hasta;
