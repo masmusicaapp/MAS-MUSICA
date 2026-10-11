@@ -22,7 +22,7 @@
 </script>
 <style>
   /* Arranque: se pinta al instante aunque styles.css todavía cargue */
-  #splash { position: fixed; inset: 0; z-index: 99999 !important; background: #0d1b2f;
+  #splash { position: fixed; inset: 0; z-index: 200; background: #0d1b2f;
             display: flex; align-items: center; justify-content: center; }
   html[data-tema="claro"] #splash { background: #f5f5f2; }
   @media (prefers-color-scheme: light) { html[data-tema="auto"] #splash { background: #f5f5f2; } }
@@ -50,7 +50,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@500;600;700&family=Barlow+Condensed:ital,wght@1,900&display=swap">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
       integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
-<link rel="stylesheet" href="styles.css?v=4.6">
+<link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
@@ -175,10 +175,7 @@
 
   <section id="step-4" class="step" hidden>
     <div class="panel">
-      <div class="panel-head">
-        <h2>📲 Confirma tu reserva</h2>
-        <button class="btn btn-sm btn-danger-soft" id="btn-cancelar-paso-reserva">✕ Cancelar y salir</button>
-      </div>
+      <div class="panel-head"><h2>📲 Confirma tu reserva</h2></div>
       <div id="confirm-body"></div>
     </div>
   </section>
@@ -207,7 +204,8 @@
 <main id="view-mine" hidden>
   <div id="mine-band-profile" class="panel" hidden></div>
   <section class="panel" id="mine-user" hidden></section>
-    <section class="panel" id="mine-favoritas" hidden></section>
+  <div id="mine-integrantes" class="panel" hidden></div>
+  <section class="panel" id="mine-favoritas" hidden></section>
   <section class="panel" id="mine-notif" hidden></section>
 </main>
 
@@ -239,17 +237,9 @@
 <!-- ============ PANEL DEL DUEÑO DE LA SALA ============ -->
 <main id="view-panel" hidden>
   <div class="panel">
-    <div class="panel-head" style="align-items:center;flex-wrap:wrap;gap:14px;border-bottom:1px solid var(--line);padding-bottom:16px;margin-bottom:18px">
-      <div style="flex:1;min-width:240px">
-        <h2 style="margin:0 0 4px;font-size:1.4rem">🎛️ Panel de Mi Sala</h2>
-        <div id="panel-mis-salas-bar" style="display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap">
-          <!-- Selector dinámico de salas -->
-        </div>
-      </div>
-      <div style="display:flex;gap:8px;align-items:center">
-        <button class="btn btn-primary btn-sm" id="btn-panel-add-room">＋ Agregar sala</button>
-        <button class="btn btn-sm" id="btn-exit-panel">← Volver</button>
-      </div>
+    <div class="panel-head">
+      <h2>🎛️ Mi sala de ensayo</h2>
+      <button class="btn btn-sm" id="btn-exit-panel">← Volver</button>
     </div>
     <div id="panel-estado"></div>
     <nav class="admin-tabs">
@@ -257,21 +247,14 @@
       <button class="admin-tab" data-ptab="disponibilidad">🕐 Disponibilidad</button>
       <button class="admin-tab" data-ptab="reservas">📲 Reservas</button>
       <button class="admin-tab" data-ptab="datos">👤 Mis datos</button>
-      <button class="admin-tab" data-ptab="plan">💎 Mi suscripción</button>
     </nav>
   </div>
 
   <section id="ptab-sala" class="tab">
     <div class="panel">
-      <div class="panel-head" style="flex-wrap:wrap;gap:8px">
+      <div class="panel-head">
         <h2>🏠 Información de la sala</h2>
-        <div style="display:flex;align-items:center;gap:10px">
-          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:600;margin:0;font-size:0.9rem">
-            <input type="checkbox" id="ps-activo" style="width:18px;height:18px;accent-color:var(--accent)">
-            <span id="ps-activo-txt">Sala abierta para reservas</span>
-          </label>
-          <button class="btn btn-primary btn-sm" id="btn-guardar-sala">💾 Guardar cambios</button>
-        </div>
+        <button class="btn btn-primary btn-sm" id="btn-guardar-sala">💾 Guardar cambios</button>
       </div>
       <div class="row2">
         <label>Nombre de la sala *<input id="ps-name" maxlength="60"></label>
@@ -404,45 +387,44 @@
 
 <!-- ============ PANEL DE ADMINISTRACIÓN ============ -->
 <main id="view-admin" hidden>
-  <header class="admin-head" style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding-bottom:14px;margin-bottom:18px">
-    <div style="display:flex;align-items:center;gap:12px">
-      <span class="admin-head-ico">👑</span>
-      <div class="admin-head-txt">
-        <h1 style="margin:0 0 2px">Administración Central</h1>
-        <p class="muted small" style="margin:0">Control total de Más Música · <span id="admin-head-user"></span></p>
-      </div>
+  <header class="admin-head">
+    <span class="admin-head-ico">👑</span>
+    <div class="admin-head-txt">
+      <h1>Administración central</h1>
+      <p class="muted small">Control total de Más Música · <span id="admin-head-user"></span></p>
     </div>
-    <button class="btn btn-sm" onclick="salirAdmin()">← Volver a la app</button>
   </header>
-  <nav class="admin-tabs">
-    <button class="admin-tab" data-tab="solicitudes">📥 Solicitudes <span class="pill" id="pill-solicitudes" hidden>0</span></button>
-    <button class="admin-tab" data-tab="usuarios">👥 Cuentas</button>
-    <button class="admin-tab" data-tab="reservas">📲 Reservas</button>
-    <button class="admin-tab" data-tab="historial">📋 Historial</button>
-    <button class="admin-tab" data-tab="salas">🎸 Salas</button>
-    <button class="admin-tab" data-tab="horarios">🕐 Horarios</button>
-    <button class="admin-tab" data-tab="bloqueos">🚫 Bloqueos</button>
-    <button class="admin-tab" data-tab="finanzas">💰 Finanzas (+MÚSICA)</button>
-    <button class="admin-tab" data-tab="estadisticas">📊 Estadísticas</button>
-    <button class="admin-tab" data-tab="ajustes">⚙️ Ajustes</button>
-    <button class="admin-tab" data-tab="lugar">📷 Lugar</button>
-    <button class="admin-tab" data-tab="bandas">🎭 Bandas</button>
-    <button class="admin-tab" data-tab="promociones">🎉 Promociones</button>
+  <nav class="admin-tabs" aria-label="Secciones de administración">
+    <span class="admin-tab-group">Reservas</span>
+    <button class="admin-tab" data-tab="solicitudes">Solicitudes <span class="pill" id="pill-solicitudes" hidden>0</span></button>
+    <button class="admin-tab" data-tab="reservas">Reservas del día</button>
+    <button class="admin-tab" data-tab="historial">Historial</button>
+    <span class="admin-tab-group">Salas</span>
+    <button class="admin-tab" data-tab="salas">Salas</button>
+    <button class="admin-tab" data-tab="horarios">Horarios</button>
+    <button class="admin-tab" data-tab="bloqueos">Bloqueos</button>
+    <button class="admin-tab" data-tab="lugar">Lugar</button>
+    <span class="admin-tab-group">Comunidad</span>
+    <button class="admin-tab" data-tab="usuarios">Cuentas</button>
+    <button class="admin-tab" data-tab="bandas">Bandas</button>
+    <span class="admin-tab-group">Negocio</span>
+    <button class="admin-tab" data-tab="estadisticas">Estadísticas</button>
+    <button class="admin-tab" data-tab="promociones">Promociones</button>
+    <button class="admin-tab" data-tab="ajustes">Ajustes</button>
   </nav>
 
   <section id="tab-solicitudes" class="tab">
     <div class="panel">
       <div class="panel-head">
-        <h2>📥 Solicitudes y Revisión de Salas</h2>
-        <div class="row wrap" id="solicitudes-filtro-btns" style="gap:6px;margin:0">
+        <h2>📥 Solicitudes de salas</h2>
+        <div class="row">
           <button class="btn btn-sm" data-estado-sol="todas">Todas</button>
-          <button class="btn btn-sm btn-primary" data-estado-sol="pendiente">Pendientes</button>
+          <button class="btn btn-sm" data-estado-sol="pendiente">Pendientes</button>
           <button class="btn btn-sm" data-estado-sol="aprobada">Aprobadas</button>
-          <button class="btn btn-sm" data-estado-sol="suspendida">Suspendidas</button>
           <button class="btn btn-sm" data-estado-sol="rechazada">Rechazadas</button>
         </div>
       </div>
-      <p class="muted small">Revisá las salas registradas por los dueños. Podés <strong>aprobarlas</strong>, <strong>pedir correcciones</strong>, <strong>suspenderlas</strong> temporalmente o <strong>rechazarlas</strong>.</p>
+      <p class="muted small">Las salas registradas por usuarios quedan <strong>pendientes de aprobación</strong> hasta que las revises.</p>
       <div id="solicitudes-list"></div>
     </div>
   </section>
@@ -472,6 +454,7 @@
     <div class="admin-stats">
       <div class="stat"><span>Reservas</span><b id="res-count">0</b></div>
       <div class="stat"><span>Ingresos</span><b id="res-income">$0</b></div>
+      <div class="stat"><span>Pendientes de pago</span><b id="res-pend">0</b></div>
     </div>
 
     <div class="admin-chips" id="res-chips" role="group" aria-label="Filtrar por sala"></div>
@@ -528,39 +511,6 @@
       </div>
       <h3 class="sub">Bloqueos activos</h3>
       <div id="blocks-list"></div>
-    </div>
-  </section>
-
-  
-  <section id="tab-finanzas" class="tab" hidden>
-    <div class="panel">
-      <div class="panel-head">
-        <h2>💰 Finanzas e Ingresos de la Plataforma (+MÚSICA)</h2>
-        <button class="btn btn-sm" id="btn-refresh-finanzas">🔄 Actualizar</button>
-      </div>
-      <p class="muted">Métricas consolidadas de facturación por comisiones de reservas (5%) y cobro recurrente de suscripciones a salas.</p>
-
-      <div class="stats-cards" id="finanzas-kpis">
-        <!-- Tarjetas dinámicas generadas en app.js -->
-      </div>
-
-      <h3 class="sub" style="margin-top:24px">Suscripciones activas de salas</h3>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Dueño / Establecimiento</th>
-              <th>Plan</th>
-              <th>Salas en uso</th>
-              <th>Abono Mensual</th>
-              <th>Estado</th>
-            </tr>
-          </thead>
-          <tbody id="finanzas-subs-tabla">
-            <!-- Filas dinámicas -->
-          </tbody>
-        </table>
-      </div>
     </div>
   </section>
 
@@ -749,12 +699,8 @@
 <div id="modal" class="modal"><div class="modal-box" id="modal-box"></div></div>
 <div id="toast"></div>
 
-<!-- ============ NAVEGACIÓN INFERIOR (MÓVIL) / LATERAL (ESCRITORIO) ============ -->
-<div class="dock-container" id="dock-container" hidden>
-  <div class="dock-brand-desktop">
-    <img src="assets/musica_plus_logo_sinfondo.png" class="dock-logo-img logo-tema-o" alt="+MÚSICA">
-    <img src="assets/logo_musica_negro.png" class="dock-logo-img logo-tema-b" alt="+MÚSICA">
-  </div>
+<!-- ============ NAVEGACIÓN INFERIOR (5 opciones) ============ -->
+<div class="dock-container" id="dock-container">
   <nav class="bottom-nav">
     <button class="nav-btn active" id="nav-inicio" data-nav="inicio" title="Inicio">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
@@ -799,6 +745,6 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-<script src="app.js?v=4.6"></script>
+<script src="app.js"></script>
 </body>
 </html>

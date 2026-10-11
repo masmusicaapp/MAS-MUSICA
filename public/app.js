@@ -96,14 +96,10 @@ let yo = null;          /* cuenta conectada (null = visitante) */
 let miSala = null;      /* sala del dueño de la cuenta (ROOM_ADMIN) */
 let notificaciones = [];
 let sinLeer = 0;
+
 const esMúsico = () => !!yo && yo.rol === 'USER';
 const esDueño = () => !!yo && yo.rol === 'ROOM_ADMIN';
-const esSuper = () => {
-  if (!yo) return false;
-  const r = String(yo.rol || '').toUpperCase().replace(/[^A-Z]/g, '');
-  const u = String(yo.usuario || '').toLowerCase();
-  return r === 'SUPERADMIN' || r === 'SUPER_ADMIN' || r === 'ADMIN' || u === 'admin' || u === 'superadmin';
-};
+const esSuper = () => !!yo && yo.rol === 'SUPER_ADMIN';
 
 function guardarToken(t) {
   token = t || '';
@@ -301,8 +297,6 @@ function renderMineRapido() {
 function renderPerfilMine() {
   const host = $('#mine-band-profile');
   if (!host) return;
-  /* El administrador general solo controla la plataforma: no tiene banda ni salas personales */
-  if (esSuper()) { host.hidden = true; host.innerHTML = ''; return; }
   if (esDueño() && miSala) return renderPerfilSala();
   const mias = misReservas();
   let banda = null;
@@ -383,7 +377,7 @@ function renderPerfilSala() {
 }
 
 /* ---------- Sección de integrantes (abajo del perfil) ---------- */
-function renderIntegrantesBanda() { return; // deshabilitado
+function renderIntegrantesBanda() {
   const host = $('#mine-integrantes');
   if (!host) return;
   /* Los integrantes acompañan al perfil de la banda; en el de la sala no aplican */
@@ -1665,10 +1659,8 @@ function renderConfirm() {
       <div><span>Horario</span><strong>${sel.slot.start} – ${sel.slot.end}</strong></div>
       <div><span>Duración</span><strong>${horas} hora${horas > 1 ? 's' : ''}</strong></div>
       <div><span>Precio por hora</span><strong>${fmtMoney(room.price)}</strong></div>
-      <div><span>Subtotal sala</span><strong id="bk-subtotal-sala">${fmtMoney(total)}</strong></div>
-      <div id="bk-alq-row" hidden><span>Alquiler instrumentos</span><strong id="bk-alq-val">${fmtMoney(0)}</strong></div>
-      <div><span>Servicio +MÚSICA (5%)</span><strong id="bk-fee" class="muted">${fmtMoney(Math.round(total * 0.05))}</strong></div>
-      <div style="border-top:1px dashed var(--border);padding-top:6px;margin-top:4px"><span>Total a pagar</span><strong class="accent" id="bk-total" style="font-size:1.15rem">${fmtMoney(total + Math.round(total * 0.05))}</strong></div>
+      <div id="bk-alq-row" hidden><span>Alquiler de instrumentos</span><strong id="bk-alq-val">${fmtMoney(0)}</strong></div>
+      <div><span>Total a pagar</span><strong class="accent" id="bk-total">${fmtMoney(total)}</strong></div>
     </div>
     ${alquilables.length ? `
     <div class="alquiler-box">
@@ -1750,24 +1742,11 @@ function renderConfirm() {
       });
       $('#bk-alq-row').hidden = suma <= 0;
       $('#bk-alq-val').textContent = fmtMoney(suma);
-      const subtotalTotal = total + suma;
-      const fee5 = Math.round(subtotalTotal * 0.05);
-      $('#bk-fee').textContent = fmtMoney(fee5);
-      $('#bk-total').textContent = fmtMoney(subtotalTotal + fee5);
+      $('#bk-total').textContent = fmtMoney(total + suma);
     };
   });
 
   $('#bk-confirm').onclick = confirmBooking;
-  const btnCancelStep = $('#btn-cancelar-paso-reserva');
-  if (btnCancelStep) {
-    btnCancelStep.onclick = () => {
-      if (confirm('¿Deseas cancelar esta reserva y volver al inicio?')) {
-        sel.range = null;
-        goStep(1);
-        setNav('inicio');
-      }
-    };
-  }
   const btnLogin = $('#bk-login');
   if (btnLogin) btnLogin.onclick = () => { closeModal(); pantallaAuth('inicio'); };
   if (!$('#bk-name').value) $('#bk-name').focus();
@@ -1813,11 +1792,8 @@ async function confirmBooking() {
         <h3>Falta pagar la seña</h3>
         <p><strong>${esc(name)}</strong></p>
         <p>${fmtDate(sel.date)} · ${esc(roomP ? roomP.name : '')} · ${data.reservation.start} – ${data.reservation.end}</p>
-        <div style="background:var(--bg-subtle, rgba(255,255,255,0.05));padding:10px 14px;border-radius:8px;margin:10px 0;text-align:left">
-          <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>Sala y servicios:</span><strong>${fmtMoney(data.pago.room_price || data.reservation.room_price || data.pago.total)}</strong></div>
-          <div style="display:flex;justify-content:space-between;margin-bottom:4px;color:var(--text-muted)"><span>Cargo de servicio +MÚSICA (5%):</span><strong>${fmtMoney(data.pago.service_fee || data.reservation.service_fee || Math.round((data.pago.total || 0) * 0.05))}</strong></div>
-          <div style="display:flex;justify-content:space-between;border-top:1px solid var(--border);padding-top:6px;font-weight:bold;color:var(--accent)"><span>Total a pagar:</span><span style="font-size:1.15rem">${fmtMoney(data.pago.total_amount || data.pago.total)}</span></div>
-        </div>
+        <p class="accent"><strong>Seña a pagar ahora: ${fmtMoney(data.pago.sena)}</strong></p>
+        <p class="muted small">Total ${fmtMoney(data.pago.total)} · el saldo de ${fmtMoney(data.pago.saldo)} se paga en la sala.</p>
         <p class="muted small">Tu horario queda reservado hasta las ${hasta}. Si no se paga la seña, se libera.</p>
         ${data.pago.url
           ? `<a class="btn btn-primary" href="${esc(data.pago.url)}">Pagar la seña con Mercado Pago</a>`
@@ -2347,7 +2323,7 @@ async function entrarConPin(pin) {
   marcarDispositivoAdmin();
   adminMode = true;
   toast('Sesión de administrador general iniciada', 'ok');
-  showAdmin();
+  mostrarAdmin();
 }
 
 async function iniciarSesionConToken(data) {
@@ -2558,37 +2534,58 @@ function renderPanelAjustes() {
   const bod = $('#ajustes-sheet-body');
   if (!bod) return;
   const sub = $('#ajustes-sheet-sub');
+  const instrumentos = (yo.instrumentos || []).join(', ');
+  const mias = misReservas();
+  const nProx = mias.filter(r => !esPasada(r) && r.estado !== 'cancelada').length;
+  const nHist = mias.filter(r => esPasada(r) || r.estado === 'cancelada').length;
+  const nFav = (yo.favoritos || []).length;
   const prefAvisos = localStorage.getItem('mm-avisos-toast') !== '0';
   const tTema = temaActual();
-  if (sub) sub.textContent = yo ? `@${yo.usuario}` : 'Configuración';
+  if (sub) sub.textContent = yo ? `@${yo.usuario} · configuración` : 'Configuración y preferencias';
   bod.innerHTML = `
     <p class="aj-lbl" style="margin-top:6px">Mi cuenta</p>
     <div class="aj-card">
-      ${filaAj('datos', ICO_AJ.persona, 'Editar mis datos', yo.email || '')}
-      ${filaAj('pass', ICO_AJ.candado, 'Cambiar contraseña')}
-      ${esDueño() ? filaAj('panel', ICO_AJ.panel, 'Mi panel de sala', miSala ? esc(miSala.name) : '') : ''}
+      ${filaAj('datos', ICO_AJ.persona, 'Datos personales', yo.email || '')}
+      ${filaAj('pass', ICO_AJ.candado, 'Contraseña')}
+      ${filaAj('inst', ICO_AJ.nota, 'Mis instrumentos', instrumentos || 'Agregá los que tocás')}
+      ${esDueño() ? filaAj('panel', ICO_AJ.panel, 'Mi panel de sala', miSala ? `${esc(miSala.name)} · ${miSala.estado}` : '') : ''}
       ${esSuper() ? filaAj('admin', ICO_AJ.engranaje, 'Panel de administración') : ''}
     </div>
 
     <p class="aj-lbl">Preferencias</p>
     <div class="aj-card">
-      <div class="aj-row aj-apariencia">
-        ${svgAj(ICO_AJ.luna)}
-        <span class="aj-txt">Apariencia</span>
-        <span class="aj-seg">
-          <button type="button" data-tema="oscuro" ${tTema === 'oscuro' ? 'class="on"' : ''}>Oscuro</button>
-          <button type="button" data-tema="claro" ${tTema === 'claro' ? 'class="on"' : ''}>Claro</button>
-          <button type="button" data-tema="auto" ${tTema === 'auto' ? 'class="on"' : ''}>Auto</button>
-        </span>
-      </div>
       <label class="aj-row" for="aj-notif">
         ${svgAj(ICO_AJ.campana)}
         <span class="aj-txt">Notificaciones de reservas</span>
         <input type="checkbox" id="aj-notif" ${prefAvisos ? 'checked' : ''}>
       </label>
+      ${filaAj('zona', ICO_AJ.pin, 'Mi zona', yo.localidad || 'Sin definir')}
+      ${filaAj('avisos', ICO_AJ.buzon, 'Mis avisos', sinLeer ? `${sinLeer} sin leer` : notificaciones.length ? `${notificaciones.length} avisos` : 'Sin avisos')}
+      <div class="aj-row aj-apariencia">
+        ${svgAj(ICO_AJ.luna)}
+        <span class="aj-txt">Apariencia</span>
+        <span class="aj-seg">
+          <button type="button" data-tema="auto" ${tTema === 'auto' ? 'class="on"' : ''}>Automático</button>
+          <button type="button" data-tema="claro" ${tTema === 'claro' ? 'class="on"' : ''}>Claro</button>
+          <button type="button" data-tema="oscuro" ${tTema === 'oscuro' ? 'class="on"' : ''}>Oscuro</button>
+        </span>
+      </div>
     </div>
 
-    <button class="aj-salir" id="btn-logout-perfil" style="margin-top:24px">
+    <p class="aj-lbl">Mis reservas</p>
+    <div class="aj-card">
+      ${filaAj('proximas', ICO_AJ.cal, 'Próximas reservas', `${nProx} reserva${nProx === 1 ? '' : 's'}`)}
+      ${filaAj('historial', ICO_AJ.reloj, 'Historial', `${nHist} reserva${nHist === 1 ? '' : 's'}`)}
+      ${filaAj('favoritas', ICO_AJ.corazon, 'Salas favoritas', `${nFav} guardada${nFav === 1 ? '' : 's'}`)}
+    </div>
+
+    <p class="aj-lbl">Ayuda</p>
+    <div class="aj-card">
+      ${filaAj('ayuda', ICO_AJ.ayuda, 'Ayuda y contacto')}
+      ${filaAj('terminos', ICO_AJ.doc, 'Términos y condiciones')}
+    </div>
+
+    <button class="aj-salir" id="btn-logout-perfil">
       ${svgAj(ICO_AJ.salir, 'aj-ico', 20)} Cerrar sesión
     </button>`;
 }
@@ -2634,10 +2631,11 @@ function renderPerfilCuenta() {
     box.hidden = false;
     box.innerHTML = `
       <div class="panel-head"><h2>Mi perfil</h2></div>
-      <p class="muted">Iniciá sesión para ver tus reservas y tus salas favoritas.</p>
+      <p class="muted">No iniciaste sesión. Creá tu cuenta para guardar tus reservas, tus salas favoritas y recibir avisos.</p>
       <div class="row wrap">
         <button class="btn btn-primary" data-auth="login">Iniciar sesión</button>
-        <button class="btn" data-auth="musico">Crear cuenta</button>
+        <button class="btn" data-auth="musico">Crear cuenta de músico</button>
+        <button class="btn" data-auth="duenio">Registrar mi sala</button>
       </div>`;
     fav.hidden = true;
     notif.hidden = true;
@@ -2645,52 +2643,57 @@ function renderPerfilCuenta() {
   }
 
   box.hidden = false;
+  const instrumentos = (yo.instrumentos || []).join(', ');
   box.innerHTML = `
-    <div class="perfil-card-modern">
-      <div class="perfil-header-row">
-        <div class="user-avatar perfil-avatar-modern">
-          ${yo.foto ? `<img src="${esc(yo.foto)}" alt="${esc(yo.nombre)}">` : esc((yo.nombre || '?').trim().charAt(0).toUpperCase())}
-        </div>
-        <div class="perfil-info-modern">
-          <h2 class="perfil-nombre">${esc(yo.nombre)}</h2>
-          <span class="perfil-usuario">@${esc(yo.usuario)}${yo.localidad ? ' · ' + esc(yo.localidad) : ''}</span>
-          <div class="perfil-tag-row">
-            <span class="badge badge-rol">${esDueño() ? '🎛️ Dueño de Sala' : esSuper() ? '👑 Administrador' : '🎸 Músico'}</span>
-          </div>
+    <div class="panel-head"><h2>Mis datos</h2></div>
+    <div class="aj-cuenta">
+      <div class="user-avatar aj-avatar">${yo.foto ? `<img src="${esc(yo.foto)}" alt="${esc(yo.nombre)}">` : esc((yo.nombre || '?').trim().charAt(0).toUpperCase())}</div>
+      <div class="aj-cuenta-txt">
+        <strong>${esc(yo.nombre)}</strong>
+        <span>@${esc(yo.usuario)}${yo.localidad ? ' · ' + esc(yo.localidad) : ''}</span>
+        <span class="aj-badges">
+          <span class="badge">${esDueño() ? '🎛️ Dueño de sala' : esSuper() ? '👑 Administración general' : '🎸 Músico'}</span>
+          ${miSala ? `<span class="badge ${miSala.estado === 'aprobada' ? '' : 'badge-next'}">Sala: ${esc(miSala.name)} · ${miSala.estado}</span>` : ''}
+        </span>
+        <div class="row wrap" style="gap:12px;margin-top:8px">
+          <button class="aj-editar" id="btn-editar-perfil">✏️ Editar perfil</button>
+          <button class="aj-editar" id="btn-cambiar-pass">🔑 Cambiar contraseña</button>
         </div>
       </div>
+    </div>
 
-      <div class="perfil-actions-grid">
-        ${esDueño() ? `<button class="btn btn-primary btn-block" onclick="mostrarPanel()" style="font-weight:700">🎛️ Ir a Mi Panel de Sala</button>` : ''}
-        ${esSuper() ? `<button class="btn btn-primary btn-block" onclick="showAdmin()" style="font-weight:700">👑 Administración General</button>` : ''}
-        <div class="perfil-btns-duo">
-          <button class="btn btn-sm btn-outline" id="btn-editar-perfil">✏️ Editar datos</button>
-          <button class="btn btn-sm btn-outline" id="btn-cambiar-pass">🔑 Cambiar clave</button>
-        </div>
-        <button class="btn btn-sm btn-danger-soft btn-block" id="btn-logout-mine">Cerrar sesión</button>
+    <p class="aj-lbl">Datos</p>
+    <div class="aj-card">
+      <div class="aj-row aj-dato">${svgAj(ICO_AJ.buzon)}
+        <span class="aj-txt">Email<small>${esc(yo.email || 'Sin email')}</small></span>
+      </div>
+      <div class="aj-row aj-dato">${svgAj(ICO_AJ.telefono)}
+        <span class="aj-txt">Teléfono<small>${esc(yo.telefono || 'Sin cargar')}</small></span>
+      </div>
+      <div class="aj-row aj-dato">${svgAj(ICO_AJ.pin)}
+        <span class="aj-txt">Localidad<small>${esc(yo.localidad || 'Sin definir')}</small></span>
+      </div>
+      <div class="aj-row aj-dato">${svgAj(ICO_AJ.nota)}
+        <span class="aj-txt">Instrumentos<small>${instrumentos || 'No agregaste ninguno'}</small></span>
+      </div>
+      <div class="aj-row aj-dato">${svgAj(ICO_AJ.cal)}
+        <span class="aj-txt">Cuenta creada<small>${yo.createdAt ? fechaCorta(yo.createdAt) : '—'}</small></span>
       </div>
     </div>`;
 
-  /* Para SUPER_ADMIN no se muestran salas favoritas; su cuenta es exclusivamente de control */
-  if (esSuper()) {
-    fav.hidden = true;
-    fav.innerHTML = '';
-    notif.hidden = true;
-    notif.innerHTML = '';
-    return;
-  }
   const salones = salasPublicas().filter(r => (yo.favoritos || []).includes(r.id));
   fav.hidden = false;
   fav.innerHTML = `
     <div class="panel-head"><h2>♥️ Mis salas favoritas</h2>
-      <button class="btn btn-sm" id="fav-ver">Ver todas</button>
+      <button class="btn btn-sm" id="fav-ver">Ver salas</button>
     </div>
     ${salones.length
       ? `<div class="mini-fotos">${salones.map(r => `<button class="fav-item" data-ir-sala="${r.id}">
           ${r.foto ? `<img src="${esc(r.foto)}" alt="">` : '<span class="sala-chip-foto">🎸</span>'}
           <span>${esc(r.name)}<small>${fmtMoney(r.price)}/h</small></span></button>`).join('')}</div>`
-      : '<p class="muted small">Tocá el ♡ en una sala para guardarla acá y reservarla más rápido.</p>'}`;
+      : '<p class="muted small">Todavía no guardaste ninguna sala. Tocá el ♡ en una sala para guardarla acá.</p>'}`;
 
+  /* Los avisos viven en la campana y en el panel de Ajustes del engranaje */
   notif.hidden = true;
   notif.innerHTML = '';
 }
@@ -2708,7 +2711,7 @@ function formularioPerfil() {
     <label>Nombre y apellido<input id="pe-nombre" maxlength="60" value="${esc(yo.nombre)}"></label>
     <label>Teléfono<input id="pe-tel" maxlength="30" value="${esc(yo.telefono || '')}"></label>
     <label>Localidad o zona<input id="pe-loc" maxlength="80" value="${esc(yo.localidad || '')}"></label>
-    ${esSuper() ? '' : `<label>Mis instrumentos (separados por coma)<input id="pe-inst" maxlength="200" value="${esc((yo.instrumentos || []).join(', '))}"></label>`}
+    <label>Mis instrumentos (separados por coma)<input id="pe-inst" maxlength="200" value="${esc((yo.instrumentos || []).join(', '))}"></label>
     <label>Email<input value="${esc(yo.email)}" disabled></label>
     <div class="sala-foto-edit" id="pe-preview">${yo.foto ? `<img src="${esc(yo.foto)}" alt="">` : '<span class="sala-chip-foto" style="width:60px;height:60px;font-size:1.6rem">🎸</span>'}</div>
     <label>Nueva foto de perfil<input type="file" id="pe-foto" accept="image/*"></label>
@@ -2731,7 +2734,7 @@ function formularioPerfil() {
       nombre: $('#pe-nombre').value.trim(),
       telefono: $('#pe-tel').value.trim(),
       localidad: $('#pe-loc').value.trim(),
-      instrumentos: $('#pe-inst') ? $('#pe-inst').value.split(',').map(s => s.trim()).filter(Boolean) : [],
+      instrumentos: $('#pe-inst').value.split(',').map(s => s.trim()).filter(Boolean),
     };
     if (nuevaFoto) body.foto = nuevaFoto;
     try {
@@ -2920,10 +2923,10 @@ async function cargarPanel() {
 function renderPanelTab(tab) {
   panelTab = tab;
   $$('.admin-tab[data-ptab]').forEach(b => b.classList.toggle('active', b.dataset.ptab === tab));
-  ['sala', 'disponibilidad', 'reservas', 'datos', 'plan'].forEach(t => { const el = $('#ptab-' + t); if(el) el.hidden = t !== tab; });
+  ['sala', 'disponibilidad', 'reservas', 'datos'].forEach(t => { $('#ptab-' + t).hidden = t !== tab; });
   if (!panelDatos) return;
   renderPanelEstado();
-  ({ sala: renderPanelSala, disponibilidad: renderPanelDisponibilidad, reservas: renderPanelReservas, datos: renderPanelDatos, plan: renderPanelPlan }[tab])();
+  ({ sala: renderPanelSala, disponibilidad: renderPanelDisponibilidad, reservas: renderPanelReservas, datos: renderPanelDatos }[tab])();
 }
 
 function renderPanelEstado() {
@@ -2949,16 +2952,6 @@ function renderPanelEstado() {
 function renderPanelSala() {
   const r = panelDatos.room;
   $('#ps-name').value = r.name || '';
-  const chkActivo = $('#ps-activo');
-  const txtActivo = $('#ps-activo-txt');
-  if (chkActivo) {
-    chkActivo.checked = r.activo !== false;
-    const actualizarTxt = () => {
-      if (txtActivo) txtActivo.textContent = chkActivo.checked ? '🟢 Sala abierta para reservas' : '⛔ Sala cerrada / pausada';
-    };
-    chkActivo.onchange = actualizarTxt;
-    actualizarTxt();
-  }
   $('#ps-price').value = r.price || 0;
   $('#ps-descripcion').value = r.descripcion || '';
   $('#ps-direccion').value = r.direccion || '';
@@ -2998,7 +2991,6 @@ async function guardarPanelSala() {
   const body = {
     roomId: panelDatos.room.id,
     name: $('#ps-name').value.trim(),
-    activo: $('#ps-activo') ? $('#ps-activo').checked : true,
     price: Number($('#ps-price').value),
     capacity: Number($('#ps-capacity').value),
     descripcion: $('#ps-descripcion').value.trim(),
@@ -3482,7 +3474,7 @@ function wirePublic() {
     if (e.target.closest('#btn-ir-panel')) return mostrarPanel();
     if (e.target.closest('#btn-ir-admin')) return esSuper() ? showAdmin() : enterAdmin();
     if (e.target.closest('#btn-notif-lista')) return irAAvisos();
-    if (e.target.closest('#btn-logout-perfil') || e.target.closest('#btn-logout-mine')) return cerrarSesion();
+    if (e.target.closest('#btn-logout-perfil')) return cerrarSesion();
   };
   $('#mine-user').onchange = e => {
     if (e.target.id !== 'aj-notif') return;
@@ -3698,7 +3690,7 @@ function renderAdminTab(tab) {
     salas: renderSalasAdmin,
     horarios: renderHorariosAdmin,
     bloqueos: renderBloqueosAdmin,
-    finanzas: renderFinanzasAdmin, estadisticas: renderStats,
+    estadisticas: renderStats,
     ajustes: renderAjustes,
     lugar: renderLugarAdmin,
     bandas: renderBandasAdmin,
@@ -3710,27 +3702,21 @@ function renderAdminTab(tab) {
 }
 
 /* ---------- Solicitudes de salas (aprobación) ---------- */
-let filtroSolicitudes = 'todas';
+let filtroSolicitudes = 'pendiente';
 let listaSolicitudes = null;
 
 function renderSolicitudes() {
   const cont = $('#solicitudes-list');
   if (!cont) return;
-
-  /* Resaltar botón de filtro activo */
-  $$('[data-estado-sol]').forEach(b => {
-    b.classList.toggle('btn-primary', b.dataset.estadoSol === filtroSolicitudes);
-  });
-
   if (!listaSolicitudes) {
-    cont.innerHTML = '<p class="muted">Cargando salas…</p>';
+    cont.innerHTML = '<p class="muted">Cargando solicitudes…</p>';
     api('/api/admin/solicitudes', { admin: true })
       .then(data => { listaSolicitudes = data.salas; renderSolicitudes(); })
       .catch(e => { cont.innerHTML = `<p class="muted">${esc(e.message)}</p>`; });
     return;
   }
   const lista = listaSolicitudes.filter(r => filtroSolicitudes === 'todas' || r.estado === filtroSolicitudes);
-  const orden = { pendiente: 0, suspendida: 1, rechazada: 2, aprobada: 3 };
+  const orden = { pendiente: 0, rechazada: 1, suspendida: 2, aprobada: 3 };
   lista.sort((a, b) => (orden[a.estado] - orden[b.estado]) || ((b.solicitud && b.solicitud.fecha) - (a.solicitud && a.solicitud.fecha)));
   const ETIQUETA = { pendiente: '🕒 Pendiente', aprobada: '🟢 Aprobada', rechazada: '⛔ Rechazada', suspendida: '⏸ Suspendida' };
   cont.innerHTML = lista.length ? lista.map(r => `
@@ -3741,87 +3727,23 @@ function renderSolicitudes() {
           <strong>${esc(r.name)}</strong>
           <span class="muted small">${esc([r.localidad, r.direccion].filter(Boolean).join(' · '))}</span>
           <span class="muted small">👤 ${r.duenio ? esc(r.duenio.nombre + ' (@' + r.duenio.usuario + ')') : 'Sin dueño asignado'}${r.duenio && r.duenio.telefono ? ' · 📞 ' + esc(r.duenio.telefono) : ''}</span>
-          <span class="muted small">${fmtMoney(r.price)}/h · 👥 ${r.capacity} · ${r.solicitud && r.solicitud.fecha ? 'Enviada ' + fechaCorta(r.solicitud.fecha) : 'Registrada'}</span>
+          <span class="muted small">${fmtMoney(r.price)}/h · 👥 ${r.capacity} · enviada ${r.solicitud && r.solicitud.fecha ? fechaCorta(r.solicitud.fecha) : '—'}</span>
         </div>
-        <span class="badge ${r.estado === 'aprobada' ? '' : r.estado === 'suspendida' ? 'badge-past' : 'badge-next'}">${ETIQUETA[r.estado] || r.estado}</span>
+        <span class="badge ${r.estado === 'aprobada' ? '' : 'badge-next'}">${ETIQUETA[r.estado]}</span>
       </div>
       ${r.descripcion ? `<p class="sol-desc">${esc(r.descripcion)}</p>` : ''}
       ${Object.values(r.equipos || {}).filter(Boolean).length ? `<div class="ficha-chips">${Object.entries(r.equipos).filter(([, v]) => v).map(([, v]) => `<span class="chip">${esc(v.slice(0, 28))}</span>`).join('')}</div>` : ''}
-      ${r.solicitud && r.solicitud.motivo ? `<p class="muted small" style="margin-top:6px">📝 <em>${esc(r.solicitud.motivo)}</em></p>` : ''}
-      <div class="row wrap" style="margin-top:12px;gap:8px">
+      ${r.solicitud && r.solicitud.motivo ? `<p class="muted small">📝 ${esc(r.solicitud.motivo)}</p>` : ''}
+      <div class="row wrap">
         ${r.estado === 'pendiente' ? `
-          <button class="btn btn-primary btn-sm" data-sol-ok="${r.id}">✅ Aprobar y publicar</button>
+          <button class="btn btn-primary btn-sm" data-sol-ok="${r.id}">✅ Aprobar</button>
           <button class="btn btn-sm" data-sol-corr="${r.id}">✏️ Pedir correcciones</button>
-          <button class="btn btn-sm btn-danger" data-sol-susp="${r.id}" data-action="rechazar">⛔ Rechazar</button>` :
-        r.estado === 'aprobada' ? `
-          <button class="btn btn-sm btn-danger" data-sol-susp="${r.id}" data-action="suspender">⏸ Suspender sala</button>
-          <button class="btn btn-sm" data-sol-susp="${r.id}" data-action="rechazar">⛔ Dar de baja</button>` : `
-          <button class="btn btn-primary btn-sm" data-sol-ok="${r.id}">🟢 Reactivar / Aprobar</button>
-          <button class="btn btn-sm btn-danger" data-sol-susp="${r.id}" data-action="rechazar">⛔ Rechazar definitivamente</button>`}
+          <button class="btn btn-sm btn-danger" data-sol-no="${r.id}">⛔ Rechazar</button>` : `
+          <button class="btn btn-sm" data-sol-ok="${r.id}">🟢 Activar / aprobar</button>
+          <button class="btn btn-sm btn-danger" data-sol-no="${r.id}">${r.estado === 'suspendida' ? '⛔ Rechazar' : '⏸ Suspender'}</button>`}
         <button class="btn btn-sm" data-sol-editar="${r.id}">✏️ Editar datos</button>
       </div>
-    </div>`).join('') : '<p class="muted">No hay salas con este estado actualmente.</p>';
-}
-
-function modalSuspenderSala(id, accion) {
-  const sala = (listaSolicitudes || []).find(r => r.id === id);
-  const nombre = sala ? sala.name : 'la sala';
-  const esSusp = accion === 'suspender';
-  const titulo = esSusp ? `⏸ Suspender “${esc(nombre)}”` : `⛔ Rechazar “${esc(nombre)}”`;
-  const desc = esSusp
-    ? 'La sala dejará de estar disponible para reservas hasta que la reactives. El dueño recibirá un aviso.'
-    : 'La solicitud será rechazada y la sala quedará marcada como no aprobada.';
-
-  openModal(`
-    <h3 style="margin-top:0">${titulo}</h3>
-    <p class="muted small">${desc}</p>
-    <label>Motivo de la ${esSusp ? 'suspensión' : 'baja'} (se le envía al dueño) *
-      <textarea id="modal-susp-motivo" rows="3" placeholder="Ej.: Mantenimiento edilicio, datos incompletos..." style="width:100%"></textarea>
-    </label>
-    <div class="row wrap" style="justify-content:flex-end;margin-top:16px;gap:8px">
-      <button class="btn" id="modal-susp-cancelar">Cancelar</button>
-      <button class="btn btn-danger" id="modal-susp-confirmar">${esSusp ? 'Confirmar suspensión' : 'Confirmar rechazo'}</button>
-    </div>
-  `);
-
-  $('#modal-susp-cancelar').onclick = closeModal;
-  $('#modal-susp-confirmar').onclick = async () => {
-    const motivo = ($('#modal-susp-motivo').value || '').trim();
-    if (!motivo) {
-      toast('Por favor escribe un motivo breve para avisarle al dueño', 'warn');
-      return;
-    }
-    closeModal();
-    await accionSolicitud(id, accion, motivo);
-  };
-}
-
-function modalCorregirSala(id) {
-  const sala = (listaSolicitudes || []).find(r => r.id === id);
-  const nombre = sala ? sala.name : 'la sala';
-
-  openModal(`
-    <h3 style="margin-top:0">✏️ Pedir correcciones para “${esc(nombre)}”</h3>
-    <p class="muted small">Indicale al dueño qué datos debe corregir (precios, fotos, dirección, etc.).</p>
-    <label>Detalle de las correcciones requeridas *
-      <textarea id="modal-corr-motivo" rows="3" placeholder="Ej.: Por favor añade fotos reales de la sala y aclara la dirección exacta..." style="width:100%"></textarea>
-    </label>
-    <div class="row wrap" style="justify-content:flex-end;margin-top:16px;gap:8px">
-      <button class="btn" id="modal-corr-cancelar">Cancelar</button>
-      <button class="btn btn-primary" id="modal-corr-confirmar">Enviar pedido</button>
-    </div>
-  `);
-
-  $('#modal-corr-cancelar').onclick = closeModal;
-  $('#modal-corr-confirmar').onclick = async () => {
-    const motivo = ($('#modal-corr-motivo').value || '').trim();
-    if (!motivo) {
-      toast('Por favor escribe las correcciones requeridas', 'warn');
-      return;
-    }
-    closeModal();
-    await accionSolicitud(id, 'corregir', motivo);
-  };
+    </div>`).join('') : '<p class="muted">No hay salas con ese estado.</p>';
 }
 
 async function accionSolicitud(id, accion, motivo) {
@@ -3829,16 +3751,12 @@ async function accionSolicitud(id, accion, motivo) {
     const data = await api(`/api/admin/solicitudes/${id}`, { method: 'PUT', body: { accion, motivo } });
     state = data.state;
     listaSolicitudes = null;
-    renderSolicitudes();
+    renderAdminTab('solicitudes');
     renderRooms();
-    const pend = (state.rooms || []).filter(r => r.estado === 'pendiente').length;
-    const pill = $('#pill-solicitudes');
-    if (pill) { pill.hidden = !pend; pill.textContent = pend; }
     toast(
-      accion === 'aprobar' ? 'Sala aprobada y publicada con éxito ✓' :
-      accion === 'rechazar' ? 'Sala rechazada ✓' :
-      accion === 'suspender' ? 'Sala suspendida temporalmente' :
-      accion === 'corregir' ? 'Correcciones enviadas al dueño ✓' : 'Sala actualizada',
+      accion === 'aprobar' ? 'Sala aprobada y publicada ✓' :
+      accion === 'rechazar' ? 'Sala rechazada' :
+      accion === 'corregir' ? 'Le pedimos correcciones al dueño' : 'Sala actualizada',
       'ok');
     await cargarNotificaciones();
   } catch (e) { toast(e.message, 'error'); }
@@ -3925,6 +3843,7 @@ function renderReservasAdmin() {
     .sort((a, b) => a.start.localeCompare(b.start));
   const total = list.reduce((s, r) => s + precioReserva(r), 0);
   $('#res-count').textContent = list.length;
+  $('#res-pend').textContent = list.filter(r => r.estado === 'pendiente_pago').length;
   $('#res-income').textContent = fmtMoney(total);
 
   /* Chips de salas (cada una con su color) */
@@ -3937,6 +3856,12 @@ function renderReservasAdmin() {
   const ver = adminResFiltro < 0 ? list : list.filter(r => r.roomId === (state.rooms[adminResFiltro] || {}).id);
   if (!ver.length) {
     $('#res-list').innerHTML = `<div class="res-empty"><b>${list.length ? 'Sin reservas en esta sala' : 'No hay reservas este día'}</b>${list.length ? 'Elegí otra sala para ver el resto.' : 'Cuando entre una reserva va a aparecer acá.'}</div>`;
+    return;
+  }
+
+  /* Escritorio: agenda con las salas en columnas y las horas en filas */
+  if (window.matchMedia('(min-width: 1024px)').matches) {
+    $('#res-list').innerHTML = agendaAdminHTML(ver);
     return;
   }
 
@@ -3959,6 +3884,54 @@ function renderReservasAdmin() {
       </div>`;
   }).join('') + `</div>`;
 }
+
+/* ---------- Agenda del día (escritorio) ---------- */
+function agendaAdminHTML(ver) {
+  const toMin = t => { const p = String(t || '0:0').split(':'); return (parseInt(p[0], 10) || 0) * 60 + (parseInt(p[1], 10) || 0); };
+  const fin = r => { const s = toMin(r.start), e = toMin(r.end); return e > s ? e : e + 1440; };
+  const HPX = 68; /* alto de una hora en pantalla */
+  const salas = adminResFiltro < 0 ? (state.rooms || []).slice() : [state.rooms[adminResFiltro]].filter(Boolean);
+  if (adminResFiltro < 0 && ver.some(r => !salas.some(x => x.id === r.roomId))) salas.push({ id: '__sin_sala', name: 'Sala eliminada' });
+  const ini = Math.floor(Math.min(...ver.map(r => toMin(r.start))) / 60) * 60;
+  let fn = Math.ceil(Math.max(...ver.map(fin)) / 60) * 60;
+  if (fn - ini < 360) fn = ini + 360;
+  const alto = (fn - ini) / 60 * HPX;
+  let horas = '';
+  for (let m = ini; m < fn; m += 60) {
+    horas += `<span style="top:${(m - ini) / 60 * HPX}px">${String(Math.floor(m / 60) % 24).padStart(2, '0')}:00</span>`;
+  }
+  const huerfana = room => room.id === '__sin_sala';
+  const cols = salas.map(room => {
+    const propias = ver.filter(r => huerfana(room) ? !state.rooms.some(x => x.id === r.roomId) : r.roomId === room.id);
+    const bloques = propias.map(r => {
+      const top = (toMin(r.start) - ini) / 60 * HPX;
+      const h = Math.max((fin(r) - toMin(r.start)) / 60 * HPX - 4, 40);
+      const pend = r.estado === 'pendiente_pago';
+      const extra = (r.alquiler || []).length ? ' · ' + r.alquiler.map(a => esc(a.nombre)).join(', ') : '';
+      return `<div class="ag-res${pend ? ' pend' : ''}" tabindex="0" style="top:${top + 2}px;height:${h}px;--rc:${colorRoom(huerfana(room) ? null : room)}">
+        <b>${esc(r.name)}</b>
+        <span>${r.start}–${r.end} · ${fmtMoney(precioReserva(r))}</span>
+        ${pend ? '<span class="ag-pend">Pendiente de pago</span>' : ''}
+        <span class="ag-sub">${r.phone ? esc(r.phone) : ''}${extra}</span>
+        ${adminResPidiendo === r.id
+          ? `<div class="ag-ask"><span>¿Cancelar?</span><button data-ask-no>No</button><button class="yes" data-ask-yes="${r.id}">Sí</button></div>`
+          : `<div class="ag-acts"><button data-edit="${r.id}">Editar</button><button data-cancel="${r.id}">Cancelar</button></div>`}
+      </div>`;
+    }).join('');
+    return `<div class="ag-col" style="--hpx:${HPX}px">${bloques}</div>`;
+  }).join('');
+  const cab = salas.map(room => `<div class="ag-room"><i style="--c:${colorRoom(huerfana(room) ? null : room)}"></i>${esc(room.name)}</div>`).join('');
+  return `<div class="agenda" style="--n:${salas.length}">
+    <div class="ag-head"><span></span>${cab}</div>
+    <div class="ag-body" style="height:${alto}px"><div class="ag-hours">${horas}</div>${cols}</div>
+  </div>`;
+}
+
+/* Si se achica o agranda la ventana, se vuelve a dibujar la vista que corresponde */
+window.matchMedia('(min-width: 1024px)').addEventListener('change', () => {
+  const v = document.getElementById('view-admin');
+  if (v && !v.hidden && typeof currentAdminTab !== 'undefined' && currentAdminTab === 'reservas' && state && state.reservations) renderReservasAdmin();
+});
 
 function cambiarDiaAdmin(n) {
   const base = adminResDate ? new Date(adminResDate + 'T12:00:00') : new Date();
@@ -4118,10 +4091,9 @@ function renderSalasAdmin() {
       <div class="price">${fmtMoney(r.price)}<span> /hora</span></div>
       <div class="cap">👥 Hasta ${r.capacity} ${r.capacity === 1 ? 'persona' : 'personas'}</div>
       <ul class="feats">${r.features.length ? r.features.map(f => `<li>${esc(f)}</li>`).join('') : '<li>Sin características</li>'}</ul>
-      <div class="row wrap" style="gap:6px">
-        <button class="btn btn-sm" data-edit-room="${r.id}">✏️ Editar</button>
-        <button class="btn btn-sm" data-toggle-room="${r.id}">${r.activo === false ? '🟢 Activar' : '⏸ Desactivar'}</button>
-        <button class="btn btn-sm" data-revisar-room="${r.id}">🔍 Revisión / Estado</button>
+      <div class="row wrap">
+        <button class="btn btn-sm" data-edit-room="${r.id}">Editar</button>
+        <button class="btn btn-sm" data-toggle-room="${r.id}">${r.activo === false ? 'Activar' : 'Desactivar'}</button>
         <button class="btn btn-sm btn-danger" data-del-room="${r.id}">Eliminar</button>
       </div>
     </article>`).join('')
@@ -4928,11 +4900,19 @@ function wireAdmin() {
     const ok = e.target.closest('[data-sol-ok]');
     if (ok) return accionSolicitud(ok.dataset.solOk, 'aprobar');
     const corr = e.target.closest('[data-sol-corr]');
-    if (corr) return modalCorregirSala(corr.dataset.solCorr);
-    const susp = e.target.closest('[data-sol-susp]');
-    if (susp) return modalSuspenderSala(susp.dataset.solSusp, susp.dataset.action || 'suspender');
+    if (corr) {
+      const motivo = prompt('¿Qué tenés que corregir? Se le avisa al dueño de la sala:');
+      if (motivo) accionSolicitud(corr.dataset.solCorr, 'corregir', motivo);
+      return;
+    }
     const no = e.target.closest('[data-sol-no]');
-    if (no) return modalSuspenderSala(no.dataset.solNo, 'rechazar');
+    if (no) {
+      const sala = (listaSolicitudes || []).find(r => r.id === no.dataset.solNo);
+      const motivo = prompt(`¿Por qué ${sala && sala.estado === 'pendiente' ? 'rechazás' : 'suspendés'} “${sala ? sala.name : 'la sala'}”?`, '');
+      if (motivo === null) return;
+      const accion = sala && sala.estado === 'pendiente' ? 'rechazar' : (sala && sala.estado === 'suspendida' ? 'rechazar' : 'desactivar');
+      return accionSolicitud(no.dataset.solNo, accion, motivo);
+    }
     const ed = e.target.closest('[data-sol-editar]');
     if (ed) return formularioSala(ed.dataset.solEditar);
   };
@@ -4975,13 +4955,6 @@ function wireAdmin() {
   $('#salas-grid-admin').onclick = e => {
     const ed = e.target.closest('[data-edit-room]');
     if (ed) return formularioSala(ed.dataset.editRoom);
-    const rev = e.target.closest('[data-revisar-room]');
-    if (rev) {
-      filtroSolicitudes = 'todas';
-      listaSolicitudes = null;
-      renderAdminTab('solicitudes');
-      return;
-    }
     const tg = e.target.closest('[data-toggle-room]');
     if (tg) {
       const r = state.rooms.find(x => x.id === tg.dataset.toggleRoom);
@@ -5193,14 +5166,10 @@ async function init() {
   startPolling();
   cerrarSplash();
 
-  /* Service worker: desregistrar para evitar que los celulares retengan código viejo */
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.getRegistrations().then(registrations => {
-      for (const reg of registrations) reg.unregister();
-    }).catch(() => {});
-    if ('caches' in window) {
-      caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).catch(() => {});
-    }
+  /* Service worker (solo en contextos seguros: HTTPS o localhost) */
+  if ('serviceWorker' in navigator &&
+      (location.protocol === 'https:' || ['localhost', '127.0.0.1'].includes(location.hostname))) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
   }
 
   /* Instalación como app (PWA) */
@@ -5239,151 +5208,3 @@ async function init() {
   }, 1500);
 })();
 document.addEventListener('DOMContentLoaded', init);
-
-/* --- Mi Suscripción y Planes --- */
-function renderPanelPlan() {
-  if (!panelDatos || !panelDatos.suscripcion) return;
-  const sub = panelDatos.suscripcion;
-  const cont = $('#plan-actual-card');
-  if (!cont) return;
-  const usoPct = Math.min(100, Math.round((sub.salasActuales / sub.limiteSalas) * 100));
-  cont.innerHTML = `
-    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-      <div>
-        <span class="badge" style="background:var(--accent);color:#fff">PLAN ACTIVO</span>
-        <h3 style="margin:6px 0 2px">${esc(sub.nombrePlan)}</h3>
-        <p class="muted small">Costo mensual: ${fmtMoney(sub.precioMensual)} / mes</p>
-      </div>
-      <div style="text-align:right">
-        <div style="font-size:1.1rem;font-weight:bold">${sub.salasActuales} de ${sub.limiteSalas} salas</div>
-        <span class="muted small">${sub.puedeCrearSala ? 'Puedes registrar más salas' : 'Límite de salas alcanzado'}</span>
-      </div>
-    </div>
-    <div style="background:var(--border);height:8px;border-radius:4px;margin:12px 0;overflow:hidden">
-      <div style="background:var(--accent);width:${usoPct}%;height:100%"></div>
-    </div>
-  `;
-}
-
-async function cambiarPlan(planId) {
-  if (!confirm('¿Deseas cambiar tu suscripción al ' + planId.toUpperCase() + '?')) return;
-  try {
-    const res = await api('/api/rooms/' + encodeURIComponent(panelDatos.room.id) + '/plan', {
-      method: 'POST',
-      body: { plan: planId }
-    });
-    toast('¡Suscripción actualizada con éxito!', 'ok');
-    panelDatos.suscripcion = res.suscripcion;
-    renderPanelPlan();
-  } catch (e) {
-    toast(e.message, 'error');
-  }
-}
-
-
-/* Modal para agregar una nueva sala al complejo */
-function modalAgregarSalaPropia() {
-  const sub = panelDatos.suscripcion;
-  if (sub && !sub.puedeCrearSala) {
-    alert(`Has alcanzado el límite de ${sub.limiteSalas} salas de tu ${sub.nombrePlan}. Ve a la pestaña "💎 Mi suscripción" para ampliar tu plan.`);
-    return;
-  }
-  openModal(`
-    <div style="padding:10px">
-      <h3>＋ Agregar nueva sala</h3>
-      <p class="muted small">Crea una nueva sala o cabina de ensayo para tu establecimiento.</p>
-      <div style="margin:14px 0">
-        <label>Nombre de la sala *<input id="new-sala-name" placeholder="Ej.: Sala B, Sala Acústica, Cabina 3" maxlength="60"></label>
-        <label style="margin-top:10px">Precio por hora ($) *<input id="new-sala-price" type="number" value="${panelDatos.room.price || 15000}" min="1000" step="500"></label>
-      </div>
-      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px">
-        <button class="btn" onclick="closeModal()">Cancelar</button>
-        <button class="btn btn-primary" id="btn-confirm-add-sala">Crear sala</button>
-      </div>
-    </div>
-  `);
-  $('#btn-confirm-add-sala').onclick = async () => {
-    const name = $('#new-sala-name').value.trim();
-    const price = Number($('#new-sala-price').value);
-    if (!name) { toast('Escribe el nombre de la sala', 'warn'); return; }
-    try {
-      const res = await api('/api/rooms/' + encodeURIComponent(panelDatos.room.id) + '/nueva-sala', {
-        method: 'POST',
-        body: { name, price }
-      });
-      toast('¡Sala “' + name + '” creada con éxito!', 'ok');
-      closeModal();
-      state = res.state;
-      miSala = res.room;
-      await cargarPanel();
-      renderPanelTab('sala');
-    } catch (e) {
-      toast(e.message, 'error');
-    }
-  };
-}
-
-
-/* ---------- Finanzas de la plataforma SUPER_ADMIN ---------- */
-async function renderFinanzasAdmin() {
-  const kpis = $('#finanzas-kpis');
-  const tbody = $('#finanzas-subs-tabla');
-  if (!kpis || !tbody) return;
-
-  kpis.innerHTML = '<p class="muted">Cargando métricas financieras…</p>';
-  try {
-    const data = await api('/api/admin/finanzas', { admin: true });
-    
-    kpis.innerHTML = `
-      <div class="stat" style="border-top:3px solid var(--accent)">
-        <span>💵 Ingresos Totales Plataforma</span>
-        <strong style="color:var(--accent);font-size:1.4rem">${fmtMoney(data.ingresosTotalesPlataforma)}</strong>
-      </div>
-      <div class="stat">
-        <span>🔄 Recurrente Suscripciones (MRR)</span>
-        <strong>${fmtMoney(data.totalMRRSuscripciones)}</strong>
-      </div>
-      <div class="stat">
-        <span>🎟️ Comisiones por Reservas (5%)</span>
-        <strong>${fmtMoney(data.totalComisionesPlataforma)}</strong>
-      </div>
-      <div class="stat">
-        <span>💎 Suscripciones Activas</span>
-        <strong>${data.totalSuscripcionesActivas}</strong>
-      </div>
-      <div class="stat">
-        <span>🎸 Salas en la Plataforma</span>
-        <strong>${data.totalSalasRegistradas}</strong>
-      </div>
-    `;
-
-    if (!data.suscripciones || !data.suscripciones.length) {
-      tbody.innerHTML = '<tr><td colspan="5" class="muted text-center" style="padding:16px">No hay suscripciones registradas aún.</td></tr>';
-      return;
-    }
-
-    tbody.innerHTML = data.suscripciones.map(s => `
-      <tr>
-        <td>
-          <strong>${esc(s.duenioNombre)}</strong><br>
-          <span class="muted small">${esc(s.duenioEmail || '')}</span>
-        </td>
-        <td>
-          <span class="badge" style="background:var(--bg-subtle, rgba(255,255,255,0.08))">${esc(s.nombrePlan)}</span>
-        </td>
-        <td>
-          <strong>${s.salasUsadas}</strong> de ${s.limiteSalas} salas
-        </td>
-        <td>
-          <strong style="color:var(--accent)">${fmtMoney(s.costoMensual)}</strong> / mes
-        </td>
-        <td>
-          <span class="badge" style="background:#2a9d8f;color:#fff">🟢 Activa</span>
-        </td>
-      </tr>
-    `).join('');
-
-  } catch (e) {
-    kpis.innerHTML = `<p class="muted" style="color:#e63946">Error cargando finanzas: ${esc(e.message)}</p>`;
-  }
-}

@@ -116,7 +116,7 @@ input, select { font-family: inherit; }
 }
 .brand { display: flex; align-items: center; flex: 0 0 auto; }
 .brand strong { color: var(--accent2); }
-.brand-logo { width: 220px; height: auto; object-fit: contain; }
+.brand-logo { width: 190px; height: auto; object-fit: contain; }
 
 /* Sala actual: su logo en la esquina superior derecha */
 .sala-actual {
@@ -275,15 +275,12 @@ h3.sub {
 label { display: block; margin: 10px 0; font-size: .9rem; color: var(--muted); }
 label.check { display: flex; align-items: center; gap: 8px; color: var(--text); margin: 0; }
 label.check input[type="checkbox"] { width: 18px; height: 18px; flex: 0 0 auto; accent-color: var(--accent); }
-input, select, textarea {
+input, select {
   width: 100%; margin-top: 5px;
   background: var(--panel2); border: 1px solid var(--line); border-radius: 9px;
   color: var(--text); padding: 9px 11px; font-size: .95rem;
-  font-family: inherit;
-  box-sizing: border-box;
 }
-textarea { resize: vertical; min-height: 80px; }
-input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); }
+input:focus, select:focus { outline: 2px solid var(--accent); }
 
 .success { text-align: center; padding: 20px 0; display: grid; gap: 8px; justify-items: center; }
 .ok-mark {
@@ -696,7 +693,7 @@ main {
   pointer-events: none;
   transition: transform .34s cubic-bezier(.22, .9, .28, 1), opacity .26s ease, visibility 0s linear .34s;
 }
-.dock-container[hidden], #dock-container[hidden] { display: none !important; visibility: hidden !important; }
+.dock-container[hidden] { display: none; }
 /* Al abrir el panel de notificaciones o de ajustes la barra inferior se oculta y vuelve al cerrar */
 #notif-drop.open ~ .dock-container, #ajustes-drop.open ~ .dock-container {
   opacity: 0;
@@ -1865,8 +1862,8 @@ main {
   .nav-btn { height: clamp(58px, 7.5vh, 76px); font-size: clamp(11px, .2vw + 8.5px, 14px); }
   .nav-btn svg { width: 24px; height: 24px; }
 
-  .app-header { padding: 12px clamp(22px, 2.4vw, 56px); }
-  .brand-logo { width: clamp(220px, 18vw, 320px); height: auto; }
+  .app-header { padding: 10px clamp(22px, 2.4vw, 56px); }
+  .brand-logo { width: clamp(200px, 15vw, 320px); }
 
   main, #view-mapa, #view-panel {
     max-width: clamp(1100px, 90vw, 2000px);
@@ -1944,565 +1941,81 @@ main {
   main, #view-mapa, #view-panel { max-width: 2200px; }
 }
 
-/* =========================================================
-   DISEÑO HÍBRIDO DEFINITIVO: MÓVIL vs ESCRITORIO
-   ========================================================= */
+/* =====================================================================
+   PANEL DE ADMINISTRACIÓN — menú lateral y agenda (escritorio)
+   ===================================================================== */
+.admin-tab-group { display: none; }
+.admin-stats { grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); }
+.admin-stats .stat:nth-child(3) b { color: var(--warn); }
 
-/* Por defecto (Móvil): El logo lateral está oculto */
-.dock-brand-desktop {
-  display: none;
-}
-
-/* En Escritorio (>= 960px): Sidebar elegante, logo grande a 220px y calendario 2 columnas */
-@media (min-width: 960px) {
-  .dock-brand-desktop {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 18px 10px 24px;
-    width: 100%;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    margin-bottom: 12px;
+@media (min-width: 1024px) {
+  #view-admin:not([hidden]) {
+    display: grid; grid-template-columns: clamp(220px, 16vw, 280px) minmax(0, 1fr);
+    column-gap: clamp(20px, 2vw, 36px); align-content: start; align-items: start;
   }
-  .dock-logo-img {
-    width: 190px;
-    max-width: 100%;
-    height: auto;
-    object-fit: contain;
-    filter: drop-shadow(0 2px 10px rgba(0, 224, 84, 0.25));
+  #view-admin > .admin-head { grid-column: 1 / -1; }
+  #view-admin > .admin-tabs {
+    grid-column: 1; grid-row: 2 / span 40;
+    position: sticky; top: 84px;
+    flex-direction: column; gap: 2px; overflow: visible;
+    margin: 0; padding: 14px 10px 16px;
+    background: var(--pop); border: 1px solid var(--line); border-radius: 18px;
+    -webkit-backdrop-filter: none; backdrop-filter: none;
   }
-  body:has(#dock-container:not([hidden])) {
-    padding-left: 260px !important;
+  #view-admin > .tab { grid-column: 2; min-width: 0; }
+  .admin-tab-group {
+    display: block; padding: 16px 12px 6px;
+    font-size: .72rem; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--label);
   }
-  .dock-container {
-    width: 260px !important;
-    padding: 20px 14px !important;
-    background: rgba(11, 18, 33, 0.92) !important;
-    backdrop-filter: blur(20px) !important;
-    border-right: 1px solid var(--border, rgba(255, 255, 255, 0.08)) !important;
+  .admin-tab-group:first-child { padding-top: 2px; }
+  #view-admin > .admin-tabs .admin-tab {
+    width: 100%; margin: 0; padding: 10px 12px;
+    justify-content: space-between; text-align: left; white-space: normal;
+    border: 0; border-radius: 10px; font-size: .95rem;
   }
-  .bottom-nav {
-    gap: 8px !important;
-    background: transparent !important;
-    border: none !important;
-    padding: 0 !important;
+  #view-admin > .admin-tabs .admin-tab:hover { background: var(--tinte); }
+  #view-admin > .admin-tabs .admin-tab.active { background: rgba(0, 160, 56, .18); color: var(--accent2); }
+
+  /* Agenda: salas en columnas, horas en filas */
+  .agenda { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 16px 18px 20px; }
+  .ag-head, .ag-body {
+    display: grid; grid-template-columns: 56px repeat(var(--n, 3), minmax(0, 1fr)); column-gap: 10px;
   }
-  .nav-btn {
-    height: 52px !important;
-    flex-direction: row !important;
-    justify-content: flex-start !important;
-    padding: 0 18px !important;
-    gap: 14px !important;
-    font-size: 14px !important;
-    font-weight: 600 !important;
-    border-radius: 12px !important;
-    width: 100% !important;
+  .ag-room { display: flex; align-items: center; gap: 8px; padding-bottom: 12px; font-weight: 600; }
+  .ag-room i { width: 10px; height: 10px; border-radius: 50%; background: var(--c, var(--accent)); flex: none; }
+  .ag-body { margin-top: 8px; }
+  .ag-hours { position: relative; }
+  .ag-hours span { position: absolute; left: 0; transform: translateY(-50%); font-size: .78rem; color: var(--label); font-variant-numeric: tabular-nums; }
+  .ag-col {
+    position: relative;
+    background-image: repeating-linear-gradient(to bottom, var(--line) 0, var(--line) 1px, transparent 1px, transparent var(--hpx));
+    border-bottom: 1px solid var(--line);
   }
-  .nav-btn svg {
-    width: 20px !important;
-    height: 20px !important;
+  .ag-res {
+    position: absolute; left: 0; right: 0; box-sizing: border-box;
+    display: flex; flex-direction: column; gap: 1px; padding: 7px 10px; overflow: hidden; line-height: 1.2;
+    border-radius: 10px; border: 1px solid var(--rc, var(--accent));
+    background: var(--panel2);
+    background: color-mix(in srgb, var(--rc, var(--accent)) 22%, var(--panel));
+    transition: box-shadow .15s ease;
   }
-  .nav-btn-center {
-    height: 52px !important;
-    flex-direction: row !important;
-    justify-content: flex-start !important;
-    padding: 0 18px !important;
-    gap: 14px !important;
-    font-size: 14px !important;
-    font-weight: 600 !important;
-    border-radius: 12px !important;
-    width: 100% !important;
+  .ag-res:hover, .ag-res:focus-within { box-shadow: 0 8px 20px rgba(0, 0, 0, .3); z-index: 2; }
+  .ag-res b { font-size: .95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ag-res span { font-size: .8rem; color: var(--muted); }
+  .ag-sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ag-res.pend { background: transparent; border-style: dashed; border-color: var(--warn); }
+  .ag-res .ag-pend { color: var(--warn); font-weight: 600; }
+  .ag-acts { position: absolute; right: 6px; bottom: 6px; display: none; gap: 4px; }
+  .ag-res:hover .ag-acts, .ag-res:focus-within .ag-acts { display: flex; }
+  .ag-acts button, .ag-ask button {
+    font-size: .76rem; font-weight: 600; padding: 4px 9px; cursor: pointer;
+    border-radius: 8px; border: 1px solid var(--soft); background: var(--panel); color: var(--text);
   }
-  .nav-circle-btn {
-    position: static !important;
-    width: 20px !important;
-    height: 20px !important;
-    background: transparent !important;
-    box-shadow: none !important;
-    border-radius: 0 !important;
+  .ag-acts button + button { color: var(--danger); }
+  .ag-ask {
+    position: absolute; left: 6px; right: 6px; bottom: 6px; display: flex; align-items: center; gap: 6px;
+    padding: 4px 6px; border-radius: 8px; background: var(--pop); font-size: .78rem; font-weight: 600;
   }
-  .nav-circle-btn svg {
-    width: 20px !important;
-    height: 20px !important;
-  }
-  .nav-center-label {
-    display: inline !important;
-  }
-  .app-header .brand {
-    display: none !important; /* El logo ya va en la barra lateral fija de escritorio */
-  }
+  .ag-ask span { color: var(--text); flex: 1; }
+  .ag-ask .yes { background: var(--danger); border-color: transparent; color: #fff; }
 }
-
-/* =========================================================
-   SOLUCIÓN DE SUPERPOSICIÓN: MAPA vs NOTIFICACIONES / AJUSTES
-   Leaflet usa z-index hasta 1000. Forzamos los paneles y modales por encima
-   y ocultamos temporalmente el contenedor de mapa para que no filtre capas.
-   ========================================================= */
-#notif-drop, #ajustes-drop {
-  z-index: 10000 !important;
-}
-
-#notif-drop.open ~ #view-mapa,
-#ajustes-drop.open ~ #view-mapa,
-body:has(#notif-drop.open) #view-mapa,
-body:has(#ajustes-drop.open) #view-mapa {
-  visibility: hidden !important;
-  pointer-events: none !important;
-}
-
-#modal {
-  z-index: 10050 !important;
-}
-
-/* =========================================================
-   PROTECCIÓN DEL DOCK INFERIOR (5 OPCIONES EN CELULAR):
-   1. El dock (.dock-container) debe estar por encima de los controles del mapa (z-index 2000 vs 1000 de Leaflet)
-   2. #view-mapa debe tener padding-bottom de 115px para que la barra inferior no tape el mapa ni sus textos
-   ========================================================= */
-.dock-container {
-  z-index: 2000 !important;
-}
-
-#view-mapa {
-  padding-bottom: 120px !important;
-}
-
-/* Durante la animación de inicio (splash screen), el dock permanece 100% oculto */
-#splash:not(.fuera) ~ #dock-container,
-body:has(#splash:not(.fuera)) #dock-container {
-  display: none !important;
-  visibility: hidden !important;
-  opacity: 0 !important;
-}
-
-
-
-/* ===================================================
- * DISEÑO REFINADO, MODERNO Y DIRECTO (+MÚSICA v3.9)
- * =================================================== */
-
-.perfil-card-modern {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 20px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
-  margin-bottom: 20px;
-}
-
-.perfil-header-row {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 18px;
-}
-
-.perfil-avatar-modern {
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  font-size: 1.8rem;
-  font-weight: 700;
-  display: grid;
-  place-items: center;
-  background: linear-gradient(135deg, var(--accent), var(--accent2, #ff6b4a));
-  color: #fff;
-  flex-shrink: 0;
-  overflow: hidden;
-  box-shadow: 0 4px 12px rgba(230, 57, 70, 0.25);
-}
-.perfil-avatar-modern img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.perfil-info-modern {
-  flex: 1;
-  min-width: 0;
-}
-.perfil-nombre {
-  margin: 0 0 2px;
-  font-size: 1.3rem;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-}
-.perfil-usuario {
-  display: block;
-  font-size: 0.88rem;
-  color: var(--text-muted);
-  margin-bottom: 6px;
-}
-.badge-rol {
-  background: var(--bg-subtle, rgba(255,255,255,0.08));
-  color: var(--text);
-  font-weight: 600;
-  padding: 3px 10px;
-  border-radius: 20px;
-  font-size: 0.8rem;
-  border: 1px solid var(--border);
-}
-
-.perfil-actions-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.perfil-btns-duo {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
-.btn-outline {
-  background: transparent;
-  border: 1px solid var(--border);
-  color: var(--text);
-  font-weight: 600;
-  border-radius: 8px;
-}
-.btn-outline:hover {
-  background: var(--bg-subtle, rgba(255,255,255,0.05));
-  border-color: var(--text-muted);
-}
-.btn-danger-soft {
-  background: rgba(230, 57, 70, 0.1);
-  color: #e63946;
-  border: 1px solid rgba(230, 57, 70, 0.25);
-  font-weight: 600;
-  border-radius: 8px;
-  transition: all 0.2s;
-}
-.btn-danger-soft:hover {
-  background: #e63946;
-  color: #fff;
-}
-
-/* Ajustes limpios */
-.ajustes-container-clean {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-.aj-card-clean {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 12px 14px;
-}
-.aj-section-title {
-  margin: 0 0 10px;
-  font-size: 0.82rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text-muted);
-  font-weight: 700;
-}
-.aj-row-clean {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 4px 0;
-}
-.aj-seg-modern {
-  display: flex;
-  background: var(--bg-subtle, rgba(255,255,255,0.06));
-  padding: 3px;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  gap: 2px;
-}
-.aj-seg-modern button {
-  background: transparent;
-  border: none;
-  color: var(--text-muted);
-  font-size: 0.82rem;
-  font-weight: 600;
-  padding: 5px 10px;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-.aj-seg-modern button.on {
-  background: var(--accent);
-  color: #fff;
-  font-weight: 700;
-  box-shadow: 0 2px 8px rgba(230, 57, 70, 0.3);
-}
-
-/* ==========================================================================
-   MEJORAS DE ALINEACIÓN Y PULIDO VISUAL: PANELES DUEÑO Y ADMINISTRADOR
-   ========================================================================== */
-
-/* Barra de pestañas horizontal: limpia con scroll suave y sin cortes */
-.admin-tabs {
-  gap: 4px;
-  padding: 4px 6px;
-  background: var(--panel2);
-  border-radius: 12px;
-  border: 1px solid var(--line);
-  margin-bottom: 20px;
-}
-.admin-tab {
-  border-radius: 8px;
-  border-bottom: none !important;
-  padding: 8px 14px;
-  font-size: 0.88rem;
-  font-weight: 600;
-  color: var(--muted);
-  transition: all 0.15s ease;
-}
-.admin-tab:hover {
-  background: var(--soft);
-  color: var(--text);
-}
-.admin-tab.active {
-  background: var(--accent);
-  color: var(--on-accent, #fff) !important;
-  font-weight: 700;
-  box-shadow: 0 2px 8px rgba(0, 160, 56, 0.28);
-}
-.admin-tab .pill {
-  margin-left: 4px;
-}
-
-/* Encabezados y barras de acción */
-.panel-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 14px;
-  margin-bottom: 18px;
-  flex-wrap: wrap;
-}
-.panel-head h2 {
-  font-size: 1.35rem;
-  margin: 0;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-/* Contenedor responsivo para tablas */
-.table-wrap, #usuarios-list, #stats-table, #solicitudes-list {
-  width: 100%;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  margin-top: 10px;
-  border-radius: 12px;
-}
-
-/* Tablas estilizadas: sin texto desbordado ni quiebres raros */
-.tabla, table {
-  width: 100%;
-  min-width: 600px;
-  border-collapse: separate;
-  border-spacing: 0;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  overflow: hidden;
-}
-.tabla th, table th {
-  background: var(--panel2);
-  color: var(--muted);
-  font-size: 0.78rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  padding: 12px 14px;
-  border-bottom: 1px solid var(--line);
-  white-space: nowrap;
-}
-.tabla td, table td {
-  padding: 12px 14px;
-  border-bottom: 1px solid var(--line);
-  vertical-align: middle;
-  font-size: 0.9rem;
-}
-.tabla tr:last-child td, table tr:last-child td {
-  border-bottom: none;
-}
-.tabla tr:hover, table tbody tr:hover {
-  background: var(--soft2);
-}
-
-/* Columna de acciones en tablas */
-.acciones-td {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: nowrap;
-  white-space: nowrap;
-}
-
-/* Tarjetas de estadísticas de los paneles */
-.stats-cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-  gap: 12px;
-  margin-bottom: 16px;
-}
-.stat {
-  background: var(--panel2);
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  transition: transform 0.12s;
-}
-.stat:hover {
-  transform: translateY(-2px);
-  border-color: var(--accent);
-}
-.stat span {
-  font-size: 0.8rem;
-  color: var(--muted);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-  margin: 0;
-}
-.stat strong, .stat b {
-  font-size: 1.55rem;
-  font-weight: 800;
-  color: var(--text);
-  line-height: 1.1;
-  font-variant-numeric: tabular-nums;
-}
-
-/* Items de reservas en panel de dueño */
-.res-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
-  background: var(--panel2);
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 14px 18px;
-  margin-bottom: 10px;
-  transition: border-color 0.15s;
-}
-.res-item:hover {
-  border-color: var(--accent);
-}
-.res-item .res-time {
-  font-weight: 800;
-  color: var(--accent2);
-  font-size: 1.05rem;
-  min-width: 120px;
-  text-align: left;
-  border-right: none;
-  padding: 0;
-}
-.res-item .res-info {
-  flex: 2;
-  min-width: 200px;
-}
-.res-item .res-price {
-  font-weight: 800;
-  font-size: 1.1rem;
-  color: var(--text);
-  min-width: 90px;
-  text-align: right;
-}
-.res-item .res-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-/* Fila de horarios semanal en panel de dueño */
-.hora-fila {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-  padding: 10px 14px;
-  background: var(--panel2);
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  margin-bottom: 8px;
-}
-.hora-fila strong {
-  min-width: 110px;
-  font-size: 0.95rem;
-}
-.hora-fila .check {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-weight: 600;
-  font-size: 0.88rem;
-  cursor: pointer;
-}
-.hora-fila input[type="time"] {
-  width: auto;
-  min-width: 115px;
-  padding: 6px 10px;
-  margin: 0;
-  border-radius: 8px;
-}
-
-/* Bloqueos y formularios de filtro */
-.block-form {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 12px;
-  background: var(--panel2);
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 18px;
-  align-items: end;
-  margin-bottom: 18px;
-}
-.block-form label {
-  margin: 0;
-  font-size: 0.84rem;
-  font-weight: 600;
-}
-.block-form .btn {
-  margin-top: 0;
-  height: 42px;
-}
-
-/* Header del panel con switcher de salas */
-#panel-mis-salas-bar select {
-  width: auto;
-  min-width: 200px;
-  margin: 0;
-  padding: 6px 12px;
-  font-weight: 600;
-}
-
-/* Ajustes de administración: botones segmented y campos */
-.aj-seg {
-  display: flex;
-  gap: 4px;
-  background: var(--panel2);
-  padding: 4px;
-  border-radius: 10px;
-  border: 1px solid var(--line);
-  width: fit-content;
-  margin-top: 8px;
-}
-.aj-seg button {
-  background: transparent;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 8px;
-  font-size: 0.88rem;
-  font-weight: 600;
-  color: var(--muted);
-  cursor: pointer;
-  transition: all 0.15s;
-}
-.aj-seg button.on {
-  background: var(--accent);
-  color: var(--on-accent, #fff);
-  font-weight: 700;
-}
-
