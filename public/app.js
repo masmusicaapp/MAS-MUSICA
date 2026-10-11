@@ -2438,7 +2438,11 @@ function itemPromo(p) {
 function abrirPromo(id) {
   const p = (state.promociones || []).find(x => x.id === id);
   if (!p) return;
-  openModal(`<h3>${esc(p.titulo)}</h3><p>${esc(p.texto)}</p>
+  const red = safeUrl(p.redes);
+  openModal(`<h3>${esc(p.titulo)}</h3>
+    ${p.flyer ? `<img class="promo-flyer-img" src="${esc(p.flyer)}" alt="Flyer de ${esc(p.titulo)}">` : ''}
+    <p>${esc(p.texto)}</p>
+    ${red ? `<p><a class="btn btn-sm" href="${esc(red)}" target="_blank" rel="noopener">🔗 Ver en redes</a></p>` : ''}
     <div class="row"><button class="btn" onclick="closeModal()">Cerrar</button></div>`);
 }
 
@@ -3651,8 +3655,7 @@ function showAdmin() {
   $('#btn-exit-admin').hidden = false;
   setNav('admin');
   /* Arranca en las solicitudes pendientes si hay alguna */
-  const pendientes = (state.rooms || []).filter(r => r.estado === 'pendiente').length;
-  currentAdminTab = pendientes ? 'solicitudes' : 'reservas';
+  currentAdminTab = 'inicio';
   renderAdminTab(currentAdminTab);
   actualizarAdminHead();
 }
@@ -3676,13 +3679,14 @@ function salirAdmin() {
   goStep(1);
 }
 
-const TABS_ADMIN = ['solicitudes', 'usuarios', 'reservas', 'historial', 'salas', 'horarios', 'bloqueos', 'estadisticas', 'ajustes', 'lugar', 'bandas', 'promociones'];
+const TABS_ADMIN = ['inicio', 'solicitudes', 'usuarios', 'reservas', 'historial', 'salas', 'horarios', 'bloqueos', 'estadisticas', 'ajustes', 'lugar', 'bandas', 'promociones'];
 
 function renderAdminTab(tab) {
   currentAdminTab = tab;
   $$('.admin-tab[data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
   TABS_ADMIN.forEach(t => { $('#tab-' + t).hidden = t !== tab; });
   ({
+    inicio: renderInicioAdmin,
     solicitudes: renderSolicitudes,
     usuarios: renderUsuarios,
     reservas: renderReservasAdmin,
@@ -4445,6 +4449,78 @@ async function eliminarBanda(id) {
   }
 }
 
+/* Solo se aceptan enlaces http(s) para evitar esquemas peligrosos */
+function safeUrl(u) { return /^https?:\/\//i.test(String(u || '').trim()) ? String(u).trim() : ''; }
+
+/* ---------- Inicio del panel: resumen del día ---------- */
+function renderInicioAdmin() {
+  const cont = $('#inicio-admin');
+  if (!cont) return;
+  const hoy = todayStr();
+  const fechaTxt = new Date().toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' });
+  const list = (state.reservations || [])
+    .filter(r => r.date === hoy && r.estado !== 'cancelada')
+    .sort((a, b) => a.start.localeCompare(b.start));
+  const ingresos = list.reduce((s, r) => s + precioReserva(r), 0);
+  const pendPago = list.filter(r => r.estado === 'pendiente_pago').length;
+  const solicitudes = (state.rooms || []).filter(r => r.estado === 'pendiente').length;
+  const promos = promosActivas();
+  const nombreSala = id => { const s = (state.rooms || []).find(x => x.id === id); return s ? s.name : 'Sala eliminada'; };
+
+  cont.innerHTML = `
+    <div class="inicio-saludo">
+      <h2>Hola${yo ? ', ' + esc(yo.usuario) : ''} 👋</h2>
+      <p class="muted small">${esc(fechaTxt)}</p>
+    </div>
+
+    <div class="admin-stats inicio-stats">
+      <div class="stat"><span>Reservas hoy</span><b>${list.length}</b></div>
+      <div class="stat"><span>Ingresos de hoy</span><b>${fmtMoney(ingresos)}</b></div>
+      <div class="stat"><span>Pendientes de pago</span><b>${pendPago}</b></div>
+      <div class="stat"><span>Solicitudes de salas</span><b>${solicitudes}</b></div>
+    </div>
+
+    <div class="inicio-grid">
+      <section class="inicio-card">
+        <h3>Próximas reservas de hoy</h3>
+        ${list.length ? `<ul class="inicio-prox">${list.slice(0, 6).map(r => `
+          <li><time>${esc(r.start)}–${esc(r.end)}</time><span class="nom">${esc(r.name)}</span><span class="sala">${esc(nombreSala(r.roomId))}</span></li>`).join('')}</ul>`
+          : '<p class="muted small">No hay reservas para hoy.</p>'}
+        <div class="inicio-pie"><button class="btn btn-sm" data-goto="reservas">Ver agenda completa</button></div>
+      </section>
+
+      <section class="inicio-card">
+        <h3>Accesos rápidos</h3>
+        <div class="inicio-links">
+          <button class="inicio-link" data-goto="solicitudes"><span>Solicitudes</span>${solicitudes ? `<b class="n">${solicitudes}</b>` : ''}<i>›</i></button>
+          <button class="inicio-link" data-goto="promociones"><span>Promociones</span><i>›</i></button>
+          <button class="inicio-link" data-goto="estadisticas"><span>Estadísticas</span><i>›</i></button>
+          <button class="inicio-link" data-goto="ajustes"><span>Ajustes</span><i>›</i></button>
+        </div>
+      </section>
+
+      <section class="inicio-card ancha">
+        <h3>🎉 Promociones activas <span class="muted small">(${promos.length})</span></h3>
+        ${promos.length ? promos.map(p => `
+          <div class="promo-admin-card">
+            ${p.flyer ? `<img class="promo-thumb" src="${esc(p.flyer)}" alt="Flyer de ${esc(p.titulo)}">` : ''}
+            <div class="res-info">
+              <strong>${esc(p.titulo)}</strong>
+              <div class="muted small">${esc(p.texto)}</div>
+              ${safeUrl(p.redes) ? `<div class="small">🔗 <a href="${esc(safeUrl(p.redes))}" target="_blank" rel="noopener">Ver en redes</a></div>` : ''}
+            </div>
+          </div>`).join('')
+          : '<p class="muted">No hay promociones activas. Cuando actives una, aparece acá.</p>'}
+        <div class="inicio-pie"><button class="btn btn-sm" data-goto="promociones">Administrar promociones</button></div>
+      </section>
+    </div>`;
+
+  cont.onclick = e => {
+    const g = e.target.closest('[data-goto]');
+    if (g) renderAdminTab(g.dataset.goto);
+  };
+}
+
 /* ---------- Promociones y novedades ---------- */
 function renderPromocionesAdmin() {
   const cont = $('#promociones-admin');
@@ -4453,10 +4529,12 @@ function renderPromocionesAdmin() {
   const f = d => d ? new Date(d).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: '2-digit' }) : '—';
   cont.innerHTML = lista.length ? lista.map(p => `
     <div class="res-item ${p.activa === false ? 'res-past' : ''}">
+      ${p.flyer ? `<img class="promo-thumb" src="${esc(p.flyer)}" alt="Flyer de ${esc(p.titulo)}">` : ''}
       <div class="res-info">
         <strong>${esc(p.titulo)} ${p.activa === false ? '<span class="badge badge-past">Inactiva</span>' : '<span class="badge">Activa</span>'}</strong>
         <div class="muted small">${esc(p.texto)}</div>
         <div class="muted small">Desde ${f(p.desde)} hasta ${f(p.hasta)}</div>
+        ${safeUrl(p.redes) ? `<div class="muted small">🔗 <a href="${esc(safeUrl(p.redes))}" target="_blank" rel="noopener">Ver en redes</a></div>` : ''}
       </div>
       <div class="res-actions">
         <button class="btn btn-sm" data-edit-promo="${p.id}">Editar</button>
@@ -4467,7 +4545,7 @@ function renderPromocionesAdmin() {
 }
 
 function formularioPromocion(id) {
-  const p = id ? (state.promociones || []).find(x => x.id === id) : { titulo: '', texto: '', activa: true };
+  const p = id ? (state.promociones || []).find(x => x.id === id) : { titulo: '', texto: '', activa: true, flyer: '', redes: '' };
   if (id && !p) return;
   const aIso = t => t ? new Date(t).toISOString().slice(0, 10) : '';
   openModal(`
@@ -4478,19 +4556,44 @@ function formularioPromocion(id) {
       <label>Desde<input type="date" id="pr-desde" value="${aIso(p.desde || Date.now())}"></label>
       <label>Hasta<input type="date" id="pr-hasta" value="${aIso(p.hasta || (Date.now() + 864e5 * 30))}"></label>
     </div>
+    <div class="promo-flyer-edit">
+      <label>Flyer (foto de la promo)<input type="file" id="pr-flyer" accept="image/*"></label>
+      <div id="pr-flyer-prev">${p.flyer ? `<img src="${esc(p.flyer)}" alt="Flyer actual">` : ''}</div>
+      <label class="check" id="pr-quitar-wrap" ${p.flyer ? '' : 'hidden'}><input type="checkbox" id="pr-quitar"> Quitar el flyer</label>
+    </div>
+    <label>Enlace a redes (Instagram, Facebook, etc.)<input id="pr-redes" maxlength="300" value="${esc(p.redes || '')}" placeholder="https://instagram.com/..."></label>
     <label class="check"><input type="checkbox" id="pr-activa" ${p.activa !== false ? 'checked' : ''}> Mostrar en el Inicio</label>
     <div class="row">
       <button class="btn btn-primary" id="pr-guardar">💾 Guardar</button>
       <button class="btn" id="pr-cancelar">Cancelar</button>
     </div>`);
+  let flyerNuevo = null;          /* null = no tocar; '' = quitar; dataURL = nuevo */
+  $('#pr-flyer').onchange = async e => {
+    const f = e.target.files && e.target.files[0];
+    if (!f) return;
+    try {
+      flyerNuevo = await comprimirImagen(f, 1000);
+      $('#pr-flyer-prev').innerHTML = `<img src="${flyerNuevo}" alt="Flyer nuevo">`;
+      $('#pr-quitar-wrap').hidden = false;
+      $('#pr-quitar').checked = false;
+    } catch (err) { toast(err.message, 'warn'); }
+  };
+  $('#pr-quitar').onchange = e => {
+    if (e.target.checked) { flyerNuevo = ''; $('#pr-flyer-prev').innerHTML = ''; $('#pr-flyer').value = ''; }
+    else { flyerNuevo = null; $('#pr-flyer-prev').innerHTML = p.flyer ? `<img src="${esc(p.flyer)}" alt="Flyer actual">` : ''; }
+  };
   $('#pr-cancelar').onclick = closeModal;
   $('#pr-guardar').onclick = async () => {
     const titulo = $('#pr-titulo').value.trim();
     if (!titulo) { toast('Escribí el título', 'warn'); return; }
+    let redes = $('#pr-redes').value.trim();
+    if (redes && !/^https?:\/\//i.test(redes)) redes = 'https://' + redes;
     const body = {
       titulo,
       texto: $('#pr-texto').value.trim(),
       activa: $('#pr-activa').checked,
+      flyer: flyerNuevo !== null ? flyerNuevo : (p.flyer || ''),
+      redes,
       desde: new Date($('#pr-desde').value + 'T08:00:00').getTime(),
       hasta: new Date($('#pr-hasta').value + 'T23:59:00').getTime(),
     };

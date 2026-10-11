@@ -1950,28 +1950,29 @@ main {
 
 @media (min-width: 1024px) {
   #view-admin:not([hidden]) {
-    display: grid; grid-template-columns: clamp(220px, 16vw, 280px) minmax(0, 1fr);
+    display: grid; grid-template-columns: clamp(196px, 13.5vw, 232px) minmax(0, 1fr);
     column-gap: clamp(20px, 2vw, 36px); align-content: start; align-items: start;
   }
   #view-admin > .admin-head { grid-column: 1 / -1; }
   #view-admin > .admin-tabs {
     grid-column: 1; grid-row: 2 / span 40;
-    position: sticky; top: 84px;
-    flex-direction: column; gap: 2px; overflow: visible;
-    margin: 0; padding: 14px 10px 16px;
+    position: sticky; top: 12px; align-self: start;
+    max-height: calc(100dvh - 150px); overflow-y: auto; scrollbar-width: thin;
+    flex-direction: column; gap: 1px; overflow-x: visible;
+    margin: 0; padding: 8px 8px 10px;
     background: var(--pop); border: 1px solid var(--line); border-radius: 18px;
     -webkit-backdrop-filter: none; backdrop-filter: none;
   }
   #view-admin > .tab { grid-column: 2; min-width: 0; }
   .admin-tab-group {
-    display: block; padding: 16px 12px 6px;
-    font-size: .72rem; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--label);
+    display: block; padding: 10px 10px 4px;
+    font-size: .68rem; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--label);
   }
-  .admin-tab-group:first-child { padding-top: 2px; }
+  .admin-tab-group:first-child { padding-top: 0; }
   #view-admin > .admin-tabs .admin-tab {
-    width: 100%; margin: 0; padding: 10px 12px;
+    width: 100%; margin: 0; padding: 7px 10px;
     justify-content: space-between; text-align: left; white-space: normal;
-    border: 0; border-radius: 10px; font-size: .95rem;
+    border: 0; border-radius: 9px; font-size: .9rem;
   }
   #view-admin > .admin-tabs .admin-tab:hover { background: var(--tinte); }
   #view-admin > .admin-tabs .admin-tab.active { background: rgba(0, 160, 56, .18); color: var(--accent2); }
@@ -2019,3 +2020,73 @@ main {
   .ag-ask span { color: var(--text); flex: 1; }
   .ag-ask .yes { background: var(--danger); border-color: transparent; color: #fff; }
 }
+
+
+/* =====================================================================
+   INICIO DEL PANEL (resumen) y promociones con flyer / redes
+   ===================================================================== */
+.admin-tab.admin-tab-inicio { font-weight: 700; color: var(--accent2); }
+.admin-tab.admin-tab-inicio::before {
+  content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+  background: var(--accent); box-shadow: 0 0 0 3px rgba(0, 160, 56, .25);
+  margin-right: 8px; vertical-align: middle;
+}
+@media (min-width: 1024px) {
+  #view-admin > .admin-tabs .admin-tab.admin-tab-inicio {
+    font-size: .95rem; margin-bottom: 6px; padding: 8px 10px;
+    background: linear-gradient(135deg, rgba(0, 160, 56, .30), rgba(0, 160, 56, .10));
+    border: 1px solid rgba(0, 160, 56, .5);
+  }
+}
+
+.inicio-saludo h2 { margin: 0; font-size: 1.35rem; }
+.inicio-saludo p { margin: 2px 0 0; }
+.inicio-stats { margin-top: 14px; }
+
+.inicio-grid {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px; margin-top: 14px; align-items: stretch;
+}
+@media (max-width: 720px) { .inicio-grid { grid-template-columns: 1fr; } }
+
+.inicio-card {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 16px;
+  padding: 14px 16px; min-width: 0; display: flex; flex-direction: column;
+}
+.inicio-card.ancha { grid-column: 1 / -1; }
+.inicio-card h3 { margin: 0 0 8px; font-size: .95rem; }
+.inicio-pie { margin-top: auto; padding-top: 12px; }
+
+/* Próximas reservas: una fila por reserva, en columnas alineadas */
+.inicio-prox { list-style: none; margin: 0; padding: 0; }
+.inicio-prox li {
+  display: grid; grid-template-columns: 108px minmax(0, 1fr) auto; gap: 10px; align-items: center;
+  padding: 8px 0; border-bottom: 1px solid var(--line); font-size: .9rem;
+}
+.inicio-prox li:last-child { border-bottom: 0; }
+.inicio-prox time { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.inicio-prox .nom { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.inicio-prox .sala { font-size: .8rem; color: var(--muted); white-space: nowrap; }
+
+/* Accesos rápidos: botones que reparten el alto de la tarjeta */
+.inicio-links { display: grid; grid-auto-rows: 1fr; gap: 8px; flex: 1; }
+.inicio-link {
+  display: flex; align-items: center; gap: 8px; width: 100%; padding: 0 14px; min-height: 42px;
+  border-radius: 10px; background: var(--panel2); border: 1px solid var(--line);
+  color: var(--text); font: inherit; font-weight: 600; text-align: left; cursor: pointer;
+}
+.inicio-link:hover { background: var(--tinte); }
+.inicio-link span { flex: 1; }
+.inicio-link .n { background: var(--danger); color: #fff; border-radius: 999px; padding: 1px 8px; font-size: .78rem; }
+.inicio-link i { font-style: normal; color: var(--muted); font-size: 1.2rem; line-height: 1; }
+
+/* Promociones activas */
+.promo-admin-card {
+  display: flex; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line);
+}
+.promo-admin-card:first-of-type { padding-top: 0; }
+.promo-admin-card:last-of-type { border-bottom: 0; padding-bottom: 0; }
+.promo-admin-card .res-info { min-width: 0; }
+.promo-thumb { width: 56px; height: 56px; object-fit: cover; border-radius: 10px; flex: none; background: var(--panel2); }
+.promo-flyer-img { display: block; width: 100%; max-height: 300px; object-fit: contain; border-radius: 12px; margin: 8px 0; background: var(--panel2); }
+.promo-flyer-edit img { max-width: 220px; max-height: 220px; border-radius: 10px; display: block; margin: 6px 0; }

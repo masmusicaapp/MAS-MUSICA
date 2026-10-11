@@ -395,6 +395,7 @@
     </div>
   </header>
   <nav class="admin-tabs" aria-label="Secciones de administración">
+    <button class="admin-tab admin-tab-inicio" data-tab="inicio">Inicio</button>
     <span class="admin-tab-group">Reservas</span>
     <button class="admin-tab" data-tab="solicitudes">Solicitudes <span class="pill" id="pill-solicitudes" hidden>0</span></button>
     <button class="admin-tab" data-tab="reservas">Reservas del día</button>
@@ -412,6 +413,10 @@
     <button class="admin-tab" data-tab="promociones">Promociones</button>
     <button class="admin-tab" data-tab="ajustes">Ajustes</button>
   </nav>
+
+  <section id="tab-inicio" class="tab" hidden>
+    <div id="inicio-admin"></div>
+  </section>
 
   <section id="tab-solicitudes" class="tab">
     <div class="panel">
