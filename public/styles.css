@@ -2168,3 +2168,12 @@ main {
 .mov-estado.pend { color: var(--warn); }
 .mov-estado.off { color: var(--muted); }
 .mov-foot { margin: 10px 0 0; font-size: .82rem; color: var(--muted); }
+
+/* ---------- Cuentas de control (administrador y dueño de sala) ---------- */
+body.modo-control #nav-instrumentos,
+body.modo-control #btn-filtro-fav,
+body.modo-control #fav-ver,
+body.modo-control #ficha-fav,
+body.modo-control #mine-favoritas,
+body.modo-control #mine-integrantes,
+body.modo-control label:has(> #pd-instrumentos) { display: none !important; }

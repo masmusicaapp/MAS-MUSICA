@@ -100,6 +100,8 @@ let sinLeer = 0;
 const esMúsico = () => !!yo && yo.rol === 'USER';
 const esDueño = () => !!yo && yo.rol === 'ROOM_ADMIN';
 const esSuper = () => !!yo && yo.rol === 'SUPER_ADMIN';
+/* Cuentas de control (administrador y dueño de sala): solo control, sin integrantes, instrumentos ni favoritas */
+const esCuentaControl = () => esDueño() || esSuper();
 
 function guardarToken(t) {
   token = t || '';
@@ -381,7 +383,7 @@ function renderIntegrantesBanda() {
   const host = $('#mine-integrantes');
   if (!host) return;
   /* Los integrantes acompañan al perfil de la banda; en el de la sala no aplican */
-  if (esDueño() && miSala) { host.hidden = true; host.innerHTML = ''; return; }
+  if (esCuentaControl()) { host.hidden = true; host.innerHTML = ''; return; }
   const mias = misReservas();
   let banda = null;
   for (const nombre of new Set(mias.map(r => r.name))) {
@@ -1915,6 +1917,7 @@ function mostrarLugar() {
 /* ---------- Barra inferior (5 opciones) ---------- */
 function setNav(nav) {
   navActual = nav;
+  document.body.classList.toggle('modo-control', esCuentaControl());
   $$('#dock-container [data-nav]').forEach(b => b.classList.toggle('active', b.dataset.nav === nav));
   $('#dock-container').hidden = nav === 'admin'; /* el admin usa todo el alto */
   actualizarAccionesHeader();
@@ -2014,6 +2017,7 @@ function ocultarVistas() {
 
 /* Botones del header según el rol conectado */
 function actualizarBarraSesion() {
+  document.body.classList.toggle('modo-control', esCuentaControl());
   if (!yo) {
     $('#btn-panel').hidden = true;
     $('#btn-notif').hidden = true;
@@ -2262,7 +2266,7 @@ function wireAuth() {
     if (btn) { btn.disabled = true; btn.textContent = 'Guardando…'; }
     try {
       if (f.id === 'f-login') await iniciarSesion($('#lg-user').value.trim(), $('#lg-pass').value);
-      else if (f.id === 'f-pin') await entrarConPin($('#pn-pin').value);
+      else if (f.id === 'f-pin') await loginConPinAuth($('#pn-pin').value);
       else if (f.id === 'f-musico') await registrarMusico(f);
       else if (f.id === 'f-duenio') {
         if (!$('#sg-soy').checked) { toast('Confirmá que sos responsable de la sala', 'warn'); return; }
@@ -2361,13 +2365,14 @@ async function iniciarSesion(user, pass) {
   irInicio();
 }
 
-async function entrarConPin(pin) {
+/* Inicio de sesión con PIN desde la pantalla de acceso: entra al Inicio, no al panel */
+async function loginConPinAuth(pin) {
   const data = await api('/api/auth/pin', { method: 'POST', body: { pin } });
   await iniciarSesionConToken(data);
   marcarDispositivoAdmin();
   adminMode = true;
   toast('Sesión de administrador general iniciada', 'ok');
-  mostrarAdmin();
+  irInicio();
 }
 
 async function iniciarSesionConToken(data) {
@@ -2594,7 +2599,7 @@ function renderPanelAjustes() {
     <div class="aj-card">
       ${filaAj('datos', ICO_AJ.persona, 'Datos personales', yo.email || '')}
       ${filaAj('pass', ICO_AJ.candado, 'Contraseña')}
-      ${filaAj('inst', ICO_AJ.nota, 'Mis instrumentos', instrumentos || 'Agregá los que tocás')}
+      ${esCuentaControl() ? '' : filaAj('inst', ICO_AJ.nota, 'Mis instrumentos', instrumentos || 'Agregá los que tocás')}
       ${esDueño() ? filaAj('panel', ICO_AJ.panel, 'Mi panel de sala', miSala ? `${esc(miSala.name)} · ${miSala.estado}` : '') : ''}
       ${esSuper() ? filaAj('admin', ICO_AJ.engranaje, 'Panel de administración') : ''}
     </div>
@@ -2623,7 +2628,7 @@ function renderPanelAjustes() {
     <div class="aj-card">
       ${filaAj('proximas', ICO_AJ.cal, 'Próximas reservas', `${nProx} reserva${nProx === 1 ? '' : 's'}`)}
       ${filaAj('historial', ICO_AJ.reloj, 'Historial', `${nHist} reserva${nHist === 1 ? '' : 's'}`)}
-      ${filaAj('favoritas', ICO_AJ.corazon, 'Salas favoritas', `${nFav} guardada${nFav === 1 ? '' : 's'}`)}
+      ${esCuentaControl() ? '' : filaAj('favoritas', ICO_AJ.corazon, 'Salas favoritas', `${nFav} guardada${nFav === 1 ? '' : 's'}`)}
     </div>
 
     <p class="aj-lbl">Ayuda</p>
@@ -3850,11 +3855,11 @@ async function enterAdmin() {
   $('#ad-ok').onclick = intentar;
   $('#ad-pass').onkeydown = e => { if (e.key === 'Enter') intentar(); };
   $('#ad-cancel').onclick = closeModal;
-  $('#ad-pin').onclick = () => { closeModal(); entrarConPin(); };
+  $('#ad-pin').onclick = () => { closeModal(); pedirPinAdmin(); };
 }
 
-/* Entrada alternativa con el PIN de emergencia */
-function entrarConPin() {
+/* Entrada explícita al panel de administración con el PIN de emergencia */
+function pedirPinAdmin() {
   openModal(`
     <h3>🔑 PIN de administrador</h3>
     <label>PIN<input type="password" id="pin-input" inputmode="numeric" placeholder="PIN de administrador"></label>
