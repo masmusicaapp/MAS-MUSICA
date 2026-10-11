@@ -2020,6 +2020,8 @@ function actualizarBarraSesion() {
   document.body.classList.toggle('modo-control', esCuentaControl());
   const naAdmin = $('#nav-admin');
   if (naAdmin) naAdmin.hidden = !esSuper();
+  const naPanel = $('#nav-panel');
+  if (naPanel) naPanel.hidden = !esDueño();
   if (!yo) {
     $('#btn-panel').hidden = true;
     $('#btn-notif').hidden = true;
@@ -3697,6 +3699,7 @@ function wirePublic() {
     instrumentos: irInstrumentos,
     perfil: irMisReservas,
     admin: () => (esSuper() ? showAdmin() : enterAdmin()),
+    panel: () => { mostrarPanel(); setNav('panel'); },
   };
   $$('#dock-container [data-nav]').forEach(b => {
     b.onclick = () => ACCIONES_NAV[b.dataset.nav]();

@@ -2230,8 +2230,14 @@ body.modo-control label:has(> #pd-instrumentos) { display: none !important; }
   .home-indicator { display: none; }
 }
 
-/* Opción Administración: solo en el riel de escritorio (el celular mantiene las 5 opciones) */
-#nav-admin { display: none; }
+/* Administración y Panel de sala: visibles también en celular (cuentas de administración).
+   En estas cuentas se oculta "Instrumentos" (body.modo-control), por lo que la barra
+   sigue mostrando 5 opciones y el botón central (Mapa) queda perfectamente centrado. */
+#nav-admin:not([hidden]),
+#nav-panel:not([hidden]) { display: flex; }
+/* Etiqueta corta en celular; la larga en el riel de escritorio */
+.nav-label-largo { display: none; }
 @media (min-width: 1024px) {
-  #nav-admin:not([hidden]) { display: flex; }
+  .nav-label-largo { display: inline; }
+  .nav-label-corto { display: none; }
 }

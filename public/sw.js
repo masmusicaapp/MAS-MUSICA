@@ -1,5 +1,5 @@
 /* Service worker de Más Música — cache para funcionamiento offline */
-const CACHE = 'mas-musica-v36';
+const CACHE = 'mas-musica-v38';
 
 const ESTATICOS = [
   './',
