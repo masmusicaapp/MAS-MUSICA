@@ -2090,3 +2090,73 @@ main {
 .promo-thumb { width: 56px; height: 56px; object-fit: cover; border-radius: 10px; flex: none; background: var(--panel2); }
 .promo-flyer-img { display: block; width: 100%; max-height: 300px; object-fit: contain; border-radius: 12px; margin: 8px 0; background: var(--panel2); }
 .promo-flyer-edit img { max-width: 220px; max-height: 220px; border-radius: 10px; display: block; margin: 6px 0; }
+
+/* Promociones en el Inicio público (visibles para todos) */
+.promos-publico { display: grid; gap: 10px; margin: 0 0 14px; }
+.promos-tit { margin: 0; font-size: 1rem; }
+.promo-pub {
+  display: flex; gap: 12px; align-items: center; padding: 10px 12px;
+  background: var(--panel2); border: 1px solid var(--line); border-radius: 14px; cursor: pointer;
+}
+.promo-pub:hover { background: var(--tinte); }
+.promo-pub-img { width: 64px; height: 64px; object-fit: cover; border-radius: 10px; flex: none; background: var(--panel); }
+.promo-pub-txt { display: grid; gap: 2px; min-width: 0; }
+.promo-pub-txt strong { font-size: .95rem; }
+.promo-pub-txt span { color: var(--muted); font-size: .86rem; }
+.promo-pub-red { font-size: .84rem; color: var(--accent2); text-decoration: none; justify-self: start; }
+.promo-pub-red:hover { text-decoration: underline; }
+
+/* El mismo formato de menú para el panel de sala */
+@media (min-width: 1024px) {
+  #view-panel:not([hidden]) {
+    display: grid; grid-template-columns: clamp(196px, 13.5vw, 232px) minmax(0, 1fr);
+    column-gap: clamp(20px, 2vw, 36px); align-content: start; align-items: start;
+  }
+  #view-panel > .admin-head { grid-column: 1 / -1; }
+  #view-panel > .admin-tabs {
+    grid-column: 1; grid-row: 2 / span 40;
+    position: sticky; top: 12px; align-self: start;
+    max-height: calc(100dvh - 150px); overflow-y: auto; scrollbar-width: thin;
+    flex-direction: column; gap: 1px; overflow-x: visible;
+    margin: 0; padding: 8px 8px 10px;
+    background: var(--pop); border: 1px solid var(--line); border-radius: 18px;
+    -webkit-backdrop-filter: none; backdrop-filter: none;
+  }
+  #view-panel > .tab { grid-column: 2; min-width: 0; }
+  .admin-tab-group {
+    display: block; padding: 10px 10px 4px;
+    font-size: .68rem; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--label);
+  }
+  .admin-tab-group:first-child { padding-top: 0; }
+  #view-panel > .admin-tabs .admin-tab {
+    width: 100%; margin: 0; padding: 7px 10px;
+    justify-content: space-between; text-align: left; white-space: normal;
+    border: 0; border-radius: 9px; font-size: .9rem;
+  }
+  #view-panel > .admin-tabs .admin-tab:hover { background: var(--tinte); }
+  #view-panel > .admin-tabs .admin-tab.active { background: rgba(0, 160, 56, .18); color: var(--accent2); }
+}
+
+/* Encabezado del panel de sala: el botón Volver queda a la derecha */
+#view-panel > .admin-head .btn { margin-left: auto; }
+#view-panel > #panel-estado:empty { display: none; }
+
+/* ---------- Movimientos de la sala ---------- */
+.mov-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.mov-nav { display: flex; align-items: center; gap: 8px; }
+.mov-nav .btn:disabled { opacity: .4; cursor: not-allowed; }
+.mov-mes { text-transform: capitalize; min-width: 160px; text-align: center; }
+.mov-stats { margin-top: 14px; }
+.mov-wrap { overflow-x: auto; margin-top: 14px; border: 1px solid var(--line); border-radius: 12px; }
+.mov-table { width: 100%; border-collapse: collapse; font-size: .88rem; min-width: 560px; }
+.mov-table th, .mov-table td { padding: 9px 12px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
+.mov-table th { background: var(--panel2); color: var(--label); font-size: .74rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; }
+.mov-table tr:last-child td { border-bottom: 0; }
+.mov-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+.mov-table tr.anulada td { color: var(--muted); }
+.mov-table tr.anulada td:nth-child(3) { text-decoration: line-through; }
+.mov-estado { font-size: .76rem; font-weight: 600; padding: 2px 9px; border-radius: 999px; background: var(--panel2); }
+.mov-estado.ok { color: var(--accent2); }
+.mov-estado.pend { color: var(--warn); }
+.mov-estado.off { color: var(--muted); }
+.mov-foot { margin: 10px 0 0; font-size: .82rem; color: var(--muted); }

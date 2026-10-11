@@ -236,19 +236,31 @@
 
 <!-- ============ PANEL DEL DUEÑO DE LA SALA ============ -->
 <main id="view-panel" hidden>
-  <div class="panel">
-    <div class="panel-head">
-      <h2>🎛️ Mi sala de ensayo</h2>
-      <button class="btn btn-sm" id="btn-exit-panel">← Volver</button>
+  <header class="admin-head">
+    <span class="admin-head-ico">🎛️</span>
+    <div class="admin-head-txt">
+      <h1>Mi sala de ensayo</h1>
+      <p class="muted small">Panel del dueño de la sala</p>
     </div>
-    <div id="panel-estado"></div>
-    <nav class="admin-tabs">
-      <button class="admin-tab active" data-ptab="sala">🏠 Mi sala</button>
-      <button class="admin-tab" data-ptab="disponibilidad">🕐 Disponibilidad</button>
-      <button class="admin-tab" data-ptab="reservas">📲 Reservas</button>
-      <button class="admin-tab" data-ptab="datos">👤 Mis datos</button>
-    </nav>
-  </div>
+    <button class="btn btn-sm" id="btn-exit-panel">← Volver</button>
+  </header>
+  <div id="panel-estado"></div>
+  <nav class="admin-tabs" aria-label="Secciones de la sala">
+    <button class="admin-tab admin-tab-inicio" data-ptab="inicio">Inicio</button>
+    <span class="admin-tab-group">Sala</span>
+    <button class="admin-tab" data-ptab="sala">Mi sala</button>
+    <button class="admin-tab" data-ptab="disponibilidad">Disponibilidad</button>
+    <span class="admin-tab-group">Reservas</span>
+    <button class="admin-tab" data-ptab="reservas">Reservas</button>
+    <span class="admin-tab-group">Dinero</span>
+    <button class="admin-tab" data-ptab="movimientos">Movimientos</button>
+    <span class="admin-tab-group">Cuenta</span>
+    <button class="admin-tab" data-ptab="datos">Mis datos</button>
+  </nav>
+
+  <section id="ptab-inicio" class="tab" hidden>
+    <div id="panel-inicio"></div>
+  </section>
 
   <section id="ptab-sala" class="tab">
     <div class="panel">
@@ -354,6 +366,13 @@
       </div>
       <p id="ps-res-resumen" class="muted"></p>
       <div id="ps-reservas"></div>
+    </div>
+  </section>
+
+  <section id="ptab-movimientos" class="tab" hidden>
+    <div class="panel">
+      <div class="panel-head"><h2>💰 Movimientos</h2></div>
+      <div id="panel-movimientos"></div>
     </div>
   </section>
 

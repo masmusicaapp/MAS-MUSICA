@@ -1016,6 +1016,26 @@ function actualizarMapaSiSeVe() {
 }
 
 /* ---------- Resumen del Inicio: estadísticas ---------- */
+/* Promociones activas en el Inicio público: las ve cualquier usuario, con o sin sesión */
+function promosInicioHTML() {
+  const lista = promosActivas();
+  if (!lista.length) return '';
+  return `<div class="promos-publico">
+    <h3 class="promos-tit">🎉 Promociones y novedades</h3>
+    ${lista.map(p => {
+      const red = safeUrl(p.redes);
+      return `<article class="promo-pub" data-promo-id="${esc(p.id)}" role="button" tabindex="0" title="Ver promoción">
+        ${p.flyer ? `<img class="promo-pub-img" src="${esc(p.flyer)}" alt="Flyer de ${esc(p.titulo)}">` : ''}
+        <div class="promo-pub-txt">
+          <strong>${esc(p.titulo)}</strong>
+          ${p.texto ? `<span>${esc(p.texto)}</span>` : ''}
+          ${red ? `<a class="promo-pub-red" href="${esc(red)}" target="_blank" rel="noopener">🔗 Ver en redes</a>` : ''}
+        </div>
+      </article>`;
+    }).join('')}
+  </div>`;
+}
+
 function renderResumenInicio() {
   const box = $('#inicio-resumen');
   if (!box || !state) return;
@@ -1035,6 +1055,8 @@ function renderResumenInicio() {
       <div class="stat"><span>Próximos 7 días</span><strong>${semana}</strong></div>
       <div class="stat"><span>Mis reservas</span><strong>${proximas}</strong></div>
     </div>
+
+    ${promosInicioHTML()}
 
     ${!yo ? `<div class="row wrap"><button class="btn btn-sm" id="sum-login">👤 Iniciar sesión</button></div>` : ''}`;
 }
@@ -2890,7 +2912,7 @@ function modalTerminos() {
 }
 
 /* ---------- Panel del dueño de la sala ---------- */
-let panelTab = 'sala';
+let panelTab = 'inicio';
 let panelDatos = null;
 let panelLogoTmp = '';
 let panelPortadaTmp = '';
@@ -2927,10 +2949,204 @@ async function cargarPanel() {
 function renderPanelTab(tab) {
   panelTab = tab;
   $$('.admin-tab[data-ptab]').forEach(b => b.classList.toggle('active', b.dataset.ptab === tab));
-  ['sala', 'disponibilidad', 'reservas', 'datos'].forEach(t => { $('#ptab-' + t).hidden = t !== tab; });
+  ['inicio', 'sala', 'disponibilidad', 'reservas', 'movimientos', 'datos'].forEach(t => { $('#ptab-' + t).hidden = t !== tab; });
   if (!panelDatos) return;
   renderPanelEstado();
-  ({ sala: renderPanelSala, disponibilidad: renderPanelDisponibilidad, reservas: renderPanelReservas, datos: renderPanelDatos }[tab])();
+  ({ inicio: renderPanelInicio, sala: renderPanelSala, disponibilidad: renderPanelDisponibilidad, reservas: renderPanelReservas, movimientos: renderPanelMovimientos, datos: renderPanelDatos }[tab])();
+}
+
+/* Inicio del panel de sala: resumen del día de su sala */
+function renderPanelInicio() {
+  const cont = $('#panel-inicio');
+  if (!cont) return;
+  const hoy = todayStr();
+  const todas = (panelDatos.reservas || []).filter(r => r.estado !== 'cancelada');
+  const lista = todas.filter(r => r.date === hoy).sort((a, b) => a.start.localeCompare(b.start));
+  const ingresos = lista.reduce((s, r) => s + precioReserva(r), 0);
+  const pendPago = lista.filter(r => r.estado === 'pendiente_pago').length;
+  const semana = todas.filter(r => r.date > hoy && r.date <= addDaysStr(hoy, 7)).length;
+  const promos = promosActivas();
+  const fechaTxt = new Date().toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' });
+
+  cont.innerHTML = `
+    <div class="inicio-saludo">
+      <h2>${esc(panelDatos.room ? panelDatos.room.name : 'Mi sala')}</h2>
+      <p class="muted small">${esc(fechaTxt)}</p>
+    </div>
+
+    <div class="admin-stats inicio-stats">
+      <div class="stat"><span>Reservas hoy</span><b>${lista.length}</b></div>
+      <div class="stat"><span>Ingresos de hoy</span><b>${fmtMoney(ingresos)}</b></div>
+      <div class="stat"><span>Pendientes de pago</span><b>${pendPago}</b></div>
+      <div class="stat"><span>Próximos 7 días</span><b>${semana}</b></div>
+    </div>
+
+    <div class="inicio-grid">
+      <section class="inicio-card">
+        <h3>Reservas de hoy</h3>
+        ${lista.length ? `<ul class="inicio-prox">${lista.slice(0, 6).map(r => `
+          <li><time>${esc(r.start)}–${esc(r.end)}</time><span class="nom">${esc(r.name)}</span><span class="sala">${esc(r.phone || '')}</span></li>`).join('')}</ul>`
+          : '<p class="muted small">No hay reservas para hoy.</p>'}
+        <div class="inicio-pie"><button class="btn btn-sm" data-goto-ptab="reservas">Ver todas las reservas</button></div>
+      </section>
+
+      <section class="inicio-card">
+        <h3>Accesos rápidos</h3>
+        <div class="inicio-links">
+          <button class="inicio-link" data-goto-ptab="sala"><span>Mi sala</span><i>›</i></button>
+          <button class="inicio-link" data-goto-ptab="disponibilidad"><span>Disponibilidad</span><i>›</i></button>
+          <button class="inicio-link" data-goto-ptab="reservas"><span>Reservas</span><i>›</i></button>
+          <button class="inicio-link" data-goto-ptab="movimientos"><span>Movimientos</span><i>›</i></button>
+          <button class="inicio-link" data-goto-ptab="datos"><span>Mis datos</span><i>›</i></button>
+        </div>
+      </section>
+
+      <section class="inicio-card ancha">
+        <h3>🎉 Promociones activas <span class="muted small">(${promos.length})</span></h3>
+        ${promos.length ? promos.map(p => `
+          <div class="promo-admin-card">
+            ${p.flyer ? `<img class="promo-thumb" src="${esc(p.flyer)}" alt="Flyer de ${esc(p.titulo)}">` : ''}
+            <div class="res-info">
+              <strong>${esc(p.titulo)}</strong>
+              <div class="muted small">${esc(p.texto)}</div>
+              ${safeUrl(p.redes) ? `<div class="small">🔗 <a href="${esc(safeUrl(p.redes))}" target="_blank" rel="noopener">Ver en redes</a></div>` : ''}
+            </div>
+          </div>`).join('')
+          : '<p class="muted small">No hay promociones activas en este momento.</p>'}
+      </section>
+    </div>`;
+
+  cont.onclick = e => {
+    const g = e.target.closest('[data-goto-ptab]');
+    if (g) renderPanelTab(g.dataset.gotoPtab);
+  };
+}
+
+/* ---------- Movimientos y resumen mensual de la sala ---------- */
+let movMes = todayStr().slice(0, 7);   /* 'AAAA-MM' */
+
+const estadoMov = r => r.estado === 'cancelada' ? 'Cancelada' : r.estado === 'pendiente_pago' ? 'Pendiente de pago' : 'Confirmada';
+const horasMov = r => (toMin(r.end) - toMin(r.start)) / 60;
+const montoMov = r => horasMov(r) * (panelDatos && panelDatos.room ? panelDatos.room.price : 0);
+const fmtFechaCorta = s => { const [y, m, d] = String(s).split('-'); return `${d}/${m}/${y}`; };
+const shiftMes = (mes, n) => { const [y, m] = mes.split('-').map(Number); const d = new Date(y, m - 1 + n, 1); return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}`; };
+const etiquetaMes = mes => new Date(mes + '-01T12:00:00').toLocaleDateString('es-AR', { month: 'long', year: 'numeric' });
+
+function movimientosDelMes(mes) {
+  return (panelDatos.reservas || [])
+    .filter(r => String(r.date || '').startsWith(mes))
+    .sort((a, b) => (a.date + a.start).localeCompare(b.date + b.start));
+}
+
+function resumenMovimientos(lista) {
+  const vivas = lista.filter(r => r.estado !== 'cancelada');
+  const canc = lista.filter(r => r.estado === 'cancelada');
+  const pend = vivas.filter(r => r.estado === 'pendiente_pago');
+  const conf = vivas.filter(r => r.estado !== 'pendiente_pago');
+  const suma = arr => arr.reduce((s, r) => s + montoMov(r), 0);
+  return {
+    reservas: vivas.length,
+    bruto: suma(vivas),
+    horas: vivas.reduce((s, r) => s + horasMov(r), 0),
+    confirmadas: conf.length, montoConfirmado: suma(conf),
+    pendientes: pend.length, montoPendiente: suma(pend),
+    canceladas: canc.length, montoCancelado: suma(canc),
+  };
+}
+
+function renderPanelMovimientos() {
+  const cont = $('#panel-movimientos');
+  if (!cont || !panelDatos) return;
+  const lista = movimientosDelMes(movMes);
+  const R = resumenMovimientos(lista);
+  const hoyMes = todayStr().slice(0, 7);
+
+  cont.innerHTML = `
+    <div class="mov-bar">
+      <div class="mov-nav">
+        <button class="btn btn-sm" data-mes="-1" aria-label="Mes anterior">‹</button>
+        <strong class="mov-mes">${esc(etiquetaMes(movMes))}</strong>
+        <button class="btn btn-sm" data-mes="1" aria-label="Mes siguiente" ${movMes >= hoyMes ? 'disabled' : ''}>›</button>
+      </div>
+      <button class="btn btn-primary btn-sm" data-descargar-mes>⬇ Descargar Excel</button>
+    </div>
+
+    <div class="admin-stats mov-stats">
+      <div class="stat"><span>Reservas del mes</span><b>${R.reservas}</b></div>
+      <div class="stat"><span>Ingreso bruto</span><b>${fmtMoney(R.bruto)}</b></div>
+      <div class="stat"><span>Confirmado</span><b>${fmtMoney(R.montoConfirmado)}</b></div>
+      <div class="stat"><span>Pendiente de pago</span><b style="color:var(--warn)">${fmtMoney(R.montoPendiente)}</b></div>
+      <div class="stat"><span>Canceladas</span><b>${R.canceladas}</b></div>
+    </div>
+
+    <div class="mov-wrap">
+      <table class="mov-table">
+        <thead><tr><th>Fecha</th><th>Horario</th><th>Cliente</th><th class="num">Horas</th><th class="num">Monto</th><th>Estado</th></tr></thead>
+        <tbody>${lista.length ? lista.map(r => {
+          const cls = r.estado === 'cancelada' ? 'off' : r.estado === 'pendiente_pago' ? 'pend' : 'ok';
+          return `<tr class="${r.estado === 'cancelada' ? 'anulada' : ''}">
+            <td>${esc(fmtFechaCorta(r.date))}</td>
+            <td>${esc(r.start)}–${esc(r.end)}</td>
+            <td>${esc(r.name)}</td>
+            <td class="num">${horasMov(r).toString().replace('.', ',')}</td>
+            <td class="num">${fmtMoney(r.estado === 'cancelada' ? 0 : montoMov(r))}</td>
+            <td><span class="mov-estado ${cls}">${estadoMov(r)}</span></td>
+          </tr>`;
+        }).join('') : `<tr><td colspan="6" class="muted">No hay movimientos en este mes.</td></tr>`}</tbody>
+      </table>
+    </div>
+    <p class="mov-foot">El ingreso bruto suma las reservas no canceladas (horas × tarifa de la sala). Las canceladas no suman.</p>`;
+
+  cont.onclick = e => {
+    const m = e.target.closest('[data-mes]');
+    if (m && !m.disabled) { movMes = shiftMes(movMes, Number(m.dataset.mes)); return renderPanelMovimientos(); }
+    if (e.target.closest('[data-descargar-mes]')) descargarMovimientosExcel();
+  };
+}
+
+/* Archivo CSV con separador ";" y BOM: Excel lo abre con las columnas ya separadas */
+function descargarMovimientosExcel() {
+  const lista = movimientosDelMes(movMes);
+  const R = resumenMovimientos(lista);
+  const room = panelDatos.room || {};
+  const nf = n => (Math.round(Number(n) * 100) / 100).toFixed(2).replace('.', ',');
+  const celda = v => { const s = String(v ?? ''); return /[;"\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+
+  const filas = [
+    ['Resumen mensual de movimientos'],
+    ['Sala', room.name || ''],
+    ['Mes', etiquetaMes(movMes)],
+    [],
+    ['Concepto', 'Cantidad', 'Monto'],
+    ['Reservas del mes (sin canceladas)', R.reservas, nf(R.bruto)],
+    ['Confirmadas', R.confirmadas, nf(R.montoConfirmado)],
+    ['Pendientes de pago', R.pendientes, nf(R.montoPendiente)],
+    ['Canceladas (no suman)', R.canceladas, nf(R.montoCancelado)],
+    ['Horas reservadas', nf(R.horas), ''],
+    [],
+    ['Detalle de reservas'],
+    ['Fecha', 'Horario', 'Cliente', 'Teléfono', 'Horas', 'Tarifa por hora', 'Monto', 'Estado'],
+    ...lista.map(r => [
+      fmtFechaCorta(r.date), `${r.start}-${r.end}`, r.name, r.phone || '',
+      nf(horasMov(r)), nf(room.price || 0),
+      nf(r.estado === 'cancelada' ? 0 : montoMov(r)), estadoMov(r),
+    ]),
+    [],
+    ['Total del mes (sin canceladas)', '', '', '', '', '', nf(R.bruto), ''],
+  ];
+
+  const csv = '\uFEFF' + filas.map(f => f.map(celda).join(';')).join('\r\n');
+  const slug = (room.name || 'sala').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9]+/g, '-').toLowerCase();
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `movimientos-${slug}-${movMes}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  toast('Archivo descargado ✓', 'ok');
 }
 
 function renderPanelEstado() {
@@ -3550,6 +3766,9 @@ function wirePublic() {
   /* Resumen del Inicio: accesos */
   $('#inicio-resumen').onclick = e => {
     if (e.target.closest('#sum-login')) return pantallaAuth('login');
+    if (e.target.closest('a')) return;
+    const pp = e.target.closest('[data-promo-id]');
+    if (pp) return abrirPromo(pp.dataset.promoId);
     const promo = e.target.closest('[data-promo]');
     if (promo) {
       const p = (state.promociones || []).find(x => x.id === promo.dataset.promo);
