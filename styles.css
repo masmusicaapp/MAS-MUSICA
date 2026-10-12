@@ -86,6 +86,9 @@
   }
 }
 * { box-sizing: border-box; }
+/* Ocultar la barra de desplazamiento en toda la app (se sigue deslizando igual) */
+* { scrollbar-width: none; -ms-overflow-style: none; }
+*::-webkit-scrollbar { width: 0 !important; height: 0 !important; display: none; }
 [hidden] { display: none !important; }
 body {
   margin: 0;
@@ -98,6 +101,17 @@ body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+
+/* Marca de agua: logo fijo y muy sutil detrás de todo el contenido */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: url('assets/marca-agua.png') center / min(440px, 82vw) no-repeat;
+  opacity: .06;
 }
 button { font-family: inherit; cursor: pointer; }
 input, select { font-family: inherit; }
@@ -116,7 +130,7 @@ input, select { font-family: inherit; }
 }
 .brand { display: flex; align-items: center; flex: 0 0 auto; }
 .brand strong { color: var(--accent2); }
-.brand-logo { width: 220px; height: auto; object-fit: contain; }
+.brand-logo { width: 190px; height: auto; object-fit: contain; }
 
 /* Sala actual: su logo en la esquina superior derecha */
 .sala-actual {
@@ -275,15 +289,12 @@ h3.sub {
 label { display: block; margin: 10px 0; font-size: .9rem; color: var(--muted); }
 label.check { display: flex; align-items: center; gap: 8px; color: var(--text); margin: 0; }
 label.check input[type="checkbox"] { width: 18px; height: 18px; flex: 0 0 auto; accent-color: var(--accent); }
-input, select, textarea {
+input, select {
   width: 100%; margin-top: 5px;
   background: var(--panel2); border: 1px solid var(--line); border-radius: 9px;
   color: var(--text); padding: 9px 11px; font-size: .95rem;
-  font-family: inherit;
-  box-sizing: border-box;
 }
-textarea { resize: vertical; min-height: 80px; }
-input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); }
+input:focus, select:focus { outline: 2px solid var(--accent); }
 
 .success { text-align: center; padding: 20px 0; display: grid; gap: 8px; justify-items: center; }
 .ok-mark {
@@ -696,7 +707,7 @@ main {
   pointer-events: none;
   transition: transform .34s cubic-bezier(.22, .9, .28, 1), opacity .26s ease, visibility 0s linear .34s;
 }
-.dock-container[hidden], #dock-container[hidden] { display: none !important; visibility: hidden !important; }
+.dock-container[hidden] { display: none; }
 /* Al abrir el panel de notificaciones o de ajustes la barra inferior se oculta y vuelve al cerrar */
 #notif-drop.open ~ .dock-container, #ajustes-drop.open ~ .dock-container {
   opacity: 0;
@@ -754,6 +765,23 @@ main {
 .home-indicator {
   width: 120px; height: 4px;
   background: var(--line); border-radius: 9999px; margin-top: 8px;
+}
+
+/* En el Mapa (celular) la barra de 5 opciones va transparente: los íconos
+   flotan sobre el mapa, sin cápsula de fondo. En escritorio el riel no cambia. */
+@media (max-width: 959px) {
+  body.nav-mapa .bottom-nav {
+    background: transparent;
+    border-color: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+  body.nav-mapa .nav-btn,
+  body.nav-mapa .nav-btn-center { text-shadow: 0 1px 3px rgba(0, 0, 0, .6); }
+  body.nav-mapa .nav-btn svg { filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .55)); }
+  body.nav-mapa .nav-circle-btn { border-color: transparent; }
+  body.nav-mapa .home-indicator { background: transparent; }
 }
 
 /* ---------- Visor de fotos (arrastrar / zoom) ---------- */
@@ -1128,28 +1156,51 @@ main {
   flex-direction: column;
   align-items: stretch;
 }
-.auth-logo { width: min(260px, 78vw); margin: 4px auto 26px; object-fit: contain; align-self: center; }
-.auth-titulo { display: flex; flex-direction: column; gap: 12px; }
-.auth-title { margin: 0; text-align: left; font-size: clamp(2.4rem, 13vw, 3.25rem); line-height: .98; }
-.auth-sub { margin: 0; font-size: 17px; line-height: 1.4; font-weight: 500; color: var(--muted); }
-.auth-roles { display: flex; flex-direction: column; gap: 14px; margin: 26px 0 18px; }
-.auth-rol {
-  display: flex; align-items: center; gap: 16px;
-  background: var(--panel); border: 2px solid transparent;
-  border-radius: 20px; padding: 20px; cursor: pointer;
-  color: var(--text); text-align: left;
-  transition: transform .12s, filter .15s;
+@keyframes authIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+.auth-logo { width: min(230px, 70vw); margin: 6px auto 18px; object-fit: contain; align-self: center; }
+.auth-titulo { display: flex; flex-direction: column; gap: 10px; }
+.auth-title { margin: 0; text-align: left; font-size: clamp(2.1rem, 11vw, 2.9rem); line-height: .98; }
+.auth-sub { margin: 6px 0 0; font-size: 16px; line-height: 1.4; font-weight: 500; color: var(--muted); }
+
+/* Tarjeta contenedora de cada paso */
+.auth-card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  padding: 22px 18px 20px;
+  box-shadow: var(--sombra);
+  animation: authIn .26s ease both;
 }
-.auth-rol:hover { transform: translateY(-2px); filter: brightness(1.1); }
-.auth-svg { flex: none; }
-.auth-rol-txt { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-.auth-rol strong { font-size: 1.3rem; font-weight: 700; }
-.auth-rol-txt > span { font-size: .95rem; line-height: 1.35; font-weight: 500; color: var(--muted); }
-.auth-rol-fijo { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+
+/* Botones grandes para elegir el perfil */
+.auth-roles { display: flex; flex-direction: column; gap: 14px; margin: 20px 0 16px; }
+.auth-rol {
+  display: flex; align-items: center; gap: 14px;
+  background: var(--panel2); border: 2px solid transparent;
+  border-radius: 18px; padding: 16px; cursor: pointer;
+  color: var(--text); text-align: left;
+  transition: transform .12s, filter .15s, border-color .15s;
+}
+.auth-rol:hover { transform: translateY(-2px); filter: brightness(1.08); }
+.auth-rol-fijo {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: var(--on-accent); border-color: transparent;
+  box-shadow: 0 8px 22px rgba(0, 160, 56, .35);
+}
+.auth-rol-lar { border-color: var(--line); }
+.auth-rol-lar:hover { border-color: var(--accent); }
+.auth-rol-ic { width: 52px; height: 52px; flex: none; border-radius: 15px; display: grid; place-items: center; background: var(--soft2); }
+.auth-rol-fijo .auth-rol-ic { background: rgba(11, 21, 34, .16); }
+.auth-rol-lar .auth-rol-ic { background: var(--tinte); }
+.auth-rol-ic svg { width: 28px; height: 28px; }
+.auth-rol-txt { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1 1 auto; }
+.auth-rol strong { font-size: 1.18rem; font-weight: 700; }
+.auth-rol-txt > span { font-size: .9rem; line-height: 1.35; font-weight: 500; color: var(--muted); }
 .auth-rol-fijo strong { color: var(--on-accent); }
 .auth-rol-fijo .auth-rol-txt > span { color: rgba(11, 21, 34, .78); font-weight: 600; }
-.auth-rol-lar { background: var(--panel); border-color: var(--accent); }
-.auth-cuenta { margin: 4px 0 8px; text-align: center; font-size: 1rem; font-weight: 500; color: var(--muted); }
+.auth-rol-go { font-size: 1.7rem; line-height: 1; opacity: .5; flex: none; }
+.auth-cuenta { margin: 6px 0 4px; text-align: center; font-size: 1rem; font-weight: 500; color: var(--muted); }
+.auth-redes { margin-top: 14px; text-align: center; }
 .auth-link {
   background: none; border: none; padding: 10px 4px;
   color: var(--accent2); font-size: 1rem; font-weight: 700;
@@ -1160,13 +1211,79 @@ main {
   color: var(--muted); font-size: .8rem; margin: 6px 0 14px;
 }
 .auth-div::before, .auth-div::after { content: ''; flex: 1; height: 1px; background: var(--line); }
-.auth-form { display: flex; flex-direction: column; gap: 12px; margin-top: 14px; }
+.auth-volver { align-self: flex-start; margin-bottom: 10px; }
+.auth-nota { margin-top: 14px; }
+
+/* Botones de contacto en la pantalla de ayuda */
+.auth-ayuda-contacto { gap: 8px; }
+.auth-ayuda-contacto .btn {
+  background: var(--panel2); border: 1.5px solid var(--line); color: var(--text);
+  border-radius: 999px; padding: 8px 14px; text-decoration: none;
+}
+.auth-ayuda-contacto .btn:hover { border-color: var(--accent); color: var(--accent); }
+
+/* Panel de pedidos de ayuda (administración) */
+.ayuda-item { margin-bottom: 10px; }
+.ayuda-item.ayuda-resuelta { opacity: .6; }
+.ayuda-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.ayuda-msj { font-style: italic; opacity: .8; }
+
+/* Formularios */
+.auth-form { display: flex; flex-direction: column; gap: 14px; margin-top: 16px; }
 .auth-form .check { margin: 0; }
-.auth-form textarea { resize: vertical; }
+
+/* Campos con validación */
+.campo { display: block; margin: 0; }
+.campo-lbl { display: block; font-size: .85rem; font-weight: 600; color: var(--label); margin-bottom: 6px; letter-spacing: .2px; }
+.campo-lbl .req { color: var(--danger); }
+.campo input, .campo textarea, .campo select {
+  width: 100%; margin-top: 0;
+  background: var(--panel2); border: 1.5px solid var(--line); border-radius: 12px;
+  color: var(--text); padding: 12px 13px; font-size: 1rem;
+  transition: border-color .15s, box-shadow .15s;
+}
+.campo textarea { resize: vertical; }
+.campo input::placeholder, .campo textarea::placeholder { color: var(--label); opacity: .7; }
+.campo input:focus, .campo textarea:focus, .campo select:focus {
+  outline: none; border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(0, 160, 56, .22);
+}
+.campo.error input, .campo.error textarea { border-color: var(--danger); }
+.campo.error input:focus, .campo.error textarea:focus { box-shadow: 0 0 0 3px rgba(229, 72, 77, .22); }
+.campo.ok input, .campo.ok textarea { border-color: var(--ok); }
+.campo-msg { display: none; font-size: .82rem; font-weight: 600; margin-top: 6px; }
+.campo.error .campo-msg { display: block; color: var(--danger); }
+.campo.ok .campo-msg { display: block; color: var(--ok); }
+.campo.ok .campo-msg::before { content: '✓ '; }
+.campo.checking .campo-msg { display: block; color: var(--muted); }
+
+/* Contraseña: mostrar / ocultar */
+.pass-wrap { position: relative; display: block; }
+.pass-wrap input { padding-right: 46px; }
+.pass-eye {
+  position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+  background: none; border: none; padding: 8px; font-size: 1.05rem; line-height: 1;
+  color: var(--muted); border-radius: 8px;
+}
+.pass-eye:hover { background: var(--soft2); }
+
+/* Medidor de fuerza de la contraseña */
+.fuerza { display: flex; align-items: center; gap: 5px; margin-top: 7px; }
+.fuerza i { flex: 1 1 0; height: 4px; border-radius: 999px; background: var(--line); transition: background .2s; }
+.fuerza[data-n="1"] i:nth-child(-n+1) { background: var(--danger); }
+.fuerza[data-n="2"] i:nth-child(-n+2) { background: var(--warn); }
+.fuerza[data-n="3"] i:nth-child(-n+3) { background: var(--accent2); }
+.fuerza[data-n="4"] i { background: var(--ok); }
+.fuerza-txt { margin-left: 6px; font-size: .76rem; font-weight: 700; color: var(--muted); white-space: nowrap; }
+
+/* Foto de perfil / logo */
 .auth-foto { display: flex; align-items: center; gap: 14px; }
 .auth-foto .sala-foto-edit { margin: 0; }
-.auth-volver { align-self: flex-start; margin-bottom: 8px; }
-.auth-nota { margin-top: 14px; }
+.auth-foto-txt { display: flex; flex-direction: column; gap: 4px; }
+
+/* Botón grande de envío */
+.btn-lg { padding: 14px; font-size: 1.05rem; border-radius: 12px; }
+
 .center { text-align: center; }
 .dias-sel { display: flex; flex-wrap: wrap; gap: 10px; }
 .dias-sel .check { margin: 0; }
@@ -1242,6 +1359,20 @@ main {
 }
 .notif-txt { line-height: 1; }
 .btn-notif .badge-notif { top: -6px; right: -6px; border: 2px solid var(--hdr); }
+/* Logo de Instagram en la cabecera: chip redondo con el isologotipo real, a juego con el diseño */
+.btn-ig {
+  position: relative; flex: 0 0 auto;
+  width: 42px; height: 42px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+  background: var(--panel2);
+  border: 1px solid var(--line);
+  cursor: pointer;
+  transition: border-color .15s, box-shadow .15s, transform .12s;
+}
+.btn-ig svg { width: 25px; height: 25px; display: block; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .25)); }
+.btn-ig:hover { transform: translateY(-1px); border-color: var(--accent); box-shadow: 0 4px 14px rgba(0, 160, 56, .28); }
+.btn-ig:active { transform: scale(.94); }
 /* Con avisos sin leer: acento verde de la app + campana que se sacude */
 .btn-notif.tiene-nuevas {
   border-color: var(--accent);
@@ -1577,6 +1708,14 @@ main {
   margin-bottom: 10px;
 }
 .leaflet-container { font: inherit; background: var(--bg); }
+/* En tema oscuro, el mapa (OpenStreetMap) se oscurece sin cambiar de proveedor */
+:root[data-tema="oscuro"] .leaflet-tile-pane,
+:root[data-tema="auto"] .leaflet-tile-pane {
+  filter: invert(1) hue-rotate(180deg) brightness(.95) contrast(.9) saturate(.7);
+}
+@media (prefers-color-scheme: light) {
+  :root[data-tema="auto"] .leaflet-tile-pane { filter: none; }
+}
 .leaflet-popup-content-wrapper {
   background: var(--panel);
   color: var(--text);
@@ -1624,22 +1763,33 @@ main {
 /* Marcadores con el logo de la sala */
 .mk-wrap { background: transparent; border: none; }
 .mk-sala {
-  width: 46px; height: 46px; border-radius: 50%;
+  width: 28px; height: 28px; border-radius: 50%;
   background: linear-gradient(135deg, var(--panel2), var(--panel));
   border: 2px solid var(--accent);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, .55);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, .5), 0 0 0 2px rgba(255, 255, 255, .85);
   display: grid; place-items: center; overflow: hidden;
-  font-size: 1.2rem;
+  font-size: .9rem;
   transition: transform .15s;
 }
 .mk-sala img { width: 100%; height: 100%; object-fit: cover; }
-.mk-sala:hover { transform: scale(1.08); }
+.mk-sala:hover { transform: scale(1.12); }
+/* Sala sin logo propio: círculo verde con el logo de Más Música en negro */
+.mk-sala.mk-marca { background: var(--accent); border-color: var(--accent); }
+.mk-sala.mk-marca img { width: 16px; height: 16px; object-fit: contain; }
 .mk-res {
-  width: 32px; height: 32px; border-radius: 50%;
+  width: 24px; height: 24px; border-radius: 50%;
   background: var(--accent); border: 2px solid #fff;
-  display: grid; place-items: center; font-size: .95rem;
+  display: grid; place-items: center; font-size: .72rem;
   box-shadow: 0 3px 10px rgba(0, 0, 0, .5);
 }
+/* Tu ubicación: círculo verde con el logo de Más Música en negro */
+.mk-yo {
+  width: 24px; height: 24px; border-radius: 50%;
+  background: var(--accent); border: 2px solid #fff;
+  display: grid; place-items: center; overflow: hidden;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, .5);
+}
+.mk-yo img { width: 14px; height: 14px; object-fit: contain; display: block; }
 
 /* Contenido del popup */
 .pop { display: flex; flex-direction: column; gap: 3px; min-width: 190px; max-width: 240px; }
@@ -1691,6 +1841,351 @@ main {
 .pop-acciones a.btn { text-decoration: none; }
 .mapa-acciones { margin: 10px 0; align-items: center; }
 .mapa-ayuda { margin: 10px 0 0; }
+
+/* ---------- Lista de salas junto al mapa ---------- */
+.mapa-lista { margin-top: 16px; }
+.mapa-lista .sub { margin: 0 0 10px; }
+.mapa-lista-items { display: grid; gap: 10px; grid-template-columns: 1fr; }
+/* Encabezado de la lista: título + controles ‹ › (los controles son solo de escritorio) */
+.mapa-lista-head { margin: 0 0 10px; }
+.mapa-lista-head .sub { margin: 0; }
+.mapa-lista-ctrl { display: none; }
+.mapa-item {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--panel2); border: 1px solid var(--line);
+  border-radius: 12px; padding: 10px 12px;
+  transition: border-color .15s, transform .15s;
+}
+.mapa-item[data-mapa-item] { cursor: pointer; }
+.mapa-item[data-mapa-item]:hover { border-color: var(--accent); transform: translateY(-1px); }
+.mapa-item.sin-punto { opacity: .85; }
+.mapa-item-foto {
+  width: 52px; height: 52px; flex: 0 0 52px; border-radius: 50%;
+  overflow: hidden; display: grid; place-items: center; font-size: 1.4rem;
+  background: linear-gradient(135deg, var(--panel2), var(--panel));
+  border: 2px solid var(--accent);
+}
+.mapa-item-foto img { width: 100%; height: 100%; object-fit: cover; }
+.mapa-item-info { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.mapa-item-info strong { font-size: .95rem; }
+.mapa-item-info .small { font-size: .78rem; }
+.mapa-item-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.mapa-item-dist {
+  flex: 0 0 auto; font-size: .72rem; font-weight: 700; color: var(--accent2);
+  background: rgba(23, 192, 91, .14); border: 1px solid rgba(23, 192, 91, .35);
+  border-radius: 999px; padding: 2px 9px; white-space: nowrap;
+}
+.mapa-item-dir { overflow: hidden; text-overflow: ellipsis; }
+.mapa-item-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.mapa-item-acciones { display: flex; flex-direction: column; gap: 6px; align-items: stretch; }
+.mapa-item-acciones a.btn { text-decoration: none; text-align: center; }
+@media (min-width: 720px) {
+  .mapa-lista-items { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
+}
+
+/* ---------- Hoja de salas del mapa ---------- */
+/* En escritorio la lista queda debajo del mapa, como siempre */
+.mapa-hoja { display: block; }
+.mapa-hoja-btn { display: none; }
+.mapa-hoja-cuerpo { display: block; }
+
+/* ---------- Mapa a pantalla completa (celular) ----------
+   El mapa cubre TODA la pantalla; el título, los botones y las 5 opciones
+   flotan por encima. La lista de salas se pliega en una hoja flotante. */
+@media (max-width: 959px) {
+  body.nav-mapa #app-header { display: none; }
+  body.nav-mapa main#view-mapa { padding: 0; max-width: none; overflow: hidden; }
+  body.nav-mapa #view-mapa > .panel {
+    background: none; border: none; border-radius: 0; padding: 0; height: 100%;
+  }
+  body.nav-mapa #mapa {
+    position: fixed; inset: 0;
+    width: 100vw; height: 100vh; height: 100dvh;
+    min-height: 0; max-height: none;
+    border: none; border-radius: 0; z-index: 0;
+  }
+  body.nav-mapa #pane-mapa .mapa-ayuda { display: none; }
+
+  /* Los dos botones del mapa: abajo a la derecha, apilados, junto a las 5 opciones */
+  body.nav-mapa #view-mapa .panel-head {
+    position: fixed;
+    right: max(14px, env(safe-area-inset-right));
+    bottom: calc(98px + env(safe-area-inset-bottom));
+    top: auto; left: auto;
+    z-index: 6; margin: 0; padding: 0;
+    background: none; border: none; box-shadow: none;
+    -webkit-backdrop-filter: none; backdrop-filter: none;
+    flex-direction: column; align-items: flex-end;
+  }
+  body.nav-mapa #view-mapa .panel-head h2 { display: none; }
+  body.nav-mapa #view-mapa .panel-head .row { flex-direction: column; gap: 10px; margin: 0; flex-wrap: nowrap; }
+  body.nav-mapa #view-mapa .panel-head .btn {
+    width: 44px; height: 44px; padding: 0; border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 1.15rem; line-height: 1; color: var(--text);
+    background: var(--pop);
+    -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+    border: 1px solid var(--line);
+    box-shadow: 0 10px 26px rgba(0, 0, 0, .45), inset 0 1px 0 rgba(255, 255, 255, .07);
+    transition: transform .12s ease, border-color .15s ease, color .15s ease;
+  }
+  body.nav-mapa #view-mapa .panel-head .btn:hover { border-color: var(--accent); color: var(--accent2); }
+  body.nav-mapa #view-mapa .panel-head .btn:active { transform: scale(.92); }
+  body.nav-mapa .mapa-btn-txt { display: none; }
+  body.nav-mapa #mapa-fallback:not([hidden]) {
+    position: fixed; left: 16px; right: 16px;
+    top: calc(70px + env(safe-area-inset-top));
+    z-index: 6; margin: 0; padding: 14px;
+    background: var(--pop); border: 1px solid var(--line); border-radius: 14px;
+  }
+
+  /* Hoja de salas flotante, un poco más separada del logo central del mapa */
+  body.nav-mapa #mapa-hoja {
+    position: fixed; left: 12px; right: 12px;
+    bottom: calc(112px + env(safe-area-inset-bottom));
+    z-index: 6;
+    display: flex; flex-direction: column; align-items: stretch;
+    pointer-events: none;
+  }
+  /* Tirador: solo una línea horizontal (sin recuadro) para deslizar y ver las salas */
+  body.nav-mapa .mapa-hoja-btn {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    pointer-events: auto; align-self: center;
+    padding: 13px 44px; margin: 0;
+    background: none; border: none; box-shadow: none;
+    -webkit-backdrop-filter: none; backdrop-filter: none;
+    cursor: grab; touch-action: none;
+  }
+  body.nav-mapa .mapa-hoja-btn:active { cursor: grabbing; }
+  body.nav-mapa .mapa-hoja-linea {
+    display: block; width: 54px; height: 5px; border-radius: 999px;
+    background: var(--muted); opacity: .9;
+    box-shadow: 0 1px 7px rgba(0, 0, 0, .6);
+    transition: width .16s ease, background .16s ease, opacity .16s ease;
+  }
+  body.nav-mapa .mapa-hoja-btn:hover .mapa-hoja-linea,
+  body.nav-mapa .mapa-hoja-btn:active .mapa-hoja-linea {
+    width: 72px; background: var(--accent2); opacity: 1;
+  }
+  /* La hoja: crece siguiendo el dedo (altura animada) */
+  body.nav-mapa .mapa-hoja-cuerpo {
+    pointer-events: auto;
+    width: 100%; max-height: 0; overflow: hidden;
+    margin-bottom: 0;
+    transition: max-height .3s cubic-bezier(.22, .61, .36, 1), margin-bottom .3s ease;
+  }
+  body.nav-mapa #mapa-hoja.abierta .mapa-hoja-cuerpo { margin-bottom: 10px; }
+  body.nav-mapa .mapa-hoja-card {
+    padding: 14px;
+    max-height: 46vh; overflow-y: auto; overscroll-behavior: contain;
+    background: linear-gradient(180deg, var(--panel2), var(--panel));
+    -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+    border: 1px solid var(--line); border-radius: 22px;
+    box-shadow: 0 18px 46px rgba(0, 0, 0, .55), inset 0 1px 0 rgba(255, 255, 255, .05);
+  }
+  body.nav-mapa #mapa-lista { margin-top: 0; }
+  body.nav-mapa #mapa-sin-ubicacion:not(:empty) { margin-bottom: 10px; }
+  /* Cada sala dentro de la hoja: foto + datos arriba, botones abajo */
+  body.nav-mapa .mapa-item {
+    display: grid;
+    grid-template-columns: 54px 1fr;
+    grid-template-areas: "foto info" "acc acc";
+    align-items: start;
+    gap: 10px 12px;
+    padding: 12px;
+    border-radius: 14px;
+  }
+  body.nav-mapa .mapa-item-foto { grid-area: foto; }
+  body.nav-mapa .mapa-item-info { grid-area: info; gap: 3px; }
+  body.nav-mapa .mapa-item-acciones {
+    grid-area: acc;
+    flex-direction: row; flex-wrap: wrap;
+    gap: 6px; margin-top: 2px; padding-top: 10px;
+    border-top: 1px solid var(--line);
+  }
+  body.nav-mapa .mapa-item-acciones .btn { flex: 1 1 auto; }
+  body.nav-mapa .mapa-item-acciones .btn-primary { flex: 1 1 100%; }
+  /* El contador "n / N" y el botón de ocultar la lista son solo de escritorio */
+  body.nav-mapa .mapa-indice { display: none; }
+  body.nav-mapa #view-mapa #mapa-lista-toggle { display: none; }
+}
+
+/* ---------- Mapa a pantalla completa (escritorio) ----------
+   En pantallas anchas el mapa también cubre toda la ventana: el riel
+   lateral flota sobre el mapa, los botones 📍/🔎 van abajo a la derecha
+   sobre el mapa y la lista de salas es un panel lateral siempre visible. */
+@media (min-width: 960px) {
+  body.nav-mapa #app-header { display: none; }
+  body.nav-mapa main#view-mapa { padding: 0; max-width: none; overflow: hidden; }
+  body.nav-mapa #view-mapa > .panel {
+    background: none; border: none; border-radius: 0; padding: 0; height: 100%;
+  }
+  body.nav-mapa #mapa {
+    position: fixed; inset: 0;
+    width: 100vw; height: 100vh; height: 100dvh;
+    min-height: 0; max-height: none;
+    border: none; border-radius: 0; z-index: 0;
+  }
+  /* Los textos de ayuda quedan ocultos (el mapa es a pantalla completa) */
+  body.nav-mapa #pane-mapa .mapa-ayuda { display: none; }
+
+  /* El riel lateral queda transparente, flotando sobre el mapa */
+  body.nav-mapa .dock-container { background: transparent; }
+  body.nav-mapa .bottom-nav {
+    background: transparent; border-color: transparent; box-shadow: none;
+    -webkit-backdrop-filter: none; backdrop-filter: none;
+  }
+  body.nav-mapa .nav-btn, body.nav-mapa .nav-btn-center {
+    text-shadow: 0 1px 3px rgba(0, 0, 0, .6);
+  }
+  body.nav-mapa .nav-btn svg { filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .55)); }
+
+  /* Control de zoom y créditos de OpenStreetMap: abajo a la izquierda
+     (a la izquierda del panel de salas, afuera del riel) */
+  body.nav-mapa #mapa .leaflet-top.leaflet-left {
+    left: 16px; top: auto; bottom: 64px;
+  }
+  body.nav-mapa #mapa .leaflet-control-attribution {
+    position: fixed;
+    left: 16px; right: auto; bottom: 16px;
+    margin: 0;
+    background: rgba(8, 12, 24, .62); color: rgba(255, 255, 255, .78);
+    border-radius: 999px; padding: 3px 10px; font-size: .7rem;
+  }
+  body.nav-mapa #mapa .leaflet-control-attribution a { color: rgba(255, 255, 255, .9); }
+
+  /* Botones 📍 / 🔎 / ✕ flotantes, a la izquierda del panel de salas.
+     Cuando la lista se oculta, los 3 botones viajan juntos al borde derecho */
+  body.nav-mapa #view-mapa .panel-head {
+    position: fixed;
+    right: calc(min(392px, 35vw) + 32px);
+    bottom: 18px;
+    top: auto; left: auto;
+    z-index: 96; margin: 0; padding: 0;
+    background: none; border: none; box-shadow: none;
+    -webkit-backdrop-filter: none; backdrop-filter: none;
+    flex-direction: column; align-items: flex-end;
+    transition: right .34s cubic-bezier(.22, .9, .28, 1);
+  }
+  body.nav-mapa.salas-oculta #view-mapa .panel-head { right: 16px; }
+  body.nav-mapa #view-mapa .panel-head h2 { display: none; }
+  body.nav-mapa #view-mapa .panel-head .row { flex-direction: column; gap: 10px; margin: 0; flex-wrap: nowrap; }
+  body.nav-mapa #view-mapa .panel-head .btn {
+    width: 48px; height: 48px; padding: 0; border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 1.2rem; line-height: 1; color: var(--text);
+    background: var(--pop);
+    -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+    border: 1px solid var(--line);
+    box-shadow: 0 10px 26px rgba(0, 0, 0, .45), inset 0 1px 0 rgba(255, 255, 255, .07);
+    transition: transform .12s ease, border-color .15s ease, color .15s ease;
+  }
+  body.nav-mapa #view-mapa .panel-head .btn:hover { border-color: var(--accent); color: var(--accent2); }
+  body.nav-mapa #view-mapa .panel-head .btn:active { transform: scale(.92); }
+  body.nav-mapa .mapa-btn-txt { display: none; }
+
+  /* Aviso (mapa sin internet): tarjeta flotante arriba, a la izquierda del panel */
+  body.nav-mapa #mapa-fallback:not([hidden]) {
+    position: fixed; left: auto; right: calc(min(392px, 35vw) + 32px);
+    top: 18px; bottom: auto;
+    z-index: 96; margin: 0; padding: 14px; display: block;
+    background: var(--pop); border: 1px solid var(--line); border-radius: 14px;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, .4);
+  }
+
+  /* Lista de salas: panel lateral derecho (se puede ocultar con el botón ✕) */
+  body.nav-mapa #mapa-hoja {
+    position: fixed;
+    top: 16px; right: 16px; bottom: 16px; left: auto;
+    width: min(392px, 35vw);
+    z-index: 6;
+    display: flex; flex-direction: column; align-items: stretch;
+    pointer-events: none;
+    transition: transform .34s cubic-bezier(.22, .9, .28, 1), opacity .24s ease;
+  }
+  /* Con el botón ✕ la lista se guarda y el mapa queda a pantalla completa */
+  body.nav-mapa.salas-oculta #mapa-hoja {
+    transform: translateX(calc(100% + 28px));
+    opacity: 0;
+    pointer-events: none;
+  }
+  /* Sin tirador en escritorio: el panel queda abierto */
+  body.nav-mapa .mapa-hoja-btn { display: none; }
+  body.nav-mapa .mapa-hoja-cuerpo {
+    pointer-events: auto;
+    width: 100%;
+    flex: 1 1 auto; min-height: 0;
+    max-height: none !important;   /* siempre abierto en escritorio */
+    margin-bottom: 0; overflow: hidden;
+    display: flex; flex-direction: column;
+    background: var(--pop);
+    -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+    border: 1px solid var(--line); border-radius: 18px;
+    box-shadow: 0 18px 46px rgba(0, 0, 0, .5), inset 0 1px 0 rgba(255, 255, 255, .05);
+  }
+  body.nav-mapa .mapa-hoja-card {
+    padding: 14px;
+    max-height: none; overflow: hidden;
+    flex: 1 1 auto; min-height: 0;
+    display: flex; flex-direction: column;
+  }
+
+  /* ---------- Carrusel horizontal de salas (solo escritorio) ----------
+     Las tarjetas se deslizan de costado: con el mouse el arrastre sigue
+     al cursor y con rueda/trackpad funciona el scroll nativo. */
+  body.nav-mapa .mapa-lista { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
+  body.nav-mapa .mapa-lista-head {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    margin: 0 0 10px;
+  }
+  body.nav-mapa .mapa-lista-head .sub {
+    margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  body.nav-mapa .mapa-lista-ctrl { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; }
+  body.nav-mapa .mapa-indice {
+    font-size: .72rem; font-weight: 700; color: var(--muted); letter-spacing: .6px;
+    background: var(--panel2); border: 1px solid var(--line); border-radius: 999px;
+    padding: 2px 10px; white-space: nowrap;
+  }
+  body.nav-mapa .mapa-flecha {
+    width: 32px; height: 32px; flex: 0 0 32px; padding: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 1.2rem; line-height: 1; font-weight: 700;
+    color: var(--text); background: var(--panel2);
+    border: 1px solid var(--line); border-radius: 50%;
+    cursor: pointer; transition: border-color .15s, color .15s, transform .12s;
+  }
+  body.nav-mapa .mapa-flecha:hover:not(:disabled) { border-color: var(--accent); color: var(--accent2); }
+  body.nav-mapa .mapa-flecha:active:not(:disabled) { transform: scale(.9); }
+  body.nav-mapa .mapa-flecha:disabled { opacity: .35; cursor: default; }
+  body.nav-mapa .mapa-lista-items {
+    display: flex; gap: 12px; flex: 1 1 auto; min-height: 0;
+    overflow-x: auto; overflow-y: hidden;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x pan-y;
+    padding: 2px 2px 10px;
+    scrollbar-width: none;
+    user-select: none; -webkit-user-select: none;
+    cursor: grab;
+  }
+  body.nav-mapa .mapa-lista-items::-webkit-scrollbar { display: none; }
+  body.nav-mapa .mapa-item {
+    flex: 0 0 auto;
+    scroll-snap-align: center;
+    display: flex; flex-direction: column; justify-content: space-between;
+    align-items: stretch;
+    width: min(78%, 330px);
+    max-width: none;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, .25);
+  }
+  body.nav-mapa .mapa-item-top { display: flex; align-items: center; gap: 12px; min-width: 0; }
+  body.nav-mapa .mapa-item-acciones {
+    margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line);
+  }
+  body.nav-mapa #mapa-lista { margin-top: 0; }
+  body.nav-mapa #mapa-sin-ubicacion:not(:empty) { margin-bottom: 10px; }
+}
 
 /* ================= RESUMEN DEL INICIO ================= */
 #view-mapa { padding: 12px 14px 30px; }
@@ -1865,8 +2360,8 @@ main {
   .nav-btn { height: clamp(58px, 7.5vh, 76px); font-size: clamp(11px, .2vw + 8.5px, 14px); }
   .nav-btn svg { width: 24px; height: 24px; }
 
-  .app-header { padding: 12px clamp(22px, 2.4vw, 56px); }
-  .brand-logo { width: clamp(220px, 18vw, 320px); height: auto; }
+  .app-header { padding: 10px clamp(22px, 2.4vw, 56px); }
+  .brand-logo { width: clamp(200px, 15vw, 320px); }
 
   main, #view-mapa, #view-panel {
     max-width: clamp(1100px, 90vw, 2000px);
@@ -1944,565 +2439,373 @@ main {
   main, #view-mapa, #view-panel { max-width: 2200px; }
 }
 
-/* =========================================================
-   DISEÑO HÍBRIDO DEFINITIVO: MÓVIL vs ESCRITORIO
-   ========================================================= */
+/* =====================================================================
+   PANEL DE ADMINISTRACIÓN — menú lateral y agenda (escritorio)
+   ===================================================================== */
+.admin-tab-group { display: none; }
+.admin-stats { grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); }
+.admin-stats .stat:nth-child(3) b { color: var(--warn); }
 
-/* Por defecto (Móvil): El logo lateral está oculto */
-.dock-brand-desktop {
-  display: none;
+@media (min-width: 1024px) {
+  #view-admin:not([hidden]) {
+    display: grid; grid-template-columns: clamp(196px, 13.5vw, 232px) minmax(0, 1fr);
+    column-gap: clamp(20px, 2vw, 36px); align-content: start; align-items: start;
+  }
+  #view-admin > .admin-head { grid-column: 1 / -1; }
+  #view-admin > .admin-tabs {
+    grid-column: 1; grid-row: 2 / span 40;
+    position: sticky; top: 12px; align-self: start;
+    max-height: calc(100dvh - 150px); overflow-y: auto; scrollbar-width: thin;
+    flex-direction: column; gap: 1px; overflow-x: visible;
+    margin: 0; padding: 8px 8px 10px;
+    background: var(--pop); border: 1px solid var(--line); border-radius: 18px;
+    -webkit-backdrop-filter: none; backdrop-filter: none;
+  }
+  #view-admin > .tab { grid-column: 2; min-width: 0; }
+  .admin-tab-group {
+    display: block; padding: 10px 10px 4px;
+    font-size: .68rem; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--label);
+  }
+  .admin-tab-group:first-child { padding-top: 0; }
+  #view-admin > .admin-tabs .admin-tab {
+    width: 100%; margin: 0; padding: 7px 10px;
+    justify-content: space-between; text-align: left; white-space: normal;
+    border: 0; border-radius: 9px; font-size: .9rem;
+  }
+  #view-admin > .admin-tabs .admin-tab:hover { background: var(--tinte); }
+  #view-admin > .admin-tabs .admin-tab.active { background: rgba(0, 160, 56, .18); color: var(--accent2); }
+
+  /* Agenda: salas en columnas, horas en filas */
+  .agenda { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 16px 18px 20px; }
+  .ag-head, .ag-body {
+    display: grid; grid-template-columns: 56px repeat(var(--n, 3), minmax(0, 1fr)); column-gap: 10px;
+  }
+  .ag-room { display: flex; align-items: center; gap: 8px; padding-bottom: 12px; font-weight: 600; }
+  .ag-room i { width: 10px; height: 10px; border-radius: 50%; background: var(--c, var(--accent)); flex: none; }
+  .ag-body { margin-top: 8px; }
+  .ag-hours { position: relative; }
+  .ag-hours span { position: absolute; left: 0; transform: translateY(-50%); font-size: .78rem; color: var(--label); font-variant-numeric: tabular-nums; }
+  .ag-col {
+    position: relative;
+    background-image: repeating-linear-gradient(to bottom, var(--line) 0, var(--line) 1px, transparent 1px, transparent var(--hpx));
+    border-bottom: 1px solid var(--line);
+  }
+  .ag-res {
+    position: absolute; left: 0; right: 0; box-sizing: border-box;
+    display: flex; flex-direction: column; gap: 1px; padding: 7px 10px; overflow: hidden; line-height: 1.2;
+    border-radius: 10px; border: 1px solid var(--rc, var(--accent));
+    background: var(--panel2);
+    background: color-mix(in srgb, var(--rc, var(--accent)) 22%, var(--panel));
+    transition: box-shadow .15s ease;
+  }
+  .ag-res:hover, .ag-res:focus-within { box-shadow: 0 8px 20px rgba(0, 0, 0, .3); z-index: 2; }
+  .ag-res b { font-size: .95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ag-res span { font-size: .8rem; color: var(--muted); }
+  .ag-sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ag-res.pend { background: transparent; border-style: dashed; border-color: var(--warn); }
+  .ag-res .ag-pend { color: var(--warn); font-weight: 600; }
+  .ag-acts { position: absolute; right: 6px; bottom: 6px; display: none; gap: 4px; }
+  .ag-res:hover .ag-acts, .ag-res:focus-within .ag-acts { display: flex; }
+  .ag-acts button, .ag-ask button {
+    font-size: .76rem; font-weight: 600; padding: 4px 9px; cursor: pointer;
+    border-radius: 8px; border: 1px solid var(--soft); background: var(--panel); color: var(--text);
+  }
+  .ag-acts button + button { color: var(--danger); }
+  .ag-ask {
+    position: absolute; left: 6px; right: 6px; bottom: 6px; display: flex; align-items: center; gap: 6px;
+    padding: 4px 6px; border-radius: 8px; background: var(--pop); font-size: .78rem; font-weight: 600;
+  }
+  .ag-ask span { color: var(--text); flex: 1; }
+  .ag-ask .yes { background: var(--danger); border-color: transparent; color: #fff; }
 }
 
-/* En Escritorio (>= 960px): Sidebar elegante, logo grande a 220px y calendario 2 columnas */
-@media (min-width: 960px) {
-  .dock-brand-desktop {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 18px 10px 24px;
-    width: 100%;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    margin-bottom: 12px;
+
+/* =====================================================================
+   INICIO DEL PANEL (resumen) y promociones con flyer / redes
+   ===================================================================== */
+.admin-tab.admin-tab-inicio { font-weight: 700; color: var(--accent2); }
+.admin-tab.admin-tab-inicio::before {
+  content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+  background: var(--accent); box-shadow: 0 0 0 3px rgba(0, 160, 56, .25);
+  margin-right: 8px; vertical-align: middle;
+}
+@media (min-width: 1024px) {
+  #view-admin > .admin-tabs .admin-tab.admin-tab-inicio {
+    font-size: .95rem; margin-bottom: 6px; padding: 8px 10px;
+    background: linear-gradient(135deg, rgba(0, 160, 56, .30), rgba(0, 160, 56, .10));
+    border: 1px solid rgba(0, 160, 56, .5);
   }
-  .dock-logo-img {
-    width: 190px;
-    max-width: 100%;
-    height: auto;
-    object-fit: contain;
-    filter: drop-shadow(0 2px 10px rgba(0, 224, 84, 0.25));
+}
+
+.inicio-saludo h2 { margin: 0; font-size: 1.35rem; }
+.inicio-saludo p { margin: 2px 0 0; }
+.inicio-stats { margin-top: 14px; }
+
+.inicio-grid {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px; margin-top: 14px; align-items: stretch;
+}
+@media (max-width: 720px) { .inicio-grid { grid-template-columns: 1fr; } }
+
+.inicio-card {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 16px;
+  padding: 14px 16px; min-width: 0; display: flex; flex-direction: column;
+}
+.inicio-card.ancha { grid-column: 1 / -1; }
+.inicio-card h3 { margin: 0 0 8px; font-size: .95rem; }
+.inicio-pie { margin-top: auto; padding-top: 12px; }
+
+/* Próximas reservas: una fila por reserva, en columnas alineadas */
+.inicio-prox { list-style: none; margin: 0; padding: 0; }
+.inicio-prox li {
+  display: grid; grid-template-columns: 108px minmax(0, 1fr) auto; gap: 10px; align-items: center;
+  padding: 8px 0; border-bottom: 1px solid var(--line); font-size: .9rem;
+}
+.inicio-prox li:last-child { border-bottom: 0; }
+.inicio-prox time { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.inicio-prox .nom { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.inicio-prox .sala { font-size: .8rem; color: var(--muted); white-space: nowrap; }
+
+/* Accesos rápidos: botones que reparten el alto de la tarjeta */
+.inicio-links { display: grid; grid-auto-rows: 1fr; gap: 8px; flex: 1; }
+.inicio-link {
+  display: flex; align-items: center; gap: 8px; width: 100%; padding: 0 14px; min-height: 42px;
+  border-radius: 10px; background: var(--panel2); border: 1px solid var(--line);
+  color: var(--text); font: inherit; font-weight: 600; text-align: left; cursor: pointer;
+}
+.inicio-link:hover { background: var(--tinte); }
+.inicio-link span { flex: 1; }
+.inicio-link .n { background: var(--danger); color: #fff; border-radius: 999px; padding: 1px 8px; font-size: .78rem; }
+.inicio-link i { font-style: normal; color: var(--muted); font-size: 1.2rem; line-height: 1; }
+
+/* Promociones activas */
+.promo-admin-card {
+  display: flex; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line);
+}
+.promo-admin-card:first-of-type { padding-top: 0; }
+.promo-admin-card:last-of-type { border-bottom: 0; padding-bottom: 0; }
+.promo-admin-card .res-info { min-width: 0; }
+.promo-thumb { width: 56px; height: 56px; object-fit: cover; border-radius: 10px; flex: none; background: var(--panel2); }
+.promo-flyer-img { display: block; width: 100%; max-height: 300px; object-fit: contain; border-radius: 12px; margin: 8px 0; background: var(--panel2); }
+.promo-flyer-edit img { max-width: 220px; max-height: 220px; border-radius: 10px; display: block; margin: 6px 0; }
+
+/* Promociones en el Inicio: el flyer es lo principal */
+.promos-publico { margin: 0 0 16px; }
+.promos-tit { margin: 0 0 10px; font-size: 1.05rem; }
+.promo-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
+.promo-grid > :only-child { max-width: 420px; }
+.promo-hero {
+  display: flex; flex-direction: column; overflow: hidden; cursor: pointer;
+  background: var(--panel2); border: 1px solid var(--line); border-radius: 16px;
+}
+.promo-hero:hover { border-color: var(--accent); }
+.promo-hero-img { display: block; width: 100%; height: auto; max-height: 460px; object-fit: contain; background: #0a1322; }
+.promo-hero-info { padding: 10px 12px 12px; display: grid; gap: 3px; }
+.promo-hero-info strong { font-size: .95rem; }
+.promo-hero-info > span {
+  color: var(--muted); font-size: .84rem;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.promo-links { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.promo-link {
+  font-size: .8rem; font-weight: 600; color: var(--accent2); text-decoration: none;
+  background: rgba(0, 160, 56, .12); border: 1px solid rgba(0, 160, 56, .35);
+  border-radius: 999px; padding: 3px 10px;
+}
+.promo-link:hover { background: rgba(0, 160, 56, .22); }
+.promo-flyer-img { display: block; width: 100%; max-height: 420px; object-fit: contain; border-radius: 12px; margin: 8px 0; background: #0a1322; }
+
+/* El mismo formato de menú lateral para el panel de sala */
+@media (min-width: 1024px) {
+  #view-panel:not([hidden]) {
+    display: grid; grid-template-columns: clamp(196px, 13.5vw, 232px) minmax(0, 1fr);
+    column-gap: clamp(20px, 2vw, 36px); align-content: start; align-items: start;
   }
-  body:has(#dock-container:not([hidden])) {
-    padding-left: 260px !important;
+  #view-panel > .admin-head { grid-column: 1 / -1; }
+  #view-panel > #panel-estado { grid-column: 1 / -1; }
+  #view-panel > .admin-tabs {
+    grid-column: 1; grid-row: 2 / span 40;
+    position: sticky; top: 12px; align-self: start;
+    max-height: calc(100dvh - 150px); overflow-y: auto; scrollbar-width: thin;
+    flex-direction: column; gap: 1px; overflow-x: visible;
+    margin: 0; padding: 8px 8px 10px;
+    background: var(--pop); border: 1px solid var(--line); border-radius: 18px;
+    -webkit-backdrop-filter: none; backdrop-filter: none;
   }
+  #view-panel > .tab { grid-column: 2; min-width: 0; }
+  #view-panel > .admin-tabs .admin-tab {
+    width: 100%; margin: 0; padding: 7px 10px;
+    justify-content: space-between; text-align: left; white-space: normal;
+    border: 0; border-radius: 9px; font-size: .9rem;
+  }
+  #view-panel > .admin-tabs .admin-tab:hover { background: var(--tinte); }
+  #view-panel > .admin-tabs .admin-tab.active { background: rgba(0, 160, 56, .18); color: var(--accent2); }
+  #view-panel > .admin-tabs .admin-tab.admin-tab-inicio { font-size: .95rem; margin-bottom: 6px; padding: 8px 10px; }
+}
+
+/* Encabezado del panel de sala: el botón Volver queda a la derecha */
+#view-panel > .admin-head .btn { margin-left: auto; }
+#view-panel > #panel-estado:empty { display: none; }
+
+/* ---------- Movimientos de la sala ---------- */
+.mov-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.mov-nav { display: flex; align-items: center; gap: 8px; }
+.mov-nav .btn:disabled { opacity: .4; cursor: not-allowed; }
+.mov-mes { text-transform: capitalize; min-width: 160px; text-align: center; }
+.mov-stats { margin-top: 14px; }
+.mov-wrap { overflow-x: auto; margin-top: 14px; border: 1px solid var(--line); border-radius: 12px; }
+.mov-table { width: 100%; border-collapse: collapse; font-size: .88rem; min-width: 560px; }
+.mov-table th, .mov-table td { padding: 9px 12px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
+.mov-table th { background: var(--panel2); color: var(--label); font-size: .74rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; }
+.mov-table tr:last-child td { border-bottom: 0; }
+.mov-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+.mov-table tr.anulada td { color: var(--muted); }
+.mov-table tr.anulada td:nth-child(3) { text-decoration: line-through; }
+.mov-estado { font-size: .76rem; font-weight: 600; padding: 2px 9px; border-radius: 999px; background: var(--panel2); }
+.mov-estado.ok { color: var(--accent2); }
+.mov-estado.pend { color: var(--warn); }
+.mov-estado.off { color: var(--muted); }
+.mov-foot { margin: 10px 0 0; font-size: .82rem; color: var(--muted); }
+
+/* ---------- Cuentas de control (administrador y dueño de sala) ---------- */
+body.modo-control #nav-instrumentos,
+body.modo-control #btn-filtro-fav,
+body.modo-control #fav-ver,
+body.modo-control #ficha-fav,
+body.modo-control #mine-favoritas,
+body.modo-control #mine-integrantes,
+body.modo-control label:has(> #pd-instrumentos) { display: none !important; }
+
+/* =====================================================================
+   RISEL LATERAL DE ESCRITORIO (5 opciones): ícono + etiqueta, alineado
+   con el menú del panel de administración
+   ===================================================================== */
+@media (min-width: 1024px) {
+  :root { --riel: clamp(228px, 16vw, 262px); }
+  body:has(#dock-container:not([hidden])) { padding-left: var(--riel); }
+
   .dock-container {
-    width: 260px !important;
-    padding: 20px 14px !important;
-    background: rgba(11, 18, 33, 0.92) !important;
-    backdrop-filter: blur(20px) !important;
-    border-right: 1px solid var(--border, rgba(255, 255, 255, 0.08)) !important;
+    top: 0; bottom: auto; left: 0; right: auto;
+    width: var(--riel); height: 100vh; height: 100dvh;
+    max-width: none; margin: 0; padding: 18px 10px;
+    align-items: stretch; justify-content: flex-start;
+    background: transparent;
   }
   .bottom-nav {
-    gap: 8px !important;
-    background: transparent !important;
-    border: none !important;
-    padding: 0 !important;
+    display: flex; flex-direction: column; gap: 4px;
+    width: 100%; height: 100%; padding: 10px;
+    background: var(--pop); border: 1px solid var(--line); border-radius: 18px;
+    box-shadow: none; grid-template-columns: none;
   }
-  .nav-btn {
-    height: 52px !important;
-    flex-direction: row !important;
-    justify-content: flex-start !important;
-    padding: 0 18px !important;
-    gap: 14px !important;
-    font-size: 14px !important;
-    font-weight: 600 !important;
-    border-radius: 12px !important;
-    width: 100% !important;
+
+  /* Cada opción: una fila con ícono y texto a la izquierda */
+  .nav-btn, .nav-btn-center {
+    flex-direction: row; justify-content: flex-start; align-items: center;
+    gap: 10px; width: 100%; height: 48px; padding: 0 12px;
+    border-radius: 12px; font-size: .92rem; font-weight: 600; letter-spacing: 0; white-space: nowrap;
+    color: var(--muted); text-align: left;
+    transition: background .15s ease, color .15s ease;
   }
-  .nav-btn svg {
-    width: 20px !important;
-    height: 20px !important;
+  .nav-btn svg { width: 20px; height: 20px; flex: none; }
+  .nav-btn:hover, .nav-btn-center:hover { background: rgba(0, 160, 56, .1); color: var(--text); }
+  .nav-btn:active, .nav-btn-center:active { transform: none; }
+  .nav-btn.active, .nav-btn-center.active {
+    background: rgba(0, 160, 56, .18); color: var(--accent2); font-weight: 700;
+    box-shadow: inset 3px 0 0 var(--accent);
   }
-  .nav-btn-center {
-    height: 52px !important;
-    flex-direction: row !important;
-    justify-content: flex-start !important;
-    padding: 0 18px !important;
-    gap: 14px !important;
-    font-size: 14px !important;
-    font-weight: 600 !important;
-    border-radius: 12px !important;
-    width: 100% !important;
-  }
+  .nav-btn.active svg, .nav-btn-center.active svg { color: var(--accent2); }
+
+  /* "Mapa" deja de ser un círculo que sobresale y queda como una fila más */
+  .nav-btn-center { padding-bottom: 0; justify-content: flex-start; }
   .nav-circle-btn {
-    position: static !important;
-    width: 20px !important;
-    height: 20px !important;
-    background: transparent !important;
-    box-shadow: none !important;
-    border-radius: 0 !important;
+    position: static; width: 30px; height: 30px; border-width: 0; border-radius: 9px;
+    background: var(--accent); box-shadow: none; flex: none;
+    display: flex; align-items: center; justify-content: center;
   }
-  .nav-circle-btn svg {
-    width: 20px !important;
-    height: 20px !important;
-  }
-  .nav-center-label {
-    display: inline !important;
-  }
-  .app-header .brand {
-    display: none !important; /* El logo ya va en la barra lateral fija de escritorio */
-  }
+  .nav-circle-btn svg { width: 16px; height: 16px; }
+  .nav-btn-center.active .nav-circle-btn { background: var(--accent); box-shadow: none; }
+  .nav-center-label { font-size: inherit; }
+  .home-indicator { display: none; }
 }
 
-/* =========================================================
-   SOLUCIÓN DE SUPERPOSICIÓN: MAPA vs NOTIFICACIONES / AJUSTES
-   Leaflet usa z-index hasta 1000. Forzamos los paneles y modales por encima
-   y ocultamos temporalmente el contenedor de mapa para que no filtre capas.
-   ========================================================= */
-#notif-drop, #ajustes-drop {
-  z-index: 10000 !important;
+/* Administración y Panel de sala: visibles también en celular (cuentas de administración).
+   En estas cuentas se oculta "Instrumentos" (body.modo-control), por lo que la barra
+   sigue mostrando 5 opciones y el botón central (Mapa) queda perfectamente centrado. */
+#nav-admin:not([hidden]),
+#nav-panel:not([hidden]) { display: flex; }
+/* Etiqueta corta en celular; la larga en el riel de escritorio */
+.nav-label-largo { display: none; }
+@media (min-width: 1024px) {
+  .nav-label-largo { display: inline; }
+  .nav-label-corto { display: none; }
 }
 
-#notif-drop.open ~ #view-mapa,
-#ajustes-drop.open ~ #view-mapa,
-body:has(#notif-drop.open) #view-mapa,
-body:has(#ajustes-drop.open) #view-mapa {
-  visibility: hidden !important;
-  pointer-events: none !important;
-}
-
-#modal {
-  z-index: 10050 !important;
-}
-
-/* =========================================================
-   PROTECCIÓN DEL DOCK INFERIOR (5 OPCIONES EN CELULAR):
-   1. El dock (.dock-container) debe estar por encima de los controles del mapa (z-index 2000 vs 1000 de Leaflet)
-   2. #view-mapa debe tener padding-bottom de 115px para que la barra inferior no tape el mapa ni sus textos
-   ========================================================= */
-.dock-container {
-  z-index: 2000 !important;
-}
-
-#view-mapa {
-  padding-bottom: 120px !important;
-}
-
-/* Durante la animación de inicio (splash screen), el dock permanece 100% oculto */
-#splash:not(.fuera) ~ #dock-container,
-body:has(#splash:not(.fuera)) #dock-container {
-  display: none !important;
-  visibility: hidden !important;
-  opacity: 0 !important;
-}
-
-
-
-/* ===================================================
- * DISEÑO REFINADO, MODERNO Y DIRECTO (+MÚSICA v3.9)
- * =================================================== */
-
-.perfil-card-modern {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 20px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
-  margin-bottom: 20px;
-}
-
-.perfil-header-row {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 18px;
-}
-
-.perfil-avatar-modern {
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  font-size: 1.8rem;
-  font-weight: 700;
-  display: grid;
-  place-items: center;
-  background: linear-gradient(135deg, var(--accent), var(--accent2, #ff6b4a));
-  color: #fff;
-  flex-shrink: 0;
-  overflow: hidden;
-  box-shadow: 0 4px 12px rgba(230, 57, 70, 0.25);
-}
-.perfil-avatar-modern img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.perfil-info-modern {
-  flex: 1;
-  min-width: 0;
-}
-.perfil-nombre {
-  margin: 0 0 2px;
-  font-size: 1.3rem;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-}
-.perfil-usuario {
-  display: block;
-  font-size: 0.88rem;
-  color: var(--text-muted);
-  margin-bottom: 6px;
-}
-.badge-rol {
-  background: var(--bg-subtle, rgba(255,255,255,0.08));
-  color: var(--text);
-  font-weight: 600;
-  padding: 3px 10px;
-  border-radius: 20px;
-  font-size: 0.8rem;
-  border: 1px solid var(--border);
-}
-
-.perfil-actions-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.perfil-btns-duo {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
-.btn-outline {
-  background: transparent;
-  border: 1px solid var(--border);
-  color: var(--text);
-  font-weight: 600;
-  border-radius: 8px;
-}
-.btn-outline:hover {
-  background: var(--bg-subtle, rgba(255,255,255,0.05));
-  border-color: var(--text-muted);
-}
-.btn-danger-soft {
-  background: rgba(230, 57, 70, 0.1);
-  color: #e63946;
-  border: 1px solid rgba(230, 57, 70, 0.25);
-  font-weight: 600;
-  border-radius: 8px;
-  transition: all 0.2s;
-}
-.btn-danger-soft:hover {
-  background: #e63946;
-  color: #fff;
-}
-
-/* Ajustes limpios */
-.ajustes-container-clean {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-.aj-card-clean {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 12px 14px;
-}
-.aj-section-title {
-  margin: 0 0 10px;
-  font-size: 0.82rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text-muted);
-  font-weight: 700;
-}
-.aj-row-clean {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 4px 0;
-}
-.aj-seg-modern {
-  display: flex;
-  background: var(--bg-subtle, rgba(255,255,255,0.06));
-  padding: 3px;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  gap: 2px;
-}
-.aj-seg-modern button {
-  background: transparent;
-  border: none;
-  color: var(--text-muted);
-  font-size: 0.82rem;
-  font-weight: 600;
-  padding: 5px 10px;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-.aj-seg-modern button.on {
-  background: var(--accent);
-  color: #fff;
-  font-weight: 700;
-  box-shadow: 0 2px 8px rgba(230, 57, 70, 0.3);
-}
-
-/* ==========================================================================
-   MEJORAS DE ALINEACIÓN Y PULIDO VISUAL: PANELES DUEÑO Y ADMINISTRADOR
-   ========================================================================== */
-
-/* Barra de pestañas horizontal: limpia con scroll suave y sin cortes */
-.admin-tabs {
-  gap: 4px;
-  padding: 4px 6px;
-  background: var(--panel2);
-  border-radius: 12px;
-  border: 1px solid var(--line);
-  margin-bottom: 20px;
-}
-.admin-tab {
-  border-radius: 8px;
-  border-bottom: none !important;
-  padding: 8px 14px;
-  font-size: 0.88rem;
-  font-weight: 600;
-  color: var(--muted);
-  transition: all 0.15s ease;
-}
-.admin-tab:hover {
-  background: var(--soft);
-  color: var(--text);
-}
-.admin-tab.active {
-  background: var(--accent);
-  color: var(--on-accent, #fff) !important;
-  font-weight: 700;
-  box-shadow: 0 2px 8px rgba(0, 160, 56, 0.28);
-}
-.admin-tab .pill {
-  margin-left: 4px;
-}
-
-/* Encabezados y barras de acción */
-.panel-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 14px;
-  margin-bottom: 18px;
-  flex-wrap: wrap;
-}
-.panel-head h2 {
-  font-size: 1.35rem;
-  margin: 0;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-/* Contenedor responsivo para tablas */
-.table-wrap, #usuarios-list, #stats-table, #solicitudes-list {
-  width: 100%;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  margin-top: 10px;
-  border-radius: 12px;
-}
-
-/* Tablas estilizadas: sin texto desbordado ni quiebres raros */
-.tabla, table {
-  width: 100%;
-  min-width: 600px;
-  border-collapse: separate;
-  border-spacing: 0;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  overflow: hidden;
-}
-.tabla th, table th {
-  background: var(--panel2);
-  color: var(--muted);
-  font-size: 0.78rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  padding: 12px 14px;
-  border-bottom: 1px solid var(--line);
+/* ================= COMUNIDAD (solo músicos) ================= */
+.comu-tabs { display: flex; gap: 6px; margin: 4px 0 14px; flex-wrap: wrap; }
+.comu-tab {
+  flex: 1 1 0; min-width: 0;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 9px 10px; border-radius: 12px; cursor: pointer;
+  background: var(--soft2); color: var(--muted);
+  border: 1px solid var(--line); font: inherit; font-size: .88rem; font-weight: 600;
   white-space: nowrap;
+  transition: background .15s ease, color .15s ease, border-color .15s ease;
 }
-.tabla td, table td {
-  padding: 12px 14px;
-  border-bottom: 1px solid var(--line);
-  vertical-align: middle;
-  font-size: 0.9rem;
+.comu-tab:hover { color: var(--text); }
+.comu-tab.active { background: rgba(0, 160, 56, .16); color: var(--accent2); border-color: var(--accent); font-weight: 700; }
+.comu-badge {
+  min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px;
+  background: var(--danger); color: #fff; font-size: .68rem; font-weight: 700;
+  display: inline-flex; align-items: center; justify-content: center;
 }
-.tabla tr:last-child td, table tr:last-child td {
-  border-bottom: none;
+.comu-filtros { display: flex; align-items: center; gap: 10px; margin: 0 0 12px; flex-wrap: wrap; }
+.comu-lista, .comu-chats, #comu-siguiendo { display: flex; flex-direction: column; gap: 10px; }
+.comu-card {
+  display: flex; gap: 12px; align-items: flex-start;
+  padding: 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel2);
 }
-.tabla tr:hover, table tbody tr:hover {
-  background: var(--soft2);
+.comu-avatar {
+  flex: none; width: 46px; height: 46px; border-radius: 50%; overflow: hidden;
+  background: var(--soft2); display: inline-flex; align-items: center; justify-content: center;
 }
-
-/* Columna de acciones en tablas */
-.acciones-td {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: nowrap;
-  white-space: nowrap;
+.comu-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.comu-avatar-letra { background: rgba(0, 160, 56, .18); color: var(--accent2); font-weight: 800; font-size: 1.1rem; }
+.comu-info { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1 1 auto; }
+.comu-info strong { font-size: .95rem; color: var(--text); }
+.comu-user { color: var(--muted); font-weight: 500; font-size: .82rem; }
+.comu-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 2px; }
+.comu-tag { font-size: .72rem; padding: 2px 9px; border-radius: 999px; background: var(--soft2); color: var(--muted); border: 1px solid var(--line); }
+.comu-me-sigue { align-self: flex-start; font-size: .7rem; padding: 2px 9px; border-radius: 999px; background: rgba(0, 160, 56, .16); color: var(--accent2); font-weight: 700; }
+.comu-acciones { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+.comu-sub { margin: 14px 0 8px; font-size: .9rem; color: var(--muted); }
+.comu-chat-item {
+  display: flex; gap: 12px; align-items: center; width: 100%; text-align: left; cursor: pointer;
+  padding: 11px 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel2);
+  font: inherit; color: var(--text);
 }
-
-/* Tarjetas de estadísticas de los paneles */
-.stats-cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-  gap: 12px;
-  margin-bottom: 16px;
+.comu-chat-item:hover { border-color: var(--accent); }
+.comu-chat-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1 1 auto; }
+.comu-chat-info strong { font-size: .93rem; }
+.comu-chat-info .small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.comu-chat { display: flex; flex-direction: column; gap: 10px; }
+.comu-chat-head { display: flex; align-items: center; gap: 10px; }
+.comu-chat-nombre { display: flex; flex-direction: column; line-height: 1.15; flex: 1 1 auto; min-width: 0; }
+.comu-hilo {
+  display: flex; flex-direction: column; gap: 8px;
+  max-height: min(52vh, 420px); min-height: 180px; overflow-y: auto;
+  padding: 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--bg-deep);
 }
-.stat {
-  background: var(--panel2);
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  transition: transform 0.12s;
+.comu-burbuja {
+  max-width: 82%; padding: 8px 11px; border-radius: 14px; font-size: .9rem;
+  display: flex; flex-direction: column; gap: 2px; word-break: break-word;
 }
-.stat:hover {
-  transform: translateY(-2px);
-  border-color: var(--accent);
+.comu-burbuja .comu-texto { white-space: pre-wrap; }
+.comu-burbuja.mio { align-self: flex-end; background: var(--accent); color: var(--on-accent); border-bottom-right-radius: 4px; }
+.comu-burbuja.otro { align-self: flex-start; background: var(--panel2); color: var(--text); border: 1px solid var(--line); border-bottom-left-radius: 4px; }
+.comu-hora { font-size: .65rem; opacity: .75; align-self: flex-end; }
+.comu-form { display: flex; gap: 8px; align-items: center; }
+.comu-form input {
+  flex: 1 1 auto; min-width: 0; padding: 10px 12px; border-radius: 12px;
+  border: 1px solid var(--line); background: var(--panel2); color: var(--text); font: inherit;
 }
-.stat span {
-  font-size: 0.8rem;
-  color: var(--muted);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-  margin: 0;
-}
-.stat strong, .stat b {
-  font-size: 1.55rem;
-  font-weight: 800;
-  color: var(--text);
-  line-height: 1.1;
-  font-variant-numeric: tabular-nums;
-}
-
-/* Items de reservas en panel de dueño */
-.res-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
-  background: var(--panel2);
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 14px 18px;
-  margin-bottom: 10px;
-  transition: border-color 0.15s;
-}
-.res-item:hover {
-  border-color: var(--accent);
-}
-.res-item .res-time {
-  font-weight: 800;
-  color: var(--accent2);
-  font-size: 1.05rem;
-  min-width: 120px;
-  text-align: left;
-  border-right: none;
-  padding: 0;
-}
-.res-item .res-info {
-  flex: 2;
-  min-width: 200px;
-}
-.res-item .res-price {
-  font-weight: 800;
-  font-size: 1.1rem;
-  color: var(--text);
-  min-width: 90px;
-  text-align: right;
-}
-.res-item .res-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-/* Fila de horarios semanal en panel de dueño */
-.hora-fila {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-  padding: 10px 14px;
-  background: var(--panel2);
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  margin-bottom: 8px;
-}
-.hora-fila strong {
-  min-width: 110px;
-  font-size: 0.95rem;
-}
-.hora-fila .check {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-weight: 600;
-  font-size: 0.88rem;
-  cursor: pointer;
-}
-.hora-fila input[type="time"] {
-  width: auto;
-  min-width: 115px;
-  padding: 6px 10px;
-  margin: 0;
-  border-radius: 8px;
-}
-
-/* Bloqueos y formularios de filtro */
-.block-form {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 12px;
-  background: var(--panel2);
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 18px;
-  align-items: end;
-  margin-bottom: 18px;
-}
-.block-form label {
-  margin: 0;
-  font-size: 0.84rem;
-  font-weight: 600;
-}
-.block-form .btn {
-  margin-top: 0;
-  height: 42px;
-}
-
-/* Header del panel con switcher de salas */
-#panel-mis-salas-bar select {
-  width: auto;
-  min-width: 200px;
-  margin: 0;
-  padding: 6px 12px;
-  font-weight: 600;
-}
-
-/* Ajustes de administración: botones segmented y campos */
-.aj-seg {
-  display: flex;
-  gap: 4px;
-  background: var(--panel2);
-  padding: 4px;
-  border-radius: 10px;
-  border: 1px solid var(--line);
-  width: fit-content;
-  margin-top: 8px;
-}
-.aj-seg button {
-  background: transparent;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 8px;
-  font-size: 0.88rem;
-  font-weight: 600;
-  color: var(--muted);
-  cursor: pointer;
-  transition: all 0.15s;
-}
-.aj-seg button.on {
-  background: var(--accent);
-  color: var(--on-accent, #fff);
-  font-weight: 700;
-}
-
+.comu-form input:focus { outline: 2px solid var(--accent); outline-offset: 0; border-color: var(--accent); }
