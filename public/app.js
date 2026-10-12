@@ -2303,6 +2303,152 @@ function pintarBadgeNotif() {
   if (btn) btn.classList.toggle('tiene-nuevas', sinLeer > 0);
 }
 
+/* ---------- Validación de los formularios de acceso ---------- */
+/* Cada regla recibe el valor del campo y (si hace falta) todos los campos del
+   formulario. Devuelve '' si está bien, o el mensaje de error. */
+const REGLA_TEXTO = {
+  usuario: v => /^[a-z0-9._-]{3,24}$/.test(v.trim().toLowerCase()) ? '' : 'Usá de 3 a 24 caracteres: letras, números, punto, guion o guion bajo',
+  email: v => /^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(v.trim()) ? '' : 'Ese email no parece válido',
+  nombre: v => v.trim().length >= 2 ? '' : 'Escribí tu nombre y apellido',
+  password: v => v.length >= 6 ? '' : 'Usá al menos 6 caracteres',
+  pass2: (v, todos) => v === todos.password ? '' : 'Las contraseñas no coinciden',
+  telefono: v => /^[\d\s()+.-]{6,30}$/.test(v.trim()) ? '' : 'Ese teléfono no parece válido',
+};
+
+const campoEl = id => document.querySelector(`[data-campo="${id}"]`);
+
+function campoEstado(id, estado, msg) {
+  const w = campoEl(id);
+  if (!w) return;
+  w.classList.remove('ok', 'error', 'checking');
+  if (estado) w.classList.add(estado);
+  const m = w.querySelector('.campo-msg');
+  if (m) m.textContent = msg || '';
+}
+const campoError = (id, msg) => campoEstado(id, 'error', msg);
+const campoOk = id => campoEstado(id, 'ok', '');
+const campoLimpiar = id => campoEstado(id, null, '');
+
+/* Valida un campo y pinta su estado. Devuelve true si está correcto. */
+function validarInput(input) {
+  const id = input.id;
+  const obligatorio = input.hasAttribute('data-obligatorio');
+  const valor = input.value;
+  if (!valor.trim()) {
+    if (obligatorio) { campoError(id, 'Completá este dato'); return false; }
+    campoLimpiar(id);
+    return true;
+  }
+  const regla = REGLA_TEXTO[input.dataset.valida];
+  if (regla) {
+    const todos = {};
+    const form = input.closest('form');
+    if (form) $$('[data-valida]', form).forEach(i => { todos[i.dataset.valida] = i.value; });
+    const err = regla(valor, todos);
+    if (err) { campoError(id, err); return false; }
+  }
+  campoOk(id);
+  return true;
+}
+
+/* Valida todos los campos de un formulario y enfoca el primero con error. */
+function validarFormulario(form) {
+  let ok = true, primero = null;
+  $$('[data-valida]', form).forEach(c => {
+    if (!validarInput(c)) { ok = false; if (!primero) primero = c; }
+  });
+  if (primero) primero.focus();
+  return ok;
+}
+
+/* Medidor de fuerza de la contraseña */
+function pintarFuerza(input) {
+  const w = input.closest('.campo');
+  const bar = w && w.querySelector('.fuerza');
+  if (!bar) return;
+  const p = input.value;
+  let n = 0;
+  if (p.length >= 6) n++;
+  if (p.length >= 10) n++;
+  if (/[a-z]/.test(p) && /[A-Z]/.test(p)) n++;
+  if (/\d/.test(p)) n++;
+  if (/[^A-Za-z0-9]/.test(p)) n++;
+  n = Math.min(n, 4);
+  bar.dataset.n = p ? n : 0;
+  const txt = bar.querySelector('.fuerza-txt');
+  if (txt) txt.textContent = p && n > 0 ? ['Débil', 'Aceptable', 'Buena', 'Excelente'][n - 1] : '';
+}
+
+/* Consulta al servidor si el usuario/email ya existen (mensaje en vivo) */
+async function chequearDisponible(input) {
+  const tipo = input.dataset.valida;
+  if (tipo !== 'usuario' && tipo !== 'email') return;
+  if (!validarInput(input)) return;
+  const w = campoEl(input.id);
+  if (!w) return;
+  w.classList.remove('ok');
+  w.classList.add('checking');
+  const m = w.querySelector('.campo-msg');
+  if (m) m.textContent = 'Verificando…';
+  try {
+    const q = new URLSearchParams();
+    q.set(tipo, input.value.trim());
+    const r = await api('/api/auth/disponible?' + q.toString());
+    if (!document.body.contains(input)) return;
+    const libre = tipo === 'usuario' ? r.usuarioLibre : r.emailLibre;
+    if (libre === false) campoError(input.id, tipo === 'usuario' ? 'Ese nombre de usuario ya está en uso' : 'Ya existe una cuenta con ese email');
+    else if (libre === true) campoOk(input.id);
+    else campoLimpiar(input.id);
+  } catch (e) {
+    if (!document.body.contains(input)) return;
+    campoLimpiar(input.id);   /* sin endpoint disponible: el servidor valida al enviar */
+  }
+}
+
+/* Ubica un error del servidor en el campo correspondiente. Devuelve true si lo logró. */
+function mapearErrorServidor(msg) {
+  const m = String(msg || '').toLowerCase();
+  const idUsr = $('#mu-usuario') ? 'mu-usuario' : ($('#sg-usuario') ? 'sg-usuario' : '');
+  const idMail = $('#mu-email') ? 'mu-email' : ($('#sg-email') ? 'sg-email' : '');
+  const idPass = $('#mu-pass') ? 'mu-pass' : ($('#sg-pass') ? 'sg-pass' : '');
+  if (/usuario ya est/.test(m) && idUsr) { campoError(idUsr, msg); return true; }
+  if (/email/.test(m) && idMail) { campoError(idMail, msg); return true; }
+  if (/contrase/.test(m) && idPass) { campoError(idPass, msg); return true; }
+  return false;
+}
+
+/* ---------- Render de campos con validación ---------- */
+function campoAuth(id, etiqueta, opts = {}) {
+  const { type = 'text', ph = '', req = false, max = 60, val = '', ac = '', valida = '', extra = '' } = opts;
+  return `<label class="campo" data-campo="${id}">
+    <span class="campo-lbl">${etiqueta}${req ? ' <span class="req">*</span>' : ''}</span>
+    <input id="${id}" type="${type}" maxlength="${max}"${ph ? ` placeholder="${ph}"` : ''}${ac ? ` autocomplete="${ac}"` : ''}${val ? ` value="${val}"` : ''}${valida ? ` data-valida="${valida}"` : ''}${req ? ' data-obligatorio' : ''}${extra}>
+    <span class="campo-msg"></span>
+  </label>`;
+}
+
+function campoPassword(id, etiqueta, opts = {}) {
+  const { ph = '', valida = 'password', fuerza = false, ac = 'new-password' } = opts;
+  return `<label class="campo" data-campo="${id}">
+    <span class="campo-lbl">${etiqueta} <span class="req">*</span></span>
+    <span class="pass-wrap">
+      <input id="${id}" type="password" autocomplete="${ac}" data-valida="${valida}" data-obligatorio${ph ? ` placeholder="${ph}"` : ''}>
+      <button type="button" class="pass-eye" data-ver="${id}" aria-label="Mostrar u ocultar contraseña" tabindex="-1">👁</button>
+    </span>
+    ${fuerza ? '<span class="fuerza" data-n="0"><i></i><i></i><i></i><i></i><span class="fuerza-txt"></span></span>' : ''}
+    <span class="campo-msg"></span>
+  </label>`;
+}
+
+function campoArea(id, etiqueta, opts = {}) {
+  const { ph = '', rows = 2, max = 600 } = opts;
+  return `<label class="campo" data-campo="${id}">
+    <span class="campo-lbl">${etiqueta}</span>
+    <textarea id="${id}" rows="${rows}" maxlength="${max}"${ph ? ` placeholder="${ph}"` : ''}></textarea>
+    <span class="campo-msg"></span>
+  </label>`;
+}
+
 /* ---------- Pantalla de acceso ---------- */
 function pantallaAuth(vista = 'inicio') {
   mostrarAcceso();
@@ -2311,42 +2457,48 @@ function pantallaAuth(vista = 'inicio') {
 
   if (vista === 'inicio') {
     b.innerHTML = `
-      <div class="auth-titulo">
-        <h1 class="auth-title">¿Cómo querés usar <span class="verde">Más Música</span>?</h1>
-        <p class="auth-sub">Elegí tu perfil para empezar.</p>
+      <div class="auth-card">
+        <div class="auth-titulo">
+          <h1 class="auth-title">¿Cómo querés usar <span class="verde">Más Música</span>?</h1>
+          <p class="auth-sub">Elegí tu perfil para empezar.</p>
+        </div>
+        <div class="auth-roles">
+          <button class="auth-rol auth-rol-fijo" data-vista="musico">
+            <span class="auth-rol-ic">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#0F1A2B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M9 18V5l12-2v13"></path>
+                <circle cx="6" cy="18" r="3"></circle>
+                <circle cx="18" cy="16" r="3"></circle>
+              </svg>
+            </span>
+            <span class="auth-rol-txt">
+              <strong>Soy músico</strong>
+              <span>Creá tu cuenta para buscar y reservar salas de ensayo.</span>
+            </span>
+            <span class="auth-rol-go" aria-hidden="true">›</span>
+          </button>
+          <button class="auth-rol auth-rol-lar" data-vista="duenio">
+            <span class="auth-rol-ic">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#00A038" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <line x1="5" y1="3" x2="5" y2="21"></line>
+                <line x1="12" y1="3" x2="12" y2="21"></line>
+                <line x1="19" y1="3" x2="19" y2="21"></line>
+                <circle cx="5" cy="15" r="2.2" fill="#16263D"></circle>
+                <circle cx="12" cy="8" r="2.2" fill="#16263D"></circle>
+                <circle cx="19" cy="13" r="2.2" fill="#16263D"></circle>
+              </svg>
+            </span>
+            <span class="auth-rol-txt">
+              <strong>Tengo una sala de ensayo</strong>
+              <span>Registrá tu sala para sumarla a Más Música.</span>
+            </span>
+            <span class="auth-rol-go" aria-hidden="true">›</span>
+          </button>
+        </div>
+        <p class="auth-cuenta">¿Ya tenés cuenta?
+          <button type="button" class="auth-link" data-vista="login">Iniciar sesión</button>
+        </p>
       </div>
-      <div class="auth-roles">
-        <button class="auth-rol auth-rol-fijo" data-vista="musico">
-          <svg class="auth-svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#0F1A2B"
-               stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M9 18V5l12-2v13"></path>
-            <circle cx="6" cy="18" r="3"></circle>
-            <circle cx="18" cy="16" r="3"></circle>
-          </svg>
-          <span class="auth-rol-txt">
-            <strong>Soy músico</strong>
-            <span>Creá tu cuenta para buscar y reservar salas de ensayo.</span>
-          </span>
-        </button>
-        <button class="auth-rol auth-rol-lar" data-vista="duenio">
-          <svg class="auth-svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#00A038"
-               stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <line x1="5" y1="3" x2="5" y2="21"></line>
-            <line x1="12" y1="3" x2="12" y2="21"></line>
-            <line x1="19" y1="3" x2="19" y2="21"></line>
-            <circle cx="5" cy="15" r="2.2" fill="#16263D"></circle>
-            <circle cx="12" cy="8" r="2.2" fill="#16263D"></circle>
-            <circle cx="19" cy="13" r="2.2" fill="#16263D"></circle>
-          </svg>
-          <span class="auth-rol-txt">
-            <strong>Tengo una sala de ensayo</strong>
-            <span>Registrá tu sala para sumarla a Más Música.</span>
-          </span>
-        </button>
-      </div>
-      <p class="auth-cuenta">¿Ya tenés cuenta?
-        <button type="button" class="auth-link" data-vista="login">Iniciar sesión</button>
-      </p>
       <p class="muted small center auth-nota">La cuenta de administración general no se registra acá.</p>`;
     return;
   }
@@ -2354,46 +2506,58 @@ function pantallaAuth(vista = 'inicio') {
   if (vista === 'login') {
     b.innerHTML = `
       ${vol}
-      <h1 class="auth-title">Ingresá a tu cuenta</h1>
-      <form id="f-login" class="auth-form">
-        <label>Usuario o email<input id="lg-user" autocomplete="username" required></label>
-        <label>Contraseña<input type="password" id="lg-pass" autocomplete="current-password" required></label>
-        <button class="btn btn-primary btn-block" type="submit">Ingresar</button>
-        <button type="button" class="btn btn-sm btn-block btn-ghost" data-vista="pin">¿Sos de la administración? Entrá con el PIN</button>
-      </form>`;
+      <div class="auth-card">
+        <h1 class="auth-title">Ingresá a tu cuenta</h1>
+        <p class="auth-sub">Tu usuario o email, y tu contraseña.</p>
+        <form id="f-login" class="auth-form" novalidate>
+          ${campoAuth('lg-user', 'Usuario o email', { req: true, valida: 'obligatorio', ac: 'username', ph: 'Ej.: marcelo o marcelo@mail.com', max: 80 })}
+          ${campoPassword('lg-pass', 'Contraseña', { valida: 'obligatorio', ac: 'current-password' })}
+          <button class="btn btn-primary btn-block btn-lg" type="submit">Ingresar</button>
+          <button type="button" class="btn btn-sm btn-block btn-ghost" data-vista="pin">¿Sos de la administración? Entrá con el PIN</button>
+        </form>
+      </div>`;
     return;
   }
 
   if (vista === 'pin') {
     b.innerHTML = `
       ${vol}
-      <h1 class="auth-title">Acceso de administración</h1>
-      <form id="f-pin" class="auth-form">
-        <label>PIN de administrador<input type="password" id="pn-pin" inputmode="numeric" required></label>
-        <button class="btn btn-primary btn-block" type="submit">Entrar al panel</button>
-      </form>`;
+      <div class="auth-card">
+        <h1 class="auth-title">Acceso de administración</h1>
+        <p class="auth-sub">Ingresá el PIN para entrar al panel.</p>
+        <form id="f-pin" class="auth-form" novalidate>
+          ${campoAuth('pn-pin', 'PIN de administrador', { type: 'password', req: true, valida: 'obligatorio', extra: ' inputmode="numeric"' })}
+          <button class="btn btn-primary btn-block btn-lg" type="submit">Entrar al panel</button>
+        </form>
+      </div>`;
     return;
   }
 
   if (vista === 'musico') {
     b.innerHTML = `
       ${vol}
-      <h1 class="auth-title">Crear cuenta de músico</h1>
-      <p class="muted small">Para buscar y reservar salas de ensayo.</p>
-      <form id="f-musico" class="auth-form">
-        <label>Nombre y apellido *<input id="mu-nombre" maxlength="60" required></label>
-        <label>Nombre de usuario *<input id="mu-usuario" maxlength="24" placeholder="Ej.: marcelo" required></label>
-        <label>Email *<input type="email" id="mu-email" maxlength="80" required></label>
-        <label>Teléfono<input id="mu-tel" maxlength="30" placeholder="Ej.: 15854455"></label>
-        <label>Contraseña *<input type="password" id="mu-pass" minlength="6" required></label>
-        <label>Localidad o zona<input id="mu-loc" maxlength="80"></label>
-        <label>¿Qué instrumento tocás?<input id="mu-inst" maxlength="200" placeholder="Ej.: Bajo, Guitarra (separados por coma)"></label>
-        <div class="auth-foto">
-          <div class="sala-foto-edit" id="mu-preview">${fotoTemporal ? `<img src="${fotoTemporal}" alt="previsualización">` : '<span class="sala-chip-foto" style="width:60px;height:60px;font-size:1.6rem">🎸</span>'}</div>
-          <label class="btn btn-sm">📷 Foto de perfil<input type="file" id="mu-foto" accept="image/*" hidden></label>
-        </div>
-        <button class="btn btn-primary btn-block" type="submit">Crear mi cuenta</button>
-      </form>`;
+      <div class="auth-card">
+        <h1 class="auth-title">Crear cuenta de músico</h1>
+        <p class="auth-sub">Para buscar y reservar salas de ensayo.</p>
+        <form id="f-musico" class="auth-form" novalidate>
+          <div class="auth-foto">
+            <div class="sala-foto-edit" id="mu-preview">${fotoTemporal ? `<img src="${fotoTemporal}" alt="previsualización">` : '<span class="sala-chip-foto" style="width:60px;height:60px;font-size:1.6rem">🎸</span>'}</div>
+            <div class="auth-foto-txt">
+              <label class="btn btn-sm">📷 Foto de perfil<input type="file" id="mu-foto" accept="image/*" hidden></label>
+              <span class="muted small">Opcional</span>
+            </div>
+          </div>
+          ${campoAuth('mu-nombre', 'Nombre y apellido', { req: true, valida: 'nombre', ac: 'name', ph: 'Ej.: Marcelo Gómez' })}
+          ${campoAuth('mu-usuario', 'Nombre de usuario', { req: true, valida: 'usuario', ac: 'username', ph: 'Ej.: marcelo', max: 24 })}
+          ${campoAuth('mu-email', 'Email', { type: 'email', req: true, valida: 'email', ac: 'email', ph: 'tucorreo@mail.com', max: 80 })}
+          ${campoAuth('mu-tel', 'Teléfono', { valida: 'telefono', ac: 'tel', ph: 'Ej.: 15854455', max: 30 })}
+          ${campoPassword('mu-pass', 'Contraseña', { fuerza: true, ph: 'Mínimo 6 caracteres' })}
+          ${campoPassword('mu-pass2', 'Repetí la contraseña', { valida: 'pass2', ph: 'Igual que arriba' })}
+          ${campoAuth('mu-loc', 'Localidad o zona', { ph: 'Ej.: Villa Carlos Paz', max: 80 })}
+          ${campoAuth('mu-inst', '¿Qué instrumento tocás?', { ph: 'Ej.: Bajo, Guitarra (separados por coma)', max: 200 })}
+          <button class="btn btn-primary btn-block btn-lg" type="submit">Crear mi cuenta</button>
+        </form>
+      </div>`;
     return;
   }
 
@@ -2402,69 +2566,78 @@ function pantallaAuth(vista = 'inicio') {
     const paso1 = vista === 'duenio';
     b.innerHTML = `
       ${vol}
-      <h1 class="auth-title">Registrar mi sala de ensayo</h1>
-      ${paso1 ? `
-        <p class="muted small">Paso 1 de 2 · Tus datos. La sala queda pendiente de aprobación.</p>
-        <form id="f-duenio" class="auth-form">
-          <label>Nombre y apellido *<input id="sg-nombre" maxlength="60" required></label>
-          <label>Nombre de usuario *<input id="sg-usuario" maxlength="24" placeholder="Ej.: salanueva" required></label>
-          <label>Email *<input type="email" id="sg-email" maxlength="80" required></label>
-          <label>Teléfono *<input id="sg-tel" maxlength="30" required></label>
-          <label>Contraseña *<input type="password" id="sg-pass" minlength="6" required></label>
-          <label class="check"><input type="checkbox" id="sg-soy"> Soy responsable de esta sala</label>
-          <button class="btn btn-primary btn-block" type="submit">Continuar →</button>
-        </form>` : `
-        <p class="muted small">Paso 2 de 2 · Los datos de la sala. La administración de Más Música la revisa antes de publicarla.</p>
-        <form id="f-sala" class="auth-form">
-          <label>Nombre de la sala *<input id="sa-name" maxlength="60" required></label>
-          <label>Dirección *<input id="sa-direccion" maxlength="160" required></label>
-          <div class="row2">
-            <label>Localidad / zona<input id="sa-loc" maxlength="80"></label>
-            <label>Teléfono de la sala<input id="sa-tel" maxlength="30"></label>
-          </div>
-          <label>Descripción<textarea id="sa-desc" rows="2" maxlength="600" placeholder="Ej.: Sala con buena acústica para bandas de 4 a 6 personas"></textarea></label>
-          <div class="row2">
-            <label>Precio por hora *<input type="number" id="sa-price" min="1" step="1" value="10000" required></label>
-            <label>Capacidad<input type="number" id="sa-cap" min="1" step="1" value="4"></label>
-          </div>
-          <label>Ubicación en el mapa<input id="sa-mapa" maxlength="300" placeholder="Enlace de Google Maps"></label>
-          <div class="row2">
-            <label>Latitud<input id="sa-lat" inputmode="decimal" placeholder="-31.4201"></label>
-            <label>Longitud<input id="sa-lng" inputmode="decimal" placeholder="-64.1888"></label>
-          </div>
-          <div class="row wrap">
-            <button type="button" class="btn btn-sm" data-accion-ubicacion="ubicar">🗺 Ubicar en el mapa</button>
-            <button type="button" class="btn btn-sm" data-accion-ubicacion="buscar">🔎 Buscar por dirección</button>
-          </div>
-          <p class="muted small">Es lo primero que ven los músicos: con la ubicación, tu sala aparece en el mapa de Más Música.</p>
-          <h3 class="sub">Horario de atención</h3>
-          <div class="dias-sel" id="sa-dias">
-            <label class="check"><input type="checkbox" value="1" checked> Lun</label>
-            <label class="check"><input type="checkbox" value="2" checked> Mar</label>
-            <label class="check"><input type="checkbox" value="3" checked> Mié</label>
-            <label class="check"><input type="checkbox" value="4" checked> Jue</label>
-            <label class="check"><input type="checkbox" value="5" checked> Vie</label>
-            <label class="check"><input type="checkbox" value="6"> Sáb</label>
-            <label class="check"><input type="checkbox" value="0"> Dom</label>
-          </div>
-          <div class="row2">
-            <label>Abre<input type="time" id="sa-open" value="10:00"></label>
-            <label>Cierra<input type="time" id="sa-close" value="22:00"></label>
-          </div>
-          <h3 class="sub">Equipamiento disponible</h3>
-          <label>Instrumentos<input id="sa-eq-instrumentos" maxlength="300" placeholder="Ej.: Guitarra, Bajo, Batería"></label>
-          <label>Batería<input id="sa-eq-bateria" maxlength="300"></label>
-          <label>Amplificadores<input id="sa-eq-amp" maxlength="300"></label>
-          <label>Micrófonos<input id="sa-eq-micro" maxlength="300"></label>
-          <label>Consola / sonido<input id="sa-eq-consola" maxlength="300"></label>
-          <label>Otros<input id="sa-eq-otros" maxlength="300"></label>
-          <div class="auth-foto">
-            <div class="sala-foto-edit" id="sa-preview">${fotoTemporal ? `<img src="${fotoTemporal}" alt="previsualización">` : '<span class="sala-chip-foto" style="width:60px;height:60px;font-size:1.6rem">🎛️</span>'}</div>
-            <label class="btn btn-sm">🏷️ Logo de la sala<input type="file" id="sa-logo" accept="image/*" hidden></label>
-          </div>
-          <label>Fotografías<input type="file" id="sa-fotos" accept="image/*" multiple></label>
-          <button class="btn btn-primary btn-block" type="submit">Enviar solicitud de publicación</button>
-        </form>`}`;
+      <div class="auth-card">
+        <h1 class="auth-title">Registrar mi sala de ensayo</h1>
+        ${paso1 ? `
+          <p class="auth-sub">Paso 1 de 2 · Tus datos. La sala queda pendiente de aprobación.</p>
+          <form id="f-duenio" class="auth-form" novalidate>
+            ${campoAuth('sg-nombre', 'Nombre y apellido', { req: true, valida: 'nombre', ac: 'name', ph: 'Ej.: Ana Pérez' })}
+            ${campoAuth('sg-usuario', 'Nombre de usuario', { req: true, valida: 'usuario', ac: 'username', ph: 'Ej.: salanueva', max: 24 })}
+            ${campoAuth('sg-email', 'Email', { type: 'email', req: true, valida: 'email', ac: 'email', ph: 'tucorreo@mail.com', max: 80 })}
+            ${campoAuth('sg-tel', 'Teléfono', { req: true, valida: 'telefono', ac: 'tel', ph: 'Ej.: 15854455', max: 30 })}
+            ${campoPassword('sg-pass', 'Contraseña', { fuerza: true, ph: 'Mínimo 6 caracteres' })}
+            <label class="check"><input type="checkbox" id="sg-soy"> Soy responsable de esta sala</label>
+            <button class="btn btn-primary btn-block btn-lg" type="submit">Continuar →</button>
+          </form>` : `
+          <p class="auth-sub">Paso 2 de 2 · Los datos de la sala. La administración de Más Música la revisa antes de publicarla.</p>
+          <form id="f-sala" class="auth-form" novalidate>
+            ${campoAuth('sa-name', 'Nombre de la sala', { req: true, valida: 'obligatorio', ph: 'Ej.: Estudio Sur' })}
+            ${campoAuth('sa-direccion', 'Dirección', { req: true, valida: 'obligatorio', ph: 'Calle y número', max: 160 })}
+            <div class="row2">
+              ${campoAuth('sa-loc', 'Localidad / zona', { max: 80 })}
+              ${campoAuth('sa-tel', 'Teléfono de la sala', { valida: 'telefono', max: 30 })}
+            </div>
+            ${campoArea('sa-desc', 'Descripción', { ph: 'Ej.: Sala con buena acústica para bandas de 4 a 6 personas' })}
+            <div class="row2">
+              ${campoAuth('sa-price', 'Precio por hora', { type: 'number', req: true, valida: 'obligatorio', val: '10000', extra: ' min="1" step="1"' })}
+              ${campoAuth('sa-cap', 'Capacidad', { type: 'number', val: '4', extra: ' min="1" step="1"' })}
+            </div>
+            ${campoAuth('sa-mapa', 'Ubicación en el mapa', { ph: 'Enlace de Google Maps', max: 300 })}
+            <div class="row2">
+              ${campoAuth('sa-lat', 'Latitud', { ph: '-31.4201', extra: ' inputmode="decimal"' })}
+              ${campoAuth('sa-lng', 'Longitud', { ph: '-64.1888', extra: ' inputmode="decimal"' })}
+            </div>
+            <div class="row wrap">
+              <button type="button" class="btn btn-sm" data-accion-ubicacion="ubicar">🗺 Ubicar en el mapa</button>
+              <button type="button" class="btn btn-sm" data-accion-ubicacion="buscar">🔎 Buscar por dirección</button>
+            </div>
+            <p class="muted small">Es lo primero que ven los músicos: con la ubicación, tu sala aparece en el mapa de Más Música.</p>
+            <h3 class="sub">Horario de atención</h3>
+            <div class="dias-sel" id="sa-dias">
+              <label class="check"><input type="checkbox" value="1" checked> Lun</label>
+              <label class="check"><input type="checkbox" value="2" checked> Mar</label>
+              <label class="check"><input type="checkbox" value="3" checked> Mié</label>
+              <label class="check"><input type="checkbox" value="4" checked> Jue</label>
+              <label class="check"><input type="checkbox" value="5" checked> Vie</label>
+              <label class="check"><input type="checkbox" value="6"> Sáb</label>
+              <label class="check"><input type="checkbox" value="0"> Dom</label>
+            </div>
+            <div class="row2">
+              ${campoAuth('sa-open', 'Abre', { type: 'time', val: '10:00' })}
+              ${campoAuth('sa-close', 'Cierra', { type: 'time', val: '22:00' })}
+            </div>
+            <h3 class="sub">Equipamiento disponible</h3>
+            ${campoAuth('sa-eq-instrumentos', 'Instrumentos', { ph: 'Ej.: Guitarra, Bajo, Batería', max: 300 })}
+            ${campoAuth('sa-eq-bateria', 'Batería', { max: 300 })}
+            ${campoAuth('sa-eq-amp', 'Amplificadores', { max: 300 })}
+            ${campoAuth('sa-eq-micro', 'Micrófonos', { max: 300 })}
+            ${campoAuth('sa-eq-consola', 'Consola / sonido', { max: 300 })}
+            ${campoAuth('sa-eq-otros', 'Otros', { max: 300 })}
+            <div class="auth-foto">
+              <div class="sala-foto-edit" id="sa-preview">${fotoTemporal ? `<img src="${fotoTemporal}" alt="previsualización">` : '<span class="sala-chip-foto" style="width:60px;height:60px;font-size:1.6rem">🎛️</span>'}</div>
+              <div class="auth-foto-txt">
+                <label class="btn btn-sm">🏷️ Logo de la sala<input type="file" id="sa-logo" accept="image/*" hidden></label>
+                <span class="muted small">Opcional</span>
+              </div>
+            </div>
+            <label class="campo" data-campo="sa-fotos">
+              <span class="campo-lbl">Fotografías</span>
+              <input type="file" id="sa-fotos" accept="image/*" multiple>
+              <span class="campo-msg"></span>
+            </label>
+            <button class="btn btn-primary btn-block btn-lg" type="submit">Enviar solicitud de publicación</button>
+          </form>`}
+      </div>`;
   }
 }
 
@@ -2473,6 +2646,18 @@ function wireAuth() {
   const b = $('#auth-body');
 
   b.onclick = e => {
+    /* Mostrar / ocultar contraseña */
+    const eye = e.target.closest('[data-ver]');
+    if (eye) {
+      const inp = document.getElementById(eye.dataset.ver);
+      if (inp) {
+        const ver = inp.type === 'password';
+        inp.type = ver ? 'text' : 'password';
+        eye.textContent = ver ? '🙈' : '👁';
+        inp.focus();
+      }
+      return;
+    }
     const v = e.target.closest('[data-vista]');
     if (v) {
       pantallaAuth(v.dataset.vista);
@@ -2494,6 +2679,29 @@ function wireAuth() {
         .catch(err => toast(err.message || 'No se pudo leer la imagen', 'error'));
     }
   });
+
+  /* Validación en vivo: al escribir */
+  b.addEventListener('input', e => {
+    const i = e.target;
+    if (!(i && i.matches && i.matches('[data-valida]'))) return;
+    if (i.dataset.valida === 'usuario') i.value = i.value.toLowerCase();
+    if (i.dataset.valida === 'password') {
+      pintarFuerza(i);
+      const p2 = document.getElementById('mu-pass2');
+      if (p2 && p2.value) validarInput(p2);
+    }
+    /* Si el campo ya estaba en error, se revisa mientras se corrige */
+    const w = i.closest('.campo');
+    if (w && w.classList.contains('error')) validarInput(i);
+  });
+
+  /* Validación al salir del campo + chequeo de disponibilidad */
+  b.addEventListener('blur', e => {
+    const i = e.target;
+    if (!(i && i.matches && i.matches('[data-valida]'))) return;
+    validarInput(i);
+    if (i.dataset.valida === 'usuario' || i.dataset.valida === 'email') chequearDisponible(i);
+  }, true);
 
   /* Ubicación de la sala: tocar el mapa o buscar la dirección */
   b.addEventListener('click', e => {
@@ -2520,6 +2728,13 @@ function wireAuth() {
   b.onsubmit = async e => {
     const f = e.target;
     e.preventDefault();
+
+    /* Primero valida todo el formulario */
+    if (!validarFormulario(f)) {
+      toast('Revisá los datos marcados', 'warn');
+      return;
+    }
+
     const btn = f.querySelector('button[type=submit]');
     const texto = btn ? btn.textContent : '';
     if (btn) { btn.disabled = true; btn.textContent = 'Guardando…'; }
@@ -2539,7 +2754,8 @@ function wireAuth() {
         pantallaAuth('duenio-sala');
       } else if (f.id === 'f-sala') await registrarSala();
     } catch (err) {
-      toast(err.message || 'No se pudo completar la operación', 'error');
+      /* Si el error es de un dato puntual (usuario/email en uso, etc.), se marca el campo */
+      if (!mapearErrorServidor(err.message)) toast(err.message || 'No se pudo completar la operación', 'error');
     } finally {
       if (btn) { btn.disabled = false; btn.textContent = texto; }
     }
