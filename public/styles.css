@@ -99,6 +99,17 @@ body {
   flex-direction: column;
   overflow: hidden;
 }
+
+/* Marca de agua: logo fijo y muy sutil detrás de todo el contenido */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: url('assets/marca-agua.png') center / min(440px, 82vw) no-repeat;
+  opacity: .06;
+}
 button { font-family: inherit; cursor: pointer; }
 input, select { font-family: inherit; }
 
