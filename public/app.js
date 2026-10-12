@@ -2498,8 +2498,7 @@ function pantallaAuth(vista = 'inicio') {
         <p class="auth-cuenta">¿Ya tenés cuenta?
           <button type="button" class="auth-link" data-vista="login">Iniciar sesión</button>
         </p>
-      </div>
-      <p class="muted small center auth-nota">La cuenta de administración general no se registra acá.</p>`;
+      </div>`;
     return;
   }
 
