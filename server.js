@@ -388,7 +388,7 @@ function publicState(state) {
       reglas: state.settings.reglas || REGlas_DEFAULT,
       gmapsKey: String(state.settings.gmapsKey || ''), // clave pública de Google Maps (se restringe por referrer)
       contacto: state.settings.contacto || { whatsapp: '', instagram: '', facebook: '', email: '', tiktok: '' },
-      avisoMail: !!process.env.RESEND_API_KEY, // si hay clave de Resend, los avisos llegan por mail además de la app
+      avisoMail: !!RESEND_KEY, // si hay clave de Resend, los avisos llegan por mail además de la app
     },
   };
 }
@@ -643,13 +643,24 @@ function avisar(state, userId, titulo, texto, tipo = 'info', ref = null) {
 
 /*
  * Mail real de avisos, sin dependencias externas (usa la API HTTP de Resend).
- * Si no está configurado RESEND_API_KEY, el aviso igual llega dentro de la app.
+ * Si no hay clave de Resend, el aviso igual llega dentro de la app.
  *   RESEND_API_KEY  clave de la API (panel de Resend → API Keys)
  *   RESEND_FROM     remitente (defecto: onboarding@resend.dev, que solo envía
  *                   al dueño de la cuenta hasta verificar un dominio propio)
+ * La clave también se puede guardar en el archivo local "resend.key" (una sola
+ * línea, sin espacios): así queda activada siempre, sin variables de entorno.
  * El destinatario es el email de contacto cargado en los ajustes.
  */
-const RESEND_KEY = String(process.env.RESEND_API_KEY || '').trim();
+/* Clave de Resend: variable de entorno o, si no está, archivo local "resend.key" */
+function leerClaveResend() {
+  const deEnv = String(process.env.RESEND_API_KEY || '').trim();
+  if (deEnv) return deEnv;
+  try {
+    const txt = fs.readFileSync(path.join(__dirname, 'resend.key'), 'utf8');
+    return String(txt).split(/\r?\n/)[0].trim();
+  } catch (e) { return ''; }
+}
+const RESEND_KEY = leerClaveResend();
 const RESEND_FROM = String(process.env.RESEND_FROM || '').trim() || 'Más Música <onboarding@resend.dev>';
 
 async function enviarMail(para, asunto, texto) {
