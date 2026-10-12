@@ -16,6 +16,11 @@ const fmtMoney = n => {
   return state.settings.currency + (num < 0 ? '-' : '') + txt;
 };
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+/* Solo permite enlaces web (http/https): bloquea javascript:, data: y otros esquemas en href */
+const urlSegura = s => {
+  const u = String(s || '').trim();
+  return /^https?:\/\/[^\s"'<>]+$/i.test(u) ? u : '';
+};
 
 /* ---------- Bandas ---------- */
 const ETIQUETA_FORMATO = { vertical: 'vertical 3:4', horizontal: 'horizontal 4:3', cuadrado: 'cuadrado 1:1' };
@@ -502,7 +507,7 @@ function fichaSala(id) {
       ${r.telefono ? `<div><span class="muted">Teléfono</span><strong>${esc(r.telefono)}</strong></div>` : ''}
       ${r.localidad ? `<div><span class="muted">Zona</span><strong>${esc(r.localidad)}</strong></div>` : ''}
     </div>
-    ${r.direccion ? `<p class="ficha-dir">📍 ${esc(r.direccion)}${r.mapa ? ` · <a href="${esc(r.mapa)}" target="_blank" rel="noopener">ver en el mapa</a>` : ''}</p>` : ''}
+    ${r.direccion ? `<p class="ficha-dir">📍 ${esc(r.direccion)}${urlSegura(r.mapa) ? ` · <a href="${urlSegura(r.mapa)}" target="_blank" rel="noopener">ver en el mapa</a>` : ''}</p>` : ''}
     ${r.descripcion ? `<p class="ficha-desc">${esc(r.descripcion)}</p>` : ''}
     ${(r.features || []).length ? `<div class="ficha-chips">${r.features.map(f => `<span class="chip">${esc(f)}</span>`).join('')}</div>` : ''}
     <h4 class="sub">Equipamiento</h4>
@@ -725,7 +730,7 @@ function popupSala(r) {
         <div class="row pop-acciones">
           <button class="btn btn-primary btn-sm" data-mapa-sala="${r.id}">Ver horarios</button>
           <button class="btn btn-sm" data-mapa-ficha="${r.id}">ℹ️ Ficha</button>
-          ${gmaps ? `<a class="btn btn-sm" href="${esc(gmaps)}" target="_blank" rel="noopener">📍 Google Maps</a>` : ''}
+          ${urlSegura(gmaps) ? `<a class="btn btn-sm" href="${urlSegura(gmaps)}" target="_blank" rel="noopener">📍 Google Maps</a>` : ''}
           ${tel ? `<a class="btn btn-sm" href="tel:${esc(telHref)}">📞 Llamar</a>` : ''}
           ${yo ? `<button class="btn btn-sm" data-mapa-fav="${r.id}">${esFavorita(r.id) ? '♥' : '♡'}</button>` : ''}
         </div>
@@ -1038,7 +1043,7 @@ const nombreRed = href => {
   return h;
 };
 function linksRedesHTML(txt) {
-  const links = parseRedes(txt);
+  const links = parseRedes(txt).map(urlSegura).filter(Boolean);
   return links.length ? `<div class="promo-links">${links.map(href =>
     `<a class="promo-link" href="${esc(href)}" target="_blank" rel="noopener">${esc(nombreRed(href))}</a>`).join('')}</div>` : '';
 }
@@ -1850,14 +1855,14 @@ async function confirmBooking() {
         <p class="accent"><strong>Seña a pagar ahora: ${fmtMoney(data.pago.sena)}</strong></p>
         <p class="muted small">Total ${fmtMoney(data.pago.total)} · el saldo de ${fmtMoney(data.pago.saldo)} se paga en la sala.</p>
         <p class="muted small">Tu horario queda reservado hasta las ${hasta}. Si no se paga la seña, se libera.</p>
-        ${data.pago.url
-          ? `<a class="btn btn-primary" href="${esc(data.pago.url)}">Pagar la seña con Mercado Pago</a>`
+        ${data.pago.url && urlSegura(data.pago.url)
+          ? `<a class="btn btn-primary" href="${urlSegura(data.pago.url)}">Pagar la seña con Mercado Pago</a>`
           : '<p class="muted small">Modo de prueba: el pago no está conectado todavía.</p>'}
         <button class="btn" id="bk-mine">👤 Ver mis reservas</button>
       </div>`;
     $('#bk-mine').onclick = () => { mostrarMisReservas(); };
     renderMineRapido();
-    if (data.pago.url) { toast('Te llevamos a Mercado Pago para pagar la seña…', 'ok'); setTimeout(() => { location.href = data.pago.url; }, 1500); }
+    if (urlSegura(data.pago.url)) { toast('Te llevamos a Mercado Pago para pagar la seña…', 'ok'); setTimeout(() => { location.href = urlSegura(data.pago.url); }, 1500); }
     return;
   }
   const room = state.rooms.find(r => r.id === sel.roomId);
