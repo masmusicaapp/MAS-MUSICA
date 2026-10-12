@@ -830,8 +830,15 @@ function renderMapaLista() {
     btn.title = `Deslizá para ver las ${salas.length} salas`;
   }
   caja.innerHTML = `
-    <h3 class="sub">${miUbicacion ? '📍 Salas más cercanas a vos' : '🗺 Todas las salas'}</h3>
-    <div class="mapa-lista-items">
+    <div class="mapa-lista-head">
+      <h3 class="sub">${miUbicacion ? '📍 Salas más cercanas a vos' : '🗺 Todas las salas'}</h3>
+      <div class="mapa-lista-ctrl">
+        <span class="mapa-indice" id="mapa-indice">1 / ${salas.length}</span>
+        <button type="button" class="mapa-flecha" id="mapa-prev" aria-label="Sala anterior" title="Anterior">‹</button>
+        <button type="button" class="mapa-flecha" id="mapa-next" aria-label="Sala siguiente" title="Siguiente">›</button>
+      </div>
+    </div>
+    <div class="mapa-lista-items" aria-label="Salas (deslizá de costado)">
       ${salas.map(r => {
         const ubic = tieneUbicacion(r);
         const km = (miUbicacion && ubic)
@@ -862,6 +869,193 @@ function renderMapaLista() {
         </article>`;
       }).join('')}
     </div>`;
+  if (window.matchMedia('(min-width: 960px)').matches) prepararCarruselDesktop();
+}
+
+/* ---------- Carrusel horizontal de salas (solo escritorio) ---------- */
+
+/* En pantallas anchas arma cada tarjeta con la foto + datos arriba y los
+   botones abajo, y conecta flechas, rueda del mouse y arrastre */
+function prepararCarruselDesktop() {
+  const track = document.querySelector('#mapa-lista .mapa-lista-items');
+  if (!track) return;
+  track.querySelectorAll('.mapa-item').forEach(art => {
+    const foto = art.querySelector('.mapa-item-foto');
+    const info = art.querySelector('.mapa-item-info');
+    if (!foto || !info || art.querySelector('.mapa-item-top')) return;
+    const top = document.createElement('div');
+    top.className = 'mapa-item-top';
+    art.insertBefore(top, foto);
+    top.appendChild(foto);
+    top.appendChild(info);
+  });
+  const prev = $('#mapa-prev');
+  const next = $('#mapa-next');
+  if (prev) prev.onclick = () => moverCarrusel(-1);
+  if (next) next.onclick = () => moverCarrusel(1);
+  conectarBotonSalas();
+  carruselMapaDrag();
+  actualizarCarrusel(track);
+  let t = null;
+  track.addEventListener('scroll', () => {
+    if (t) return;
+    t = setTimeout(() => { t = null; actualizarCarrusel(track); }, 80);
+  });
+}
+
+/* Botón "ocultar / mostrar" la lista de salas (solo escritorio) */
+function conectarBotonSalas() {
+  const tog = $('#mapa-lista-toggle');
+  if (!tog || tog._ok) return;
+  tog._ok = true;
+  tog.onclick = () => {
+    const oculta = document.body.classList.toggle('salas-oculta');
+    actualizarBotonSalas();
+    if (!oculta) {
+      const track = document.querySelector('#mapa-lista .mapa-lista-items');
+      setTimeout(() => { if (track) actualizarCarrusel(track); }, 360);
+    }
+  };
+  actualizarBotonSalas();
+}
+
+function actualizarBotonSalas() {
+  const tog = $('#mapa-lista-toggle');
+  if (!tog) return;
+  const oculta = document.body.classList.contains('salas-oculta');
+  tog.textContent = oculta ? '🗒️' : '✕';
+  const txt = oculta ? 'Mostrar la lista de salas' : 'Ocultar la lista de salas';
+  tog.title = txt;
+  tog.setAttribute('aria-label', txt);
+}
+
+/* Arrastre con el mouse: la tira sigue al cursor y al soltar encaja sola
+   en la tarjeta más cercana (en el celular el desplazamiento es nativo) */
+function carruselMapaDrag() {
+  const track = document.querySelector('#mapa-lista .mapa-lista-items');
+  if (!track || track._carruselOk) return;
+  track._carruselOk = true;
+  let drag = null;
+
+  track.addEventListener('pointerdown', e => {
+    if (e.pointerType === 'touch') return;   /* el dedo usa el scroll nativo */
+    if (e.button !== 0) return;
+    if (e.target.closest('button, a')) return;
+    drag = { x: e.clientX, sl: track.scrollLeft, movido: false };
+    track._carruselMovido = false;
+    track.style.scrollSnapType = 'none';   /* que siga al cursor sin saltar */
+    track.style.cursor = 'grabbing';
+    try { track.setPointerCapture(e.pointerId); } catch (err) {}
+  });
+
+  track.addEventListener('pointermove', e => {
+    if (!drag) return;
+    const dx = drag.x - e.clientX;
+    if (Math.abs(dx) > 5) drag.movido = true;
+    track.scrollLeft = drag.sl + dx;   /* la tira acompaña al mouse */
+  });
+
+  const soltar = e => {
+    if (!drag) return;
+    const movido = drag.movido;
+    drag = null;
+    track.style.cursor = '';
+    try { track.releasePointerCapture(e.pointerId); } catch (err) {}
+    track._carruselMovido = movido;
+    encajarCarrusel(track);
+    track.style.scrollSnapType = '';   /* vuelve el encaje suave */
+  };
+  track.addEventListener('pointerup', soltar);
+  track.addEventListener('pointercancel', soltar);
+
+  /* La rueda del mouse desliza la tira de costado */
+  track.addEventListener('wheel', e => {
+    if (Math.abs(e.deltaX) >= Math.abs(e.deltaY)) return;  /* scroll horizontal nativo */
+    const antes = track.scrollLeft;
+    track.scrollLeft = antes + e.deltaY;
+    if (track.scrollLeft !== antes) e.preventDefault();
+  }, { passive: false });
+
+  /* Si veníamos de arrastrar, ese clic no abre la sala */
+  track.addEventListener('click', e => {
+    if (track._carruselMovido) {
+      track._carruselMovido = false;
+      e.stopPropagation();
+      e.preventDefault();
+    }
+  });
+}
+
+/* Centra la tira en una tarjeta */
+function centrarEnTarjeta(track, card) {
+  const t = track.getBoundingClientRect();
+  const c = card.getBoundingClientRect();
+  const destino = track.scrollLeft + (c.left - t.left) - (track.clientWidth - c.width) / 2;
+  const max = Math.max(0, track.scrollWidth - track.clientWidth);
+  track.scrollLeft = Math.max(0, Math.min(max, destino));
+}
+
+/* Devuelve la tarjeta más cercana al centro (índice 0-based) */
+function posicionCarrusel(track) {
+  const cards = Array.from(track.querySelectorAll('.mapa-item'));
+  const n = cards.length;
+  if (!n) return { idx: 0, n: 0 };
+  const t = track.getBoundingClientRect();
+  const centro = t.left + t.width / 2;
+  let idx = 0, min = Infinity;
+  cards.forEach((c, i) => {
+    const r = c.getBoundingClientRect();
+    const d = Math.abs((r.left + r.width / 2) - centro);
+    if (d < min) { min = d; idx = i; }
+  });
+  return { idx, n };
+}
+
+/* Encaja la tira en la tarjeta más cercana al centro */
+function encajarCarrusel(track) {
+  const cards = Array.from(track.querySelectorAll('.mapa-item'));
+  if (!cards.length) return;
+  const { idx } = posicionCarrusel(track);
+  centrarEnTarjeta(track, cards[idx]);
+  actualizarCarrusel(track);
+}
+
+/* Pinta el contador "n / N" y habilita/deshabilita las flechas */
+function pintarCarrusel(idx, n) {
+  const ind = $('#mapa-indice');
+  if (ind && n) ind.textContent = (idx + 1) + ' / ' + n;
+  const prev = $('#mapa-prev');
+  const next = $('#mapa-next');
+  if (prev) prev.disabled = idx <= 0;
+  if (next) next.disabled = idx >= n - 1;
+}
+
+function actualizarCarrusel(track) {
+  const p = posicionCarrusel(track);
+  pintarCarrusel(p.idx, p.n);
+  return p;
+}
+
+/* Pasa de a una sala con las flechas ‹ › */
+function moverCarrusel(dir) {
+  const track = document.querySelector('#mapa-lista .mapa-lista-items');
+  if (!track) return;
+  const cards = Array.from(track.querySelectorAll('.mapa-item'));
+  if (!cards.length) return;
+  const { idx, n } = posicionCarrusel(track);
+  const nuevo = Math.max(0, Math.min(n - 1, idx + dir));
+  centrarEnTarjeta(track, cards[nuevo]);
+  pintarCarrusel(nuevo, n);
+}
+
+/* Lleva la tira hasta la tarjeta de una sala (al tocar su marcador) */
+function irACarruselSala(id) {
+  const track = document.querySelector('#mapa-lista .mapa-lista-items');
+  if (!track) return;
+  const card = track.querySelector('[data-mapa-item="' + CSS.escape(String(id)) + '"]');
+  if (!card) return;
+  centrarEnTarjeta(track, card);
+  actualizarCarrusel(track);
 }
 
 /* Centra el mapa en una sala de la lista y abre su ficha en el popup */
@@ -872,6 +1066,7 @@ function verSalaEnMapa(id) {
   centrarMapa(punto, 15);
   if (mapaEsGoogle()) { if (gmap) abrirVentanaInfo(popupSala(r)); return; }
   if (marcasSala[id]) { try { marcasSala[id].openPopup(); } catch (e) {} }
+  irACarruselSala(id);
 }
 
 /* ---------- Ventana de información de Google (mismo contenido que los popups) ---------- */
@@ -955,7 +1150,8 @@ function renderMapaLeaflet() {
     });
     marcasSala[r.id] = L.marker([Number(r.lat), Number(r.lng)], { icon: icono, title: r.name })
       .addTo(capaMarcas)
-      .bindPopup(popupSala(r));
+      .bindPopup(popupSala(r))
+      .on('click', () => irACarruselSala(r.id));
   });
 
   /* 2. Las reservas del usuario, sobre el lugar de cada sala */

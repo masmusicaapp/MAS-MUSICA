@@ -1846,6 +1846,10 @@ main {
 .mapa-lista { margin-top: 16px; }
 .mapa-lista .sub { margin: 0 0 10px; }
 .mapa-lista-items { display: grid; gap: 10px; grid-template-columns: 1fr; }
+/* Encabezado de la lista: título + controles ‹ › (los controles son solo de escritorio) */
+.mapa-lista-head { margin: 0 0 10px; }
+.mapa-lista-head .sub { margin: 0; }
+.mapa-lista-ctrl { display: none; }
 .mapa-item {
   display: flex; align-items: center; gap: 12px;
   background: var(--panel2); border: 1px solid var(--line);
@@ -2001,6 +2005,183 @@ main {
   }
   body.nav-mapa .mapa-item-acciones .btn { flex: 1 1 auto; }
   body.nav-mapa .mapa-item-acciones .btn-primary { flex: 1 1 100%; }
+  /* El contador "n / N" y el botón de ocultar la lista son solo de escritorio */
+  body.nav-mapa .mapa-indice { display: none; }
+  body.nav-mapa #view-mapa #mapa-lista-toggle { display: none; }
+}
+
+/* ---------- Mapa a pantalla completa (escritorio) ----------
+   En pantallas anchas el mapa también cubre toda la ventana: el riel
+   lateral flota sobre el mapa, los botones 📍/🔎 van abajo a la derecha
+   sobre el mapa y la lista de salas es un panel lateral siempre visible. */
+@media (min-width: 960px) {
+  body.nav-mapa #app-header { display: none; }
+  body.nav-mapa main#view-mapa { padding: 0; max-width: none; overflow: hidden; }
+  body.nav-mapa #view-mapa > .panel {
+    background: none; border: none; border-radius: 0; padding: 0; height: 100%;
+  }
+  body.nav-mapa #mapa {
+    position: fixed; inset: 0;
+    width: 100vw; height: 100vh; height: 100dvh;
+    min-height: 0; max-height: none;
+    border: none; border-radius: 0; z-index: 0;
+  }
+  /* Los textos de ayuda quedan ocultos (el mapa es a pantalla completa) */
+  body.nav-mapa #pane-mapa .mapa-ayuda { display: none; }
+
+  /* El riel lateral queda transparente, flotando sobre el mapa */
+  body.nav-mapa .dock-container { background: transparent; }
+  body.nav-mapa .bottom-nav {
+    background: transparent; border-color: transparent; box-shadow: none;
+    -webkit-backdrop-filter: none; backdrop-filter: none;
+  }
+  body.nav-mapa .nav-btn, body.nav-mapa .nav-btn-center {
+    text-shadow: 0 1px 3px rgba(0, 0, 0, .6);
+  }
+  body.nav-mapa .nav-btn svg { filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .55)); }
+
+  /* Control de zoom y créditos de OpenStreetMap: abajo a la izquierda
+     (a la izquierda del panel de salas, afuera del riel) */
+  body.nav-mapa #mapa .leaflet-top.leaflet-left {
+    left: 16px; top: auto; bottom: 64px;
+  }
+  body.nav-mapa #mapa .leaflet-control-attribution {
+    position: fixed;
+    left: 16px; right: auto; bottom: 16px;
+    margin: 0;
+    background: rgba(8, 12, 24, .62); color: rgba(255, 255, 255, .78);
+    border-radius: 999px; padding: 3px 10px; font-size: .7rem;
+  }
+  body.nav-mapa #mapa .leaflet-control-attribution a { color: rgba(255, 255, 255, .9); }
+
+  /* Botones 📍 / 🔎 flotantes, a la izquierda del panel de salas */
+  body.nav-mapa #view-mapa .panel-head {
+    position: fixed;
+    right: calc(min(392px, 35vw) + 32px);
+    bottom: 18px;
+    top: auto; left: auto;
+    z-index: 96; margin: 0; padding: 0;
+    background: none; border: none; box-shadow: none;
+    -webkit-backdrop-filter: none; backdrop-filter: none;
+    flex-direction: column; align-items: flex-end;
+  }
+  body.nav-mapa #view-mapa .panel-head h2 { display: none; }
+  body.nav-mapa #view-mapa .panel-head .row { flex-direction: column; gap: 10px; margin: 0; flex-wrap: nowrap; }
+  body.nav-mapa #view-mapa .panel-head .btn {
+    width: 48px; height: 48px; padding: 0; border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 1.2rem; line-height: 1; color: var(--text);
+    background: var(--pop);
+    -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+    border: 1px solid var(--line);
+    box-shadow: 0 10px 26px rgba(0, 0, 0, .45), inset 0 1px 0 rgba(255, 255, 255, .07);
+    transition: transform .12s ease, border-color .15s ease, color .15s ease;
+  }
+  body.nav-mapa #view-mapa .panel-head .btn:hover { border-color: var(--accent); color: var(--accent2); }
+  body.nav-mapa #view-mapa .panel-head .btn:active { transform: scale(.92); }
+  body.nav-mapa .mapa-btn-txt { display: none; }
+
+  /* Aviso (mapa sin internet): tarjeta flotante arriba, a la izquierda del panel */
+  body.nav-mapa #mapa-fallback:not([hidden]) {
+    position: fixed; left: auto; right: calc(min(392px, 35vw) + 32px);
+    top: 18px; bottom: auto;
+    z-index: 96; margin: 0; padding: 14px; display: block;
+    background: var(--pop); border: 1px solid var(--line); border-radius: 14px;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, .4);
+  }
+
+  /* Lista de salas: panel lateral derecho (se puede ocultar con el botón ✕) */
+  body.nav-mapa #mapa-hoja {
+    position: fixed;
+    top: 16px; right: 16px; bottom: 16px; left: auto;
+    width: min(392px, 35vw);
+    z-index: 6;
+    display: flex; flex-direction: column; align-items: stretch;
+    pointer-events: none;
+    transition: transform .34s cubic-bezier(.22, .9, .28, 1), opacity .24s ease;
+  }
+  /* Con el botón ✕ la lista se guarda y el mapa queda a pantalla completa */
+  body.nav-mapa.salas-oculta #mapa-hoja {
+    transform: translateX(calc(100% + 28px));
+    opacity: 0;
+    pointer-events: none;
+  }
+  /* Sin tirador en escritorio: el panel queda abierto */
+  body.nav-mapa .mapa-hoja-btn { display: none; }
+  body.nav-mapa .mapa-hoja-cuerpo {
+    pointer-events: auto;
+    width: 100%;
+    flex: 1 1 auto; min-height: 0;
+    max-height: none !important;   /* siempre abierto en escritorio */
+    margin-bottom: 0; overflow: hidden;
+    display: flex; flex-direction: column;
+    background: var(--pop);
+    -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+    border: 1px solid var(--line); border-radius: 18px;
+    box-shadow: 0 18px 46px rgba(0, 0, 0, .5), inset 0 1px 0 rgba(255, 255, 255, .05);
+  }
+  body.nav-mapa .mapa-hoja-card {
+    padding: 14px;
+    max-height: none; overflow: hidden;
+    flex: 1 1 auto; min-height: 0;
+    display: flex; flex-direction: column;
+  }
+
+  /* ---------- Carrusel horizontal de salas (solo escritorio) ----------
+     Las tarjetas se deslizan de costado: con el mouse el arrastre sigue
+     al cursor y con rueda/trackpad funciona el scroll nativo. */
+  body.nav-mapa .mapa-lista { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
+  body.nav-mapa .mapa-lista-head {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    margin: 0 0 10px;
+  }
+  body.nav-mapa .mapa-lista-head .sub {
+    margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  body.nav-mapa .mapa-lista-ctrl { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; }
+  body.nav-mapa .mapa-indice {
+    font-size: .72rem; font-weight: 700; color: var(--muted); letter-spacing: .6px;
+    background: var(--panel2); border: 1px solid var(--line); border-radius: 999px;
+    padding: 2px 10px; white-space: nowrap;
+  }
+  body.nav-mapa .mapa-flecha {
+    width: 32px; height: 32px; flex: 0 0 32px; padding: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 1.2rem; line-height: 1; font-weight: 700;
+    color: var(--text); background: var(--panel2);
+    border: 1px solid var(--line); border-radius: 50%;
+    cursor: pointer; transition: border-color .15s, color .15s, transform .12s;
+  }
+  body.nav-mapa .mapa-flecha:hover:not(:disabled) { border-color: var(--accent); color: var(--accent2); }
+  body.nav-mapa .mapa-flecha:active:not(:disabled) { transform: scale(.9); }
+  body.nav-mapa .mapa-flecha:disabled { opacity: .35; cursor: default; }
+  body.nav-mapa .mapa-lista-items {
+    display: flex; gap: 12px; flex: 1 1 auto; min-height: 0;
+    overflow-x: auto; overflow-y: hidden;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x pan-y;
+    padding: 2px 2px 10px;
+    scrollbar-width: none;
+    user-select: none; -webkit-user-select: none;
+    cursor: grab;
+  }
+  body.nav-mapa .mapa-lista-items::-webkit-scrollbar { display: none; }
+  body.nav-mapa .mapa-item {
+    flex: 0 0 auto;
+    scroll-snap-align: center;
+    display: flex; flex-direction: column; justify-content: space-between;
+    align-items: stretch;
+    width: min(78%, 330px);
+    max-width: none;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, .25);
+  }
+  body.nav-mapa .mapa-item-top { display: flex; align-items: center; gap: 12px; min-width: 0; }
+  body.nav-mapa .mapa-item-acciones {
+    margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line);
+  }
+  body.nav-mapa #mapa-lista { margin-top: 0; }
+  body.nav-mapa #mapa-sin-ubicacion:not(:empty) { margin-bottom: 10px; }
 }
 
 /* ================= RESUMEN DEL INICIO ================= */
