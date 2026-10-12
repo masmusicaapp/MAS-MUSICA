@@ -912,6 +912,16 @@ async function handleApi(req, res, url, parts) {
     return sendJson(res, 201, { token, user: usuarioPublico(duenio), room: sala });
   }
 
+  // Consultar si un usuario/email están libres (validación en vivo del registro)
+  if (method === 'GET' && url.pathname === '/api/auth/disponible') {
+    const u = String(url.searchParams.get('usuario') || '').trim().toLowerCase();
+    const e = validarEmail(url.searchParams.get('email') || '');
+    const out = {};
+    if (u) out.usuarioLibre = !(state.users || []).some(x => x.usuario === u);
+    if (e) out.emailLibre = !(state.users || []).some(x => (x.email || '').toLowerCase() === e);
+    return sendJson(res, 200, out);
+  }
+
   // Iniciar sesión
   if (method === 'POST' && url.pathname === '/api/auth/login') {
     const id = String(body.usuario || body.email || '').trim().toLowerCase();
