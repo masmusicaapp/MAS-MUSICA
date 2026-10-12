@@ -535,7 +535,7 @@ function sesionActual(state, req) {
 }
 
 /* ================= Anti fuerza bruta ================= */
-const INTENTOS_LIMITE = 8;               /* intentos fallidos que se permiten */
+const INTENTOS_LIMITE = 25;              /* intentos fallidos que se permiten */
 const INTENTOS_VENTANA = 15 * 60 * 1000; /* en una ventana de 15 minutos */
 const intentosPorIP = new Map();
 
@@ -1130,7 +1130,10 @@ async function handleApi(req, res, url, parts) {
     if (it.bloqueado) return sendJson(res, 429, { error: `Demasiados intentos. Probá de nuevo en ${it.espera} s.` });
     const id = String(body.usuario || body.email || '').trim().toLowerCase();
     const u = (state.users || []).find(x => x.usuario === id || (x.email || '').toLowerCase() === id);
-    if (!u || !verifyPassword(body.password, u)) return sendJson(res, 401, { error: 'Usuario o contraseña incorrectos' });
+    if (!u || !verifyPassword(body.password, u)) {
+      console.log(`[auth] Ingreso fallido en /api/auth/login (usuario "${id}") desde ${ipDeReq(req)}`);
+      return sendJson(res, 401, { error: 'Usuario o contraseña incorrectos' });
+    }
     liberarIntentos(req, 'login');
     if (u.bloqueado) return sendJson(res, 403, { error: 'Tu cuenta está bloqueada. Escribí a la administración de Más Música.' });
     if (u.activo === false) return sendJson(res, 403, { error: 'Tu cuenta está desactivada' });
@@ -1146,6 +1149,7 @@ async function handleApi(req, res, url, parts) {
     const it = chequearIntento(req, 'pin');
     if (it.bloqueado) return sendJson(res, 429, { error: `Demasiados intentos. Probá de nuevo en ${it.espera} s.` });
     if (!pinValido(state, body.pin)) {
+      console.log(`[auth] PIN incorrecto (intento ${it.n}/${INTENTOS_LIMITE}) desde ${ipDeReq(req)}`);
       return sendJson(res, 401, { error: 'PIN incorrecto' });
     }
     liberarIntentos(req, 'pin');
