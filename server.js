@@ -85,7 +85,7 @@ function guardarImagen(id, dataUrl, sufijo, subcarpeta) {
   const s = String(dataUrl || '').trim();
   const m = /^data:image\/(png|jpe?g|webp);base64,([A-Za-z0-9+/=]+)$/i.exec(s);
   if (!m) return null; /* no es data URL: se guarda como ruta/enlace */
-  const tipo = m[1].toLowerCase();
+  const tipo = m[1].toLowerCase().replace(/^jpeg$/, 'jpg'); // "jpeg" y "jpg" son el mismo formato
   const buf = Buffer.from(m[2], 'base64');
   if (!buf.length || buf.length > 6 * 1024 * 1024) return null;
   /* Verifica los "magic bytes": tiene que ser una imagen de verdad.
@@ -122,6 +122,15 @@ function borrarEnAssets(fotos, subcarpeta) {
 const borrarFotoBanda = f => borrarEnAssets(f, 'bandas');
 const borrarFotoSala = f => borrarEnAssets(f, 'salas');
 const borrarFotoUsuario = f => borrarEnAssets(f, 'usuarios');
+
+/* Resultado de guardar una foto: si se guardó como archivo, su ruta; si no, la
+   ruta o enlace tal cual. Un data URL que no se pudo guardar se descarta: guardarlo
+   recortado dejaría una imagen rota. */
+function fotoORuta(valor, guardada) {
+  if (guardada) return guardada;
+  const v = String(valor || '').trim();
+  return v.startsWith('data:') ? '' : v.slice(0, 300);
+}
 
 /* ================= Estado ================= */
 
@@ -1220,7 +1229,7 @@ async function handleApi(req, res, url, parts) {
         if (u.foto && u.foto !== guardada) borrarFotoUsuario(u.foto);
         u.foto = guardada;
       } else {
-        u.foto = String(body.foto).slice(0, 300);
+        u.foto = fotoORuta(body.foto, null);
       }
     }
     if (body.password) {
@@ -1277,8 +1286,8 @@ async function handleApi(req, res, url, parts) {
       telefono: String(telefono || '').slice(0, 20),
       genero: String(genero || '').slice(0, 40),
       integrantes: normalizarIntegrantes(integrantes),
-      foto: guardarFotoBanda(id, foto) || String(foto || '').slice(0, 300) || '',
-      fotoGrupal: guardarFotoBanda(id, fotoGrupal, '-grupo') || String(fotoGrupal || '').slice(0, 300) || '',
+      foto: fotoORuta(foto, guardarFotoBanda(id, foto)),
+      fotoGrupal: fotoORuta(fotoGrupal, guardarFotoBanda(id, fotoGrupal, '-grupo')),
       createdAt: Date.now(),
     };
     state.bands.push(banda);
@@ -1294,12 +1303,12 @@ async function handleApi(req, res, url, parts) {
     if (foto !== undefined) {
       const guardada = guardarFotoBanda(banda.id, foto);
       if (guardada) { if (banda.foto && banda.foto !== guardada) borrarFotoBanda(banda.foto); banda.foto = guardada; }
-      else banda.foto = String(foto).slice(0, 300);
+      else banda.foto = fotoORuta(foto, null);
     }
     if (fotoGrupal !== undefined) {
       const guardada = guardarFotoBanda(banda.id, fotoGrupal, '-grupo');
       if (guardada) { if (banda.fotoGrupal && banda.fotoGrupal !== guardada) borrarFotoBanda(banda.fotoGrupal); banda.fotoGrupal = guardada; }
-      else banda.fotoGrupal = String(fotoGrupal).slice(0, 300);
+      else banda.fotoGrupal = fotoORuta(fotoGrupal, null);
     }
     banda.nombre = String(nombre).trim().slice(0, 60);
     banda.telefono = String(telefono || '').slice(0, 20);
@@ -1886,7 +1895,7 @@ async function handleApi(req, res, url, parts) {
     Object.assign(room, datosDeSala(body, room));
     room.active = active !== false;
     room.activo = active !== false;
-    room.foto = guardarFotoSala(id, foto) || String(foto || '').slice(0, 300) || '';
+    room.foto = fotoORuta(foto, guardarFotoSala(id, foto));
     state.rooms.push(room);
     persist(state);
     return sendJson(res, 201, { state: publicState(state) });
@@ -1913,7 +1922,7 @@ async function handleApi(req, res, url, parts) {
       if (foto !== undefined) {
         const guardada = guardarFotoSala(room.id, foto);
         if (guardada) { if (room.foto && room.foto !== guardada) borrarFotoSala(room.foto); room.foto = guardada; }
-        else room.foto = String(foto).slice(0, 300);
+        else room.foto = fotoORuta(foto, null);
       }
     }
     persist(state);
@@ -2292,8 +2301,7 @@ function datosDeSala(body, prev = {}) {
   if (body.telefono !== undefined) out.telefono = String(body.telefono).slice(0, 30);
   /* Foto horizontal de la sala (se guarda como archivo si viene en data URL) */
   if (body.fotoPortada !== undefined) {
-    const ruta = guardarFotoSala(prev.id || uid(), body.fotoPortada, '-portada')
-      || String(body.fotoPortada || '').slice(0, 300);
+    const ruta = fotoORuta(body.fotoPortada, guardarFotoSala(prev.id || uid(), body.fotoPortada, '-portada'));
     if (prev.fotoPortada && prev.fotoPortada !== ruta) borrarFotoSala(prev.fotoPortada);
     out.fotoPortada = ruta;
   }
