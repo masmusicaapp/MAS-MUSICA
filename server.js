@@ -83,11 +83,21 @@ function guardarImagen(id, dataUrl, sufijo, subcarpeta) {
   const m = /^data:image\/(png|jpe?g|webp);base64,([A-Za-z0-9+/=]+)$/i.exec(s);
   if (!m) return null; /* no es data URL: se guarda como ruta/enlace */
   const tipo = m[1].toLowerCase();
-  const ext = tipo === 'png' ? 'png' : tipo === 'webp' ? 'webp' : 'jpg';
   const buf = Buffer.from(m[2], 'base64');
-  if (buf.length > 6 * 1024 * 1024) return null;
+  if (!buf.length || buf.length > 6 * 1024 * 1024) return null;
+  /* Verifica los "magic bytes": tiene que ser una imagen de verdad.
+     Así un HTML o JS disfrazado de imagen no puede servirse desde la app. */
+  const esPng = buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4e && buf[3] === 0x47;
+  const esJpg = buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff;
+  const esWebp = buf.slice(0, 4).toString('ascii') === 'RIFF' && buf.slice(8, 12).toString('ascii') === 'WEBP';
+  const esImagen = (tipo === 'png' && esPng) || (tipo === 'jpg' && esJpg) || (tipo === 'webp' && esWebp);
+  if (!esImagen) return null;
+  const ext = tipo === 'png' ? 'png' : tipo === 'webp' ? 'webp' : 'jpg';
+  /* El id va en el nombre del archivo: se limpia para que nunca pueda salir de la carpeta */
+  const idLimpio = String(id || 'x').replace(/[^a-zA-Z0-9._-]/g, '').slice(0, 80);
+  const sufLimpio = String(sufijo || '').replace(/[^a-zA-Z0-9._-]/g, '').slice(0, 20);
   fs.mkdirSync(path.join(PUBLIC_DIR, 'assets', subcarpeta), { recursive: true });
-  const rel = `assets/${subcarpeta}/${id}${sufijo}.${ext}`;
+  const rel = `assets/${subcarpeta}/${idLimpio}${sufLimpio}.${ext}`;
   fs.writeFileSync(path.join(PUBLIC_DIR, rel), buf);
   return rel;
 }
@@ -96,9 +106,14 @@ const guardarFotoSala = (id, d, s) => guardarImagen(id, d, s, 'salas');
 const guardarFotoUsuario = (id, d, s) => guardarImagen(id, d, s, 'usuarios');
 
 function borrarEnAssets(fotos, subcarpeta) {
+  const base = path.join(PUBLIC_DIR, 'assets', subcarpeta);
+  const prefijo = 'assets/' + subcarpeta + '/';
   (Array.isArray(fotos) ? fotos : [fotos]).forEach(rel => {
-    if (!rel || !String(rel).startsWith('assets/' + subcarpeta + '/')) return;
-    try { fs.unlinkSync(path.join(PUBLIC_DIR, rel)); } catch (e) { /* ya no existe */ }
+    if (!rel || typeof rel !== 'string' || !rel.startsWith(prefijo)) return;
+    const destino = path.normalize(path.join(base, rel.slice(prefijo.length)));
+    /* Solo borra dentro de la carpeta de la subida: bloquea ".." y rutas que escapan */
+    if (destino !== base && !destino.startsWith(base + path.sep)) return;
+    try { fs.unlinkSync(destino); } catch (e) { /* ya no existe */ }
   });
 }
 const borrarFotoBanda = f => borrarEnAssets(f, 'bandas');
@@ -244,7 +259,7 @@ function defaultState() {
   return {
     settings: {
       currency: '$',
-      adminPin: '1234',
+      /* Sin PIN por defecto: se crea solo cuando la administración lo define (seguro). */
       hours: JSON.parse(JSON.stringify(HORAS_DEFAULT)),
       reglas: JSON.parse(JSON.stringify(REGlas_DEFAULT)),
     },
@@ -318,6 +333,16 @@ function loadState() {
       data.notificaciones = (data.notificaciones || []).filter(n => (data.users || []).some(u => u.id === n.userId));
       if (data.notificaciones.length !== avisosPrevios) cambiado = true;
       if (!data.settings.reglas) { data.settings.reglas = JSON.parse(JSON.stringify(REGlas_DEFAULT)); cambiado = true; }
+      /* Seguridad: el PIN de emergencia se migra a hash (nunca queda en texto plano) */
+      if (data.settings.adminPin && !data.settings.pinHash) {
+        data.settings.pinHash = hashPassword(String(data.settings.adminPin));
+        delete data.settings.adminPin;
+        cambiado = true;
+      }
+      /* Seguridad: las sesiones se guardan como hash, no como token en texto plano */
+      (data.sessions || []).forEach(s => {
+        if (s.token && !s.tokenHash) { s.tokenHash = hashToken(s.token); delete s.token; cambiado = true; }
+      });
       const antes = JSON.stringify(data.rooms);
       data.rooms = data.rooms.map(migrarSala);
       if (JSON.stringify(data.rooms) !== antes) cambiado = true;
@@ -443,23 +468,40 @@ function hashPassword(pass, salt = crypto.randomBytes(16).toString('hex')) {
   return { hash: crypto.scryptSync(String(pass), salt, LONGITUD_HASH).toString('hex'), salt };
 }
 
-function verifyPassword(pass, usuario) {
-  if (!usuario || !usuario.pass || !usuario.pass.hash || !usuario.pass.salt) return false;
-  const real = crypto.scryptSync(String(pass), usuario.pass.salt, LONGITUD_HASH);
-  const esperado = Buffer.from(usuario.pass.hash, 'hex');
-  return real.length === esperado.length && crypto.timingSafeEqual(real, esperado);
+/* Comparación a prueba de tiempo de cualquier clave hasheada (scrypt) */
+function verificarClave(pass, reg) {
+  if (!reg || !reg.hash || !reg.salt) return false;
+  try {
+    const real = crypto.scryptSync(String(pass), reg.salt, LONGITUD_HASH);
+    const esperado = Buffer.from(String(reg.hash), 'hex');
+    return real.length === esperado.length && crypto.timingSafeEqual(real, esperado);
+  } catch (e) { return false; }
 }
+
+function verifyPassword(pass, usuario) {
+  return !!usuario && verificarClave(pass, usuario.pass);
+}
+
+/* Las sesiones NO se guardan en texto plano: solo su hash. Así una fuga de
+   data.json no permite robar sesiones activas. */
+const hashToken = t => crypto.createHash('sha256').update(String(t || '')).digest('hex');
+const sesionCoincide = (s, token) => !!s && (s.tokenHash === hashToken(token) || (s.token && s.token === token));
 
 function crearSesion(state, userId) {
   const token = crypto.randomBytes(32).toString('hex');
   const ahora = Date.now();
   state.sessions = (state.sessions || []).filter(s => s.expira > ahora);
-  state.sessions.push({ token, userId, creado: ahora, expira: ahora + 1000 * 60 * 60 * 24 * 30 });
+  state.sessions.push({ tokenHash: hashToken(token), userId, creado: ahora, expira: ahora + 1000 * 60 * 60 * 24 * 30 });
   return token;
 }
 
 function cerrarSesiones(state, userId) {
   state.sessions = (state.sessions || []).filter(s => s.userId !== userId);
+}
+
+/* Cierra todas las sesiones de un usuario salvo la actual (p. ej. al cambiar la contraseña) */
+function cerrarOtrasSesiones(state, userId, token) {
+  state.sessions = (state.sessions || []).filter(s => s.userId !== userId || sesionCoincide(s, token));
 }
 
 function tokenDeReq(req) {
@@ -471,7 +513,7 @@ function tokenDeReq(req) {
 function sesionActual(state, req) {
   const token = tokenDeReq(req);
   if (!token) return null;
-  const s = (state.sessions || []).find(x => x.token === token);
+  const s = (state.sessions || []).find(x => sesionCoincide(x, token));
   if (!s) return null;
   if (s.expira < Date.now()) return null;
   const u = (state.users || []).find(x => x.id === s.userId);
@@ -479,9 +521,51 @@ function sesionActual(state, req) {
   return u;
 }
 
+/* ================= Anti fuerza bruta ================= */
+const INTENTOS_LIMITE = 8;               /* intentos fallidos que se permiten */
+const INTENTOS_VENTANA = 15 * 60 * 1000; /* en una ventana de 15 minutos */
+const intentosPorIP = new Map();
+
+function ipDeReq(req) {
+  return String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || '?').split(',')[0].trim().slice(0, 64);
+}
+function chequearIntento(req, clave) {
+  const k = clave + '|' + ipDeReq(req);
+  const ahora = Date.now();
+  const e = intentosPorIP.get(k) || { n: 0, reset: ahora + INTENTOS_VENTANA };
+  if (e.reset <= ahora) { e.n = 0; e.reset = ahora + INTENTOS_VENTANA; }
+  if (e.n >= INTENTOS_LIMITE) return { bloqueado: true, espera: Math.ceil((e.reset - ahora) / 1000) };
+  e.n++;
+  intentosPorIP.set(k, e);
+  return { bloqueado: false };
+}
+function liberarIntentos(req, clave) {
+  intentosPorIP.delete(clave + '|' + ipDeReq(req));
+}
+
+/* PIN de emergencia: se guarda SOLO como hash (nunca en texto plano) */
+function pinValido(state, pin) {
+  const s = String(pin || '');
+  if (!s) return false;
+  if (state.settings.pinHash) return verificarClave(s, state.settings.pinHash);
+  /* Datos viejos: PIN en texto plano (se migra a hash al primer guardado) */
+  const viejo = state.settings.adminPin;
+  if (!viejo) return false;
+  const a = Buffer.from(s, 'utf8');
+  const b = Buffer.from(String(viejo), 'utf8');
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+
 /* Administración general: sesión SUPER_ADMIN o el PIN de emergencia */
 function esSuper(state, req) {
-  if (req.headers['x-admin-pin'] && req.headers['x-admin-pin'] === state.settings.adminPin) return true;
+  const pin = req.headers['x-admin-pin'];
+  if (pin) {
+    /* El PIN también está protegido contra fuerza bruta */
+    const it = chequearIntento(req, 'pin');
+    if (it.bloqueado || !pinValido(state, pin)) return false;
+    liberarIntentos(req, 'pin');
+    return true;
+  }
   const u = sesionActual(state, req);
   return !!u && u.rol === 'SUPER_ADMIN';
 }
@@ -789,20 +873,35 @@ function resumenPagos(state, roomId) {
 /* ================= HTTP helpers ================= */
 
 function sendJson(res, code, obj) {
-  res.writeHead(code, { 'Content-Type': 'application/json; charset=utf-8' });
+  if (res.writableEnded || res.destroyed) return;
+  res.writeHead(code, {
+    'Content-Type': 'application/json; charset=utf-8',
+    'Cache-Control': 'no-store',
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'DENY',
+    'Referrer-Policy': 'strict-origin-when-cross-origin',
+  });
   res.end(JSON.stringify(obj));
 }
 
 function readBody(req) {
   return new Promise(resolve => {
     let data = '';
+    let cerrado = false;
+    const terminar = () => { if (!cerrado) { cerrado = true; resolve({}); } };
     req.on('data', c => {
+      if (cerrado) return;
       data += c;
-      if (data.length > 8e6) req.destroy(); // las fotos llegan como data URL
+      if (data.length > 8e6) { req.destroy(); terminar(); } // las fotos llegan como data URL
     });
     req.on('end', () => {
-      try { resolve(JSON.parse(data || '{}')); } catch (e) { resolve({}); }
+      if (!cerrado) {
+        cerrado = true;
+        try { resolve(JSON.parse(data || '{}')); } catch (e) { resolve({}); }
+      }
     });
+    req.on('error', terminar);
+    req.on('close', terminar);
   });
 }
 
@@ -821,15 +920,21 @@ const MIME = {
 };
 
 function serveStatic(req, res, url) {
-  let p = decodeURIComponent(url.pathname);
+  let p;
+  try { p = decodeURIComponent(url.pathname); } catch (e) { res.writeHead(400); return res.end(); }
   if (p === '/') p = '/index.html';
+  /* Solo rutas normales dentro de public/: nada de "..", "." ni caracteres raros */
+  if (p.split('/').some(s => s === '..' || s === '.' || s.includes('\0'))) { res.writeHead(403); return res.end(); }
   const file = path.join(PUBLIC_DIR, p);
   if (!file.startsWith(PUBLIC_DIR + path.sep)) { res.writeHead(403); return res.end(); }
   fs.readFile(file, (err, data) => {
     if (err) { res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' }); return res.end('No encontrado'); }
     res.writeHead(200, {
       'Content-Type': MIME[path.extname(file).toLowerCase()] || 'application/octet-stream',
-      'Cache-Control': 'no-cache'
+      'Cache-Control': 'no-cache',
+      'X-Content-Type-Options': 'nosniff',
+      'X-Frame-Options': 'DENY',
+      'Referrer-Policy': 'strict-origin-when-cross-origin',
     });
     res.end(data);
   });
@@ -848,6 +953,8 @@ async function handleApi(req, res, url, parts) {
 
   // Crear cuenta de músico
   if (method === 'POST' && url.pathname === '/api/auth/registro') {
+    const it = chequearIntento(req, 'registro');
+    if (it.bloqueado) return sendJson(res, 429, { error: `Demasiados intentos. Probá de nuevo en ${it.espera} s.` });
     let nuevo;
     try { nuevo = crearUsuario(state, body, 'USER'); }
     catch (e) { return sendJson(res, e.code || 400, { error: e.message }); }
@@ -859,6 +966,8 @@ async function handleApi(req, res, url, parts) {
 
   // Registrar mi sala de ensayo (crea la cuenta + la sala, pendiente de aprobación)
   if (method === 'POST' && url.pathname === '/api/auth/registro-sala') {
+    const it = chequearIntento(req, 'registro');
+    if (it.bloqueado) return sendJson(res, 429, { error: `Demasiados intentos. Probá de nuevo en ${it.espera} s.` });
     const nombreSala = String(body.sala && body.sala.name || '').trim();
     const direccion = String(body.sala && body.sala.direccion || '').trim();
     if (nombreSala.length < 2) return sendJson(res, 400, { error: 'Escribí el nombre de la sala' });
@@ -924,9 +1033,12 @@ async function handleApi(req, res, url, parts) {
 
   // Iniciar sesión
   if (method === 'POST' && url.pathname === '/api/auth/login') {
+    const it = chequearIntento(req, 'login');
+    if (it.bloqueado) return sendJson(res, 429, { error: `Demasiados intentos. Probá de nuevo en ${it.espera} s.` });
     const id = String(body.usuario || body.email || '').trim().toLowerCase();
     const u = (state.users || []).find(x => x.usuario === id || (x.email || '').toLowerCase() === id);
     if (!u || !verifyPassword(body.password, u)) return sendJson(res, 401, { error: 'Usuario o contraseña incorrectos' });
+    liberarIntentos(req, 'login');
     if (u.bloqueado) return sendJson(res, 403, { error: 'Tu cuenta está bloqueada. Escribí a la administración de Más Música.' });
     if (u.activo === false) return sendJson(res, 403, { error: 'Tu cuenta está desactivada' });
     u.ultimoAcceso = Date.now();
@@ -938,9 +1050,12 @@ async function handleApi(req, res, url, parts) {
 
   // Entrar con el PIN de emergencia (para la cuenta madre si no recuerda la clave)
   if (method === 'POST' && url.pathname === '/api/auth/pin') {
-    if (!state.settings.adminPin || String(body.pin || '') !== state.settings.adminPin) {
+    const it = chequearIntento(req, 'pin');
+    if (it.bloqueado) return sendJson(res, 429, { error: `Demasiados intentos. Probá de nuevo en ${it.espera} s.` });
+    if (!pinValido(state, body.pin)) {
       return sendJson(res, 401, { error: 'PIN incorrecto' });
     }
+    liberarIntentos(req, 'pin');
     const u = (state.users || []).find(x => x.rol === 'SUPER_ADMIN' && !x.bloqueado && x.activo !== false);
     if (!u) return sendJson(res, 403, { error: 'No hay ninguna cuenta de administrador general. Creala con: node server.js --crear-admin' });
     u.ultimoAcceso = Date.now();
@@ -1004,6 +1119,8 @@ async function handleApi(req, res, url, parts) {
       if (!verifyPassword(body.actual || '', u)) return sendJson(res, 403, { error: 'La contraseña actual no coincide' });
       if (String(body.password).length < 6) return sendJson(res, 400, { error: 'La contraseña debe tener al menos 6 caracteres' });
       u.pass = hashPassword(body.password);
+      /* Cambiar la clave cierra las demás sesiones (solo queda esta) */
+      cerrarOtrasSesiones(state, u.id, tokenDeReq(req));
     }
     persist(state);
     return sendJson(res, 200, { user: usuarioPublico(u) });
@@ -1802,7 +1919,8 @@ async function handleApi(req, res, url, parts) {
     if (typeof body.gmapsKey === 'string') state.settings.gmapsKey = body.gmapsKey.trim().slice(0, 200);
     if (body.pin) {
       if (String(body.pin).length < 4) return sendJson(res, 400, { error: 'El PIN debe tener al menos 4 caracteres' });
-      state.settings.adminPin = String(body.pin);
+      state.settings.pinHash = hashPassword(String(body.pin));
+      delete state.settings.adminPin; /* nunca queda el PIN en texto plano */
     }
     if (body.reglas) {
       const r = body.reglas;
@@ -2073,12 +2191,17 @@ function fmtFechaCorta(ds) {
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
   const parts = url.pathname.split('/').filter(Boolean);
+  /* HSTS: si el tráfico llega por HTTPS (p. ej. detrás de un túnel), pide HTTPS siempre */
+  if ((req.headers['x-forwarded-proto'] || '').toLowerCase() === 'https') {
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000');
+  }
   try {
     if (parts[0] === 'api') return await handleApi(req, res, url, parts);
     return serveStatic(req, res, url);
   } catch (e) {
-    console.error(e);
-    sendJson(res, 500, { error: e.message || 'Error interno del servidor' });
+    console.error('[server]', e);
+    /* No se envía el detalle del error al cliente: evita filtrar rutas o archivos internos */
+    sendJson(res, 500, { error: 'Error interno del servidor. Probá de nuevo en unos minutos.' });
   }
 });
 
@@ -2128,6 +2251,11 @@ if (process.argv.includes('--crear-admin')) {
     const state = loadState();
     const creada = asegurarSuperAdmin(state);
     console.log(`🎸 Más Música corriendo en http://localhost:${PORT}`);
+    if (creada) { /* la cuenta madre se muestra abajo */ }
+    else if (verificarClave('1234', state.settings.pinHash)) {
+      console.log('⚠  ATENCIÓN: el PIN de administración sigue siendo el "1234" (el de fábrica).');
+      console.log('   Cambialo YA desde Configuración: cualquiera que lo sepa entra como administrador.');
+    }
     console.log(`   Datos guardados en: ${DATA_FILE}`);
     if (creada) {
       console.log('');
