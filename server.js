@@ -20,8 +20,11 @@
  *   GET  /api/auth/me                  sesión actual
  *   PUT  /api/auth/perfil              actualizar mis datos (nombre, email, usuario, teléfono, foto, contraseña)
  *   PUT  /api/auth/favoritos           { roomId } marca/desmarca favorita
+ *   POST /api/auth/ayuda               pedido de ayuda (olvidé contraseña / cuenta bloqueada) → avisa a la administración (+ mail)
  *
  * CUENTAS (SUPER_ADMIN o PIN de emergencia)
+ *   GET    /api/admin/ayuda               pedidos de ayuda pendientes
+ *   POST   /api/admin/ayuda               { id, desbloquear? } marca un pedido como resuelto (y opcionalmente desbloquea la cuenta)
  *   GET    /api/admin/usuarios            lista de cuentas
  *   PUT    /api/admin/usuarios/:id        { activo, bloqueado, rol }
  *   DELETE /api/admin/usuarios/:id        eliminar cuenta
@@ -52,7 +55,7 @@
  *   POST/PUT/DELETE /api/place-photos[/:id]
  *   DELETE /api/bands/:id
  *   PUT  /api/settings/hours            horarios generales
- *   PUT  /api/settings                  moneda, PIN, reglas
+ *   PUT  /api/settings                  moneda, PIN, reglas, contacto (redes + email de avisos)
  *   POST /api/blocks                    bloquear horario
  *   DELETE /api/blocks/:id
  *   PUT  /api/state                     importar datos
@@ -262,10 +265,13 @@ function defaultState() {
       /* Sin PIN por defecto: se crea solo cuando la administración lo define (seguro). */
       hours: JSON.parse(JSON.stringify(HORAS_DEFAULT)),
       reglas: JSON.parse(JSON.stringify(REGlas_DEFAULT)),
+      /* Contacto y redes: se muestran en la app y el email recibe los avisos (registros y pedidos de ayuda) */
+      contacto: { whatsapp: '', instagram: '', facebook: '', email: '', tiktok: '' },
     },
     users: [],
     sessions: [],
     notificaciones: [],
+    ayuda: [],           /* pedidos de ayuda de los usuarios (olvidé contraseña / cuenta bloqueada) */
     mensajes: [],
     promociones: demoPromociones(),
     rooms: [
@@ -333,6 +339,11 @@ function loadState() {
       data.notificaciones = (data.notificaciones || []).filter(n => (data.users || []).some(u => u.id === n.userId));
       if (data.notificaciones.length !== avisosPrevios) cambiado = true;
       if (!data.settings.reglas) { data.settings.reglas = JSON.parse(JSON.stringify(REGlas_DEFAULT)); cambiado = true; }
+      if (!data.settings.contacto) {
+        data.settings.contacto = { whatsapp: '', instagram: '', facebook: '', email: '', tiktok: '' };
+        cambiado = true;
+      }
+      if (!Array.isArray(data.ayuda)) { data.ayuda = []; cambiado = true; }
       /* Seguridad: el PIN de emergencia se migra a hash (nunca queda en texto plano) */
       if (data.settings.adminPin && !data.settings.pinHash) {
         data.settings.pinHash = hashPassword(String(data.settings.adminPin));
@@ -376,6 +387,8 @@ function publicState(state) {
       hours: state.settings.hours,
       reglas: state.settings.reglas || REGlas_DEFAULT,
       gmapsKey: String(state.settings.gmapsKey || ''), // clave pública de Google Maps (se restringe por referrer)
+      contacto: state.settings.contacto || { whatsapp: '', instagram: '', facebook: '', email: '', tiktok: '' },
+      avisoMail: !!process.env.RESEND_API_KEY, // si hay clave de Resend, los avisos llegan por mail además de la app
     },
   };
 }
@@ -624,6 +637,47 @@ function avisar(state, userId, titulo, texto, tipo = 'info', ref = null) {
   }
   state.notificaciones.unshift(n);
   state.notificaciones = state.notificaciones.slice(0, 400);
+}
+
+/* ================= Avisos a la administración (app + mail) ================= */
+
+/*
+ * Mail real de avisos, sin dependencias externas (usa la API HTTP de Resend).
+ * Si no está configurado RESEND_API_KEY, el aviso igual llega dentro de la app.
+ *   RESEND_API_KEY  clave de la API (panel de Resend → API Keys)
+ *   RESEND_FROM     remitente (defecto: onboarding@resend.dev, que solo envía
+ *                   al dueño de la cuenta hasta verificar un dominio propio)
+ * El destinatario es el email de contacto cargado en los ajustes.
+ */
+const RESEND_KEY = String(process.env.RESEND_API_KEY || '').trim();
+const RESEND_FROM = String(process.env.RESEND_FROM || '').trim() || 'Más Música <onboarding@resend.dev>';
+
+async function enviarMail(para, asunto, texto) {
+  if (!RESEND_KEY || !para || !validarEmail(para)) return false;
+  try {
+    const r = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + RESEND_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from: RESEND_FROM, to: [para], subject: asunto, text: texto }),
+    });
+    if (!r.ok) console.error('[mail]', r.status, String(await r.text().catch(() => '')).slice(0, 300));
+    return r.ok;
+  } catch (e) { console.error('[mail]', e.message); return false; }
+}
+
+/* Email de destino de los avisos (el de contacto, si está cargado) */
+function emailDeAvisos(state) {
+  return (state.settings && state.settings.contacto && state.settings.contacto.email) || '';
+}
+
+/* Avisa a todas las cuentas de administración general y, si hay mail configurado, lo manda también por email */
+function avisarAdministracion(state, titulo, texto, tipo = 'info') {
+  const t = String(titulo).slice(0, 80);
+  const x = String(texto).slice(0, 240);
+  (state.users || []).filter(u => u.rol === 'SUPER_ADMIN').forEach(u => avisar(state, u.id, t, x, tipo));
+  const destino = emailDeAvisos(state);
+  if (destino) enviarMail(destino, t, x).catch(() => {});
+  return true;
 }
 
 function validarEmail(v) {
@@ -960,6 +1014,9 @@ async function handleApi(req, res, url, parts) {
     catch (e) { return sendJson(res, e.code || 400, { error: e.message }); }
     const token = crearSesion(state, nuevo.id);
     avisar(state, nuevo.id, '¡Bienvenido a Más Música!', 'Tu cuenta ya está activa. Buscá tu sala de ensayo y reservá.', 'ok');
+    /* La administración se entera de cada registro (notificación en la app + mail si está configurado) */
+    avisarAdministracion(state, '🎸 Nuevo registro',
+      `@${nuevo.usuario} · ${nuevo.nombre}${nuevo.email ? ' · ' + nuevo.email : ''}${nuevo.localidad ? ' · ' + nuevo.localidad : ''}`, 'info');
     persist(state);
     return sendJson(res, 201, { token, user: usuarioPublico(nuevo) });
   }
@@ -1016,6 +1073,9 @@ async function handleApi(req, res, url, parts) {
     }
     state.rooms.push(sala);
     avisar(state, duenio.id, 'Solicitud enviada', `Revisamos los datos de “${sala.name}”. Te avisamos cuando sea aprobada.`, 'info');
+    /* La administración se entera de cada sala nueva (notificación en la app + mail si está configurado) */
+    avisarAdministracion(state, '🏠 Solicitud de sala pendiente',
+      `“${sala.name}” · dueño @${duenio.usuario}${duenio.email ? ' · ' + duenio.email : ''}`, 'info');
     const token = crearSesion(state, duenio.id);
     persist(state);
     return sendJson(res, 201, { token, user: usuarioPublico(duenio), room: sala });
@@ -1029,6 +1089,39 @@ async function handleApi(req, res, url, parts) {
     if (u) out.usuarioLibre = !(state.users || []).some(x => x.usuario === u);
     if (e) out.emailLibre = !(state.users || []).some(x => (x.email || '').toLowerCase() === e);
     return sendJson(res, 200, out);
+  }
+
+  // Pedido de ayuda (olvidé la contraseña / cuenta bloqueada): llega al panel y al mail de la administración
+  if (method === 'POST' && url.pathname === '/api/auth/ayuda') {
+    const it = chequearIntento(req, 'ayuda');
+    if (it.bloqueado) return sendJson(res, 429, { error: `Demasiados pedidos. Probá de nuevo en ${it.espera} s.` });
+    const MOTIVOS = { olvide: 'Olvidé mi contraseña', bloqueada: 'Cuenta bloqueada o desactivada', otro: 'Otro problema' };
+    const motivo = MOTIVOS[String(body.motivo)] ? String(body.motivo) : 'otro';
+    const ident = String(body.usuario || body.email || '').trim().slice(0, 120);
+    if (!ident) return sendJson(res, 400, { error: 'Escribí tu usuario o email para que podamos ubicarte' });
+    const mensaje = String(body.mensaje || '').trim().slice(0, 500);
+    /* Se busca la cuenta para orientar a la administración, sin revelar si existe (siempre responde el mismo mensaje) */
+    const idB = ident.toLowerCase();
+    const cuenta = (state.users || []).find(u =>
+      u.usuario === idB || (u.email || '').toLowerCase() === idB);
+    const solicitud = {
+      id: uid(),
+      fecha: Date.now(),
+      motivo,
+      ident,
+      mensaje,
+      cuenta: cuenta ? { id: cuenta.id, nombre: cuenta.nombre, usuario: cuenta.usuario, email: cuenta.email || '', rol: cuenta.rol, bloqueado: !!cuenta.bloqueado, activo: cuenta.activo !== false } : null,
+      estado: 'pendiente',
+      resuelta: 0,
+    };
+    state.ayuda = state.ayuda || [];
+    state.ayuda.unshift(solicitud);
+    state.ayuda = state.ayuda.slice(0, 200);
+    const quien = cuenta ? `@${cuenta.usuario} (${cuenta.nombre})` : ident;
+    avisarAdministracion(state, '📥 Pedido de ayuda',
+      `${MOTIVOS[motivo]} · ${quien}${cuenta ? ' · ' + (cuenta.email || 'sin email') : ''}${mensaje ? ' — ' + mensaje : ''}`, 'warn');
+    persist(state);
+    return sendJson(res, 200, { ok: true, mensaje: 'Recibimos tu pedido. La administración te va a escribir para ayudarte.' });
   }
 
   // Iniciar sesión
@@ -1354,6 +1447,31 @@ async function handleApi(req, res, url, parts) {
   }
 
   /* ======================= CUENTAS (SUPER_ADMIN) ======================= */
+
+  // Pedidos de ayuda de los usuarios (solo administración general)
+  if (url.pathname === '/api/admin/ayuda') {
+    if (!esSuper(state, req)) return sendJson(res, 401, { error: 'Acceso solo para la administración general' });
+    if (method === 'GET') return sendJson(res, 200, { ayuda: state.ayuda || [] });
+    if (method === 'POST') {
+      const s = (state.ayuda || []).find(x => x.id === String(body.id || ''));
+      if (!s) return sendJson(res, 404, { error: 'Pedido no encontrado' });
+      s.estado = 'resuelta';
+      s.resuelta = Date.now();
+      const admin = sesionActual(state, req);
+      s.resueltoPor = admin ? admin.id : '';
+      /* Opción del panel: desbloquear/activar la cuenta vinculada al pedido */
+      if (body.desbloquear && s.cuenta && s.cuenta.id) {
+        const u = (state.users || []).find(x => x.id === s.cuenta.id);
+        if (u && u.rol !== 'SUPER_ADMIN') {
+          u.bloqueado = false;
+          u.activo = true;
+          avisar(state, u.id, 'Cuenta habilitada', 'La administración desbloqueó tu cuenta. Ya podés iniciar sesión.', 'ok');
+        }
+      }
+      persist(state);
+      return sendJson(res, 200, { state: publicState(state) });
+    }
+  }
 
   if (url.pathname.startsWith('/api/admin/usuarios')) {
     if (!esSuper(state, req)) return sendJson(res, 401, { error: 'Acceso solo para la administración general' });
@@ -1932,6 +2050,17 @@ async function handleApi(req, res, url, parts) {
         comisionPorcentaje: numEntre(r.comisionPorcentaje, 0, 100, reglasPago(state).comisionPorcentaje),
         minutosPago: numEntre(r.minutosPago, 5, 60, reglasPago(state).minutosPago),
       };
+    }
+    /* Contacto: redes + email. El email recibe los avisos de registros y pedidos de ayuda. */
+    if (body.contacto && typeof body.contacto === 'object') {
+      const c = state.settings.contacto = state.settings.contacto || {};
+      ['whatsapp', 'instagram', 'facebook', 'tiktok'].forEach(k => {
+        if (body.contacto[k] !== undefined) c[k] = String(body.contacto[k]).trim().replace(/[<>]/g, '').slice(0, 60);
+      });
+      if (body.contacto.email !== undefined) {
+        const mail = validarEmail(body.contacto.email);
+        c.email = mail;   /* si no es válido queda vacío (nunca un mail inventado) */
+      }
     }
     persist(state);
     return sendJson(res, 200, { state: publicState(state) });
