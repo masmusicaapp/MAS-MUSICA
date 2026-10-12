@@ -5652,7 +5652,7 @@ function renderAjustes() {
   if (inGmaps) inGmaps.value = state.settings.gmapsKey || '';
   /* Contacto: redes + email de avisos */
   const c = (state.settings && state.settings.contacto) || {};
-  const val = id => { const el = $(id); if (el) el.value = c[id.replace('set-', '')] || ''; };
+  const val = id => { const el = $(id); if (el) el.value = c[id.replace(/^#?set-/, '')] || ''; };
   val('#set-whatsapp'); val('#set-instagram'); val('#set-facebook'); val('#set-tiktok');
   const mailEl = $('#set-contact-email');
   if (mailEl) mailEl.value = c.email || '';
