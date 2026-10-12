@@ -96,6 +96,21 @@
       <svg class="notif-svg" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1A1.7 1.7 0 0 0 9 19.4a1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
       <span class="notif-txt">Ajustes</span>
     </button>
+    <a id="btn-ig" class="btn-ig" title="Seguinos en Instagram" aria-label="Seguinos en Instagram" href="#" target="_blank" rel="noopener" hidden>
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <defs>
+          <linearGradient id="ig-grad" x1="0" y1="24" x2="24" y2="0" gradientUnits="userSpaceOnUse">
+            <stop offset="0" stop-color="#F9CE34"/>
+            <stop offset=".31" stop-color="#EE2A7B"/>
+            <stop offset=".62" stop-color="#6228D7"/>
+            <stop offset="1" stop-color="#2136A0"/>
+          </linearGradient>
+        </defs>
+        <rect x="1.1" y="1.1" width="21.8" height="21.8" rx="6.4" fill="url(#ig-grad)"/>
+        <circle cx="12" cy="12" r="4.5" fill="none" stroke="#fff" stroke-width="1.6"/>
+        <circle cx="17.2" cy="6.8" r="1.5" fill="#fff"/>
+      </svg>
+    </a>
     <button id="btn-install" class="btn btn-ghost" title="Instalar app" hidden>📲 <span class="txt">Instalar</span></button>
     <button id="btn-panel" class="btn btn-ghost" title="Mi panel de sala" hidden>🎛️ <span class="txt">Mi sala</span></button>
     <button id="btn-exit-admin" class="btn btn-ghost" hidden title="Salir del panel">← <span class="txt">Salir del panel</span></button>
@@ -458,6 +473,7 @@
     <button class="admin-tab" data-tab="lugar">Lugar</button>
     <span class="admin-tab-group">Comunidad</span>
     <button class="admin-tab" data-tab="usuarios">Cuentas</button>
+    <button class="admin-tab" data-tab="ayuda">Pedidos de ayuda <span class="pill" id="pill-ayuda" hidden>0</span></button>
     <button class="admin-tab" data-tab="bandas">Bandas</button>
     <span class="admin-tab-group">Negocio</span>
     <button class="admin-tab" data-tab="estadisticas">Estadísticas</button>
@@ -493,6 +509,16 @@
       </div>
       <p class="muted small">Podés bloquear o desactivar cuentas y cambiar el rol. Los datos de las cuentas no se puede ver en la app pública.</p>
       <div id="usuarios-list"></div>
+    </div>
+  </section>
+
+  <section id="tab-ayuda" class="tab" hidden>
+    <div class="panel">
+      <div class="panel-head">
+        <h2>📥 Pedidos de ayuda</h2>
+      </div>
+      <p class="muted small">Los usuarios piden ayuda cuando olvidaron la contraseña o su cuenta quedó bloqueada o desactivada. También te llega un aviso en el timbre 🔔 y por mail si configuraste el correo en Ajustes. Puedo desbloquear la cuenta en el acto desde acá.</p>
+      <div id="ayuda-list"></div>
     </div>
   </section>
 
@@ -614,6 +640,35 @@
         habilitando <em>Maps JavaScript API</em> y <em>Geocoding API</em>, y conviene restringirla por referrer.
         <span id="gmaps-estado"></span>
       </p>
+
+      <h3 class="sub">📬 Contacto y avisos</h3>
+      <p class="muted small">
+        Estos datos aparecen en la pantalla de acceso (botón <em>“¿Problemas para entrar? Pedí ayuda”</em>) para que los usuarios te escriban directo.
+        El <strong>email</strong> también recibe un aviso por cada registro y por cada pedido de ayuda.
+      </p>
+      <div class="row2">
+        <label>WhatsApp <span class="muted">(solo números, con código de país)</span>
+          <input id="set-whatsapp" maxlength="30" placeholder="Ej.: 5493514445566" autocomplete="off" spellcheck="false">
+        </label>
+        <label>Instagram
+          <input id="set-instagram" maxlength="60" placeholder="Ej.: mas.musica" autocomplete="off" spellcheck="false">
+        </label>
+      </div>
+      <div class="row2">
+        <label>Email de contacto / avisos
+          <input id="set-contact-email" type="email" maxlength="120" placeholder="Ej.: contacto@masmusica.com" autocomplete="off" spellcheck="false">
+        </label>
+        <label>Facebook
+          <input id="set-facebook" maxlength="60" placeholder="Ej.: masmusica" autocomplete="off" spellcheck="false">
+        </label>
+      </div>
+      <div class="row2">
+        <label>TikTok
+          <input id="set-tiktok" maxlength="60" placeholder="Ej.: mas.musica" autocomplete="off" spellcheck="false">
+        </label>
+        <label></label>
+      </div>
+      <p class="muted small" id="mail-estado"></p>
 
       <h3 class="sub">🔐 PIN de emergencia</h3>
       <label>Nuevo PIN <span class="muted">(dejar vacío para mantener el actual)</span><input type="password" id="set-pin" placeholder="Mínimo 4 caracteres"></label>

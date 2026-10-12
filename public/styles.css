@@ -1180,6 +1180,7 @@ main {
 .auth-rol-fijo .auth-rol-txt > span { color: rgba(11, 21, 34, .78); font-weight: 600; }
 .auth-rol-go { font-size: 1.7rem; line-height: 1; opacity: .5; flex: none; }
 .auth-cuenta { margin: 6px 0 4px; text-align: center; font-size: 1rem; font-weight: 500; color: var(--muted); }
+.auth-redes { margin-top: 14px; text-align: center; }
 .auth-link {
   background: none; border: none; padding: 10px 4px;
   color: var(--accent2); font-size: 1rem; font-weight: 700;
@@ -1192,6 +1193,20 @@ main {
 .auth-div::before, .auth-div::after { content: ''; flex: 1; height: 1px; background: var(--line); }
 .auth-volver { align-self: flex-start; margin-bottom: 10px; }
 .auth-nota { margin-top: 14px; }
+
+/* Botones de contacto en la pantalla de ayuda */
+.auth-ayuda-contacto { gap: 8px; }
+.auth-ayuda-contacto .btn {
+  background: var(--panel2); border: 1.5px solid var(--line); color: var(--text);
+  border-radius: 999px; padding: 8px 14px; text-decoration: none;
+}
+.auth-ayuda-contacto .btn:hover { border-color: var(--accent); color: var(--accent); }
+
+/* Panel de pedidos de ayuda (administración) */
+.ayuda-item { margin-bottom: 10px; }
+.ayuda-item.ayuda-resuelta { opacity: .6; }
+.ayuda-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.ayuda-msj { font-style: italic; opacity: .8; }
 
 /* Formularios */
 .auth-form { display: flex; flex-direction: column; gap: 14px; margin-top: 16px; }
@@ -1324,6 +1339,20 @@ main {
 }
 .notif-txt { line-height: 1; }
 .btn-notif .badge-notif { top: -6px; right: -6px; border: 2px solid var(--hdr); }
+/* Logo de Instagram en la cabecera: chip redondo con el isologotipo real, a juego con el diseño */
+.btn-ig {
+  position: relative; flex: 0 0 auto;
+  width: 42px; height: 42px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+  background: var(--panel2);
+  border: 1px solid var(--line);
+  cursor: pointer;
+  transition: border-color .15s, box-shadow .15s, transform .12s;
+}
+.btn-ig svg { width: 25px; height: 25px; display: block; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .25)); }
+.btn-ig:hover { transform: translateY(-1px); border-color: var(--accent); box-shadow: 0 4px 14px rgba(0, 160, 56, .28); }
+.btn-ig:active { transform: scale(.94); }
 /* Con avisos sin leer: acento verde de la app + campana que se sacude */
 .btn-notif.tiene-nuevas {
   border-color: var(--accent);

@@ -16,6 +16,9 @@ const fmtMoney = n => {
   return state.settings.currency + (num < 0 ? '-' : '') + txt;
 };
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+/* Limpia un @usuario de red social para armar un enlace seguro (solo letras, números, . _ -) */
+const limpiarIdentRed = v => String(v || '').trim().replace(/^@+/, '').replace(/[^A-Za-z0-9._-]/g, '');
 /* Solo permite enlaces web (http/https): bloquea javascript:, data: y otros esquemas en href */
 const urlSegura = s => {
   const u = String(s || '').trim();
@@ -2257,6 +2260,20 @@ function mostrarApp() {
   $('#app-header').hidden = false;
   $('#dock-container').hidden = false;
   actualizarBarraSesion();
+  pintarInstagram();
+}
+
+/* Botón de Instagram de la cabecera: enlace a la cuenta para ver contenido (se muestra solo si está cargada) */
+function pintarInstagram() {
+  const el = $('#btn-ig');
+  if (!el) return;
+  const ig = limpiarIdentRed((state && state.settings && state.settings.contacto && state.settings.contacto.instagram) || '');
+  if (ig) {
+    el.href = 'https://www.instagram.com/' + ig;
+    el.hidden = false;
+  } else {
+    el.hidden = true;
+  }
 }
 
 function mostrarAcceso() {
@@ -2461,6 +2478,8 @@ function pantallaAuth(vista = 'inicio') {
   const vol = '<button class="btn btn-sm btn-ghost auth-volver" data-vista="inicio">← Volver</button>';
 
   if (vista === 'inicio') {
+    const cIni = (state && state.settings && state.settings.contacto) || {};
+    const igIni = cIni.instagram ? limpiarIdentRed(cIni.instagram) : '';
     b.innerHTML = `
       <div class="auth-card">
         <div class="auth-titulo">
@@ -2503,6 +2522,7 @@ function pantallaAuth(vista = 'inicio') {
         <p class="auth-cuenta">¿Ya tenés cuenta?
           <button type="button" class="auth-link" data-vista="login">Iniciar sesión</button>
         </p>
+        ${igIni ? `<p class="auth-redes"><a class="auth-link" target="_blank" rel="noopener" href="https://www.instagram.com/${esc(igIni)}">📸 Seguinos en Instagram ${esc('@' + igIni)}</a></p>` : ''}
       </div>`;
     return;
   }
@@ -2519,6 +2539,44 @@ function pantallaAuth(vista = 'inicio') {
           <button class="btn btn-primary btn-block btn-lg" type="submit">Ingresar</button>
           <button type="button" class="btn btn-sm btn-block btn-ghost" data-vista="pin">¿Sos de la administración? Entrá con el PIN</button>
         </form>
+        <p class="auth-cuenta">¿Olvidaste tu contraseña o tu cuenta está bloqueada?
+          <button type="button" class="auth-link" data-vista="ayuda">Pedí ayuda</button>
+        </p>
+      </div>`;
+    return;
+  }
+
+  if (vista === 'ayuda') {
+    const c = (state.settings && state.settings.contacto) || {};
+    const botones = [];
+    const wa = String(c.whatsapp || '').replace(/[^\d+]/g, '');
+    if (wa) botones.push(`<a class="btn btn-sm" target="_blank" rel="noopener" href="https://wa.me/${esc(wa)}">💬 WhatsApp</a>`);
+    if (c.facebook) botones.push(`<a class="btn btn-sm" target="_blank" rel="noopener" href="https://www.facebook.com/${esc(limpiarIdentRed(c.facebook))}">👍 Facebook</a>`);
+    if (c.tiktok) botones.push(`<a class="btn btn-sm" target="_blank" rel="noopener" href="https://www.tiktok.com/@${esc(limpiarIdentRed(c.tiktok))}">🎵 TikTok</a>`);
+    if (c.email) botones.push(`<a class="btn btn-sm" href="mailto:${esc(c.email)}">✉️ Email</a>`);
+    b.innerHTML = `
+      ${vol}
+      <div class="auth-card">
+        <h1 class="auth-title">¿Problemas para entrar?</h1>
+        <p class="auth-sub">Contanos qué pasó: la administración recibe tu pedido y te ayuda a recuperar tu cuenta.</p>
+        <form id="f-ayuda" class="auth-form" novalidate>
+          <label class="campo" data-campo="ay-motivo">
+            <span class="campo-lbl">¿Qué pasó? <span class="req">*</span></span>
+            <select id="ay-motivo" data-obligatorio>
+              <option value="olvide" selected>Olvidé mi contraseña</option>
+              <option value="bloqueada">Mi cuenta está bloqueada o desactivada</option>
+              <option value="otro">Otro problema</option>
+            </select>
+            <span class="campo-msg"></span>
+          </label>
+          ${campoAuth('ay-ident', 'Tu usuario o email', { req: true, valida: 'obligatorio', ac: 'username', ph: 'Ej.: marcelo o marcelo@mail.com', max: 120 })}
+          ${campoArea('ay-msj', 'Contanos qué pasó (opcional)', { ph: 'Ej.: no puedo entrar desde ayer', max: 500 })}
+          <button class="btn btn-primary btn-block btn-lg" type="submit">Enviar pedido</button>
+        </form>
+        ${botones.length ? `
+          <p class="auth-sub" style="margin-top:18px">O escribinos directo por:</p>
+          <div class="row wrap auth-ayuda-contacto">${botones.join('')}</div>` : ''}
+        <p class="muted small" style="margin-top:12px">Tu pedido llega directo a la administración de Más Música. Te respondemos por el mismo canal.</p>
       </div>`;
     return;
   }
@@ -2745,6 +2803,7 @@ function wireAuth() {
     try {
       if (f.id === 'f-login') await iniciarSesion($('#lg-user').value.trim(), $('#lg-pass').value);
       else if (f.id === 'f-pin') await loginConPinAuth($('#pn-pin').value);
+      else if (f.id === 'f-ayuda') await enviarPedidoAyuda();
       else if (f.id === 'f-musico') await registrarMusico(f);
       else if (f.id === 'f-duenio') {
         if (!$('#sg-soy').checked) { toast('Confirmá que sos responsable de la sala', 'warn'); return; }
@@ -2835,6 +2894,19 @@ async function registrarSala() {
   await iniciarSesionConToken(data);
   toast('Solicitud enviada. Revisamos tu sala y te avisamos.', 'ok');
   mostrarPanel();
+}
+
+async function enviarPedidoAyuda() {
+  const data = await api('/api/auth/ayuda', {
+    method: 'POST',
+    body: {
+      motivo: $('#ay-motivo').value,
+      usuario: $('#ay-ident').value.trim(),
+      mensaje: $('#ay-msj').value.trim(),
+    },
+  });
+  toast(data.mensaje || 'Pedido enviado ✓', 'ok');
+  pantallaAuth('inicio');
 }
 
 async function iniciarSesion(user, pass) {
@@ -4425,7 +4497,7 @@ function salirAdmin() {
   goStep(1);
 }
 
-const TABS_ADMIN = ['inicio', 'solicitudes', 'usuarios', 'reservas', 'historial', 'salas', 'horarios', 'bloqueos', 'estadisticas', 'ajustes', 'lugar', 'bandas', 'promociones'];
+const TABS_ADMIN = ['inicio', 'solicitudes', 'usuarios', 'ayuda', 'reservas', 'historial', 'salas', 'horarios', 'bloqueos', 'estadisticas', 'ajustes', 'lugar', 'bandas', 'promociones'];
 
 function renderAdminTab(tab) {
   currentAdminTab = tab;
@@ -4435,6 +4507,7 @@ function renderAdminTab(tab) {
     inicio: renderInicioAdmin,
     solicitudes: renderSolicitudes,
     usuarios: renderUsuarios,
+    ayuda: renderAyuda,
     reservas: renderReservasAdmin,
     historial: renderHistorial,
     salas: renderSalasAdmin,
@@ -4449,6 +4522,9 @@ function renderAdminTab(tab) {
   const pend = (state.rooms || []).filter(r => r.estado === 'pendiente').length;
   const pill = $('#pill-solicitudes');
   if (pill) { pill.hidden = !pend; pill.textContent = pend; }
+  const pendAyuda = (window.__ayuda || []).filter(a => a.estado === 'pendiente').length;
+  const pillAy = $('#pill-ayuda');
+  if (pillAy) { pillAy.hidden = !pendAyuda; pillAy.textContent = pendAyuda; }
 }
 
 /* ---------- Solicitudes de salas (aprobación) ---------- */
@@ -4570,6 +4646,69 @@ async function accionUsuario(id, accion) {
     }
     await cargarUsuarios();
     toast('Cuenta actualizada', 'ok');
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+/* ---------- Pedidos de ayuda (usuarios que no pueden entrar) ---------- */
+function renderAyuda() {
+  const cont = $('#ayuda-list');
+  if (!cont) return;
+  if (!window.__ayuda) { cont.innerHTML = '<p class="muted">Cargando pedidos…</p>'; cargarAyuda(); return; }
+  const lista = window.__ayuda;
+  const MOTIVOS = { olvide: '🔑 Olvidé mi contraseña', bloqueada: '🚫 Cuenta bloqueada/desactivada', otro: '❓ Otro problema' };
+  const fechaCorta = t => new Date(t).toLocaleString('es-AR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  const pendientes = lista.filter(a => a.estado === 'pendiente');
+  const resueltos = lista.filter(a => a.estado === 'resuelta');
+  if (!lista.length) {
+    cont.innerHTML = '<p class="muted">Todavía no hay pedidos de ayuda. Cuando alguien no pueda entrar, aparece acá (y te avisa el timbre 🔔).</p>';
+    return;
+  }
+  const tarjeta = a => `<div class="panel ayuda-item ${a.estado === 'resuelta' ? 'ayuda-resuelta' : ''}">
+    <div class="ayuda-head">
+      <strong>${MOTIVOS[a.motivo] || '❓ Otro problema'}</strong>
+      <span class="muted small">${fechaCorta(a.fecha)}</span>
+    </div>
+    <p>👤 <strong>${esc(a.ident)}</strong>
+      ${a.cuenta ? ` — <span class="muted small">cuenta encontrada: @${esc(a.cuenta.usuario)} (${esc(a.cuenta.nombre)})${a.cuenta.email ? ' · ' + esc(a.cuenta.email) : ''}${a.cuenta.bloqueado ? ' · <span class="badge badge-past">bloqueada</span>' : a.cuenta.activo === false ? ' · <span class="badge badge-past">desactivada</span>' : ''}</span>` : '<span class="muted small">(cuenta no encontrada con ese dato)</span>'}
+    </p>
+    ${a.mensaje ? `<p class="ayuda-msj">“${esc(a.mensaje)}”</p>` : ''}
+    <div class="row wrap">
+      ${a.estado === 'pendiente' && a.cuenta && (a.cuenta.bloqueado || a.cuenta.activo === false) && a.cuenta.rol !== 'SUPER_ADMIN'
+        ? `<button class="btn btn-sm" data-ayuda-desbloquear="${a.id}">🔓 Desbloquear cuenta</button>` : ''}
+      ${a.estado === 'pendiente' ? `<button class="btn btn-sm btn-ghost" data-ayuda-resolver="${a.id}">✓ Marcar resuelto</button>` : ''}
+      ${a.estado === 'resuelta' ? '<span class="muted small">✓ Resuelto' + (a.resuelta ? ' el ' + fechaCorta(a.resuelta) : '') + '</span>' : ''}
+    </div>
+  </div>`;
+  cont.innerHTML = `
+    ${pendientes.length ? `<h3 class="sub">Pendientes (${pendientes.length})</h3>${pendientes.map(tarjeta).join('')}` : ''}
+    ${resueltos.length ? `<h3 class="sub">Resueltos (${resueltos.length})</h3>${resueltos.slice(0, 20).map(tarjeta).join('')}` : ''}
+  `;
+}
+
+async function cargarAyuda() {
+  try {
+    const data = await api('/api/admin/ayuda', { admin: true });
+    window.__ayuda = data.ayuda || [];
+  } catch (e) {
+    window.__ayuda = [];
+    const cont = $('#ayuda-list');
+    if (cont) cont.innerHTML = `<p class="muted">${esc(e.message)}</p>`;
+  }
+  renderAyuda();
+  const pend = (window.__ayuda || []).filter(a => a.estado === 'pendiente').length;
+  const pill = $('#pill-ayuda');
+  if (pill) { pill.hidden = !pend; pill.textContent = pend; }
+}
+
+async function resolverAyuda(id, desbloquear) {
+  try {
+    const data = await api('/api/admin/ayuda', { method: 'POST', admin: true, body: { id, desbloquear: !!desbloquear } });
+    if (desbloquear) {
+      toast('Cuenta desbloqueada y pedido resuelto ✓', 'ok');
+    } else {
+      toast('Pedido marcado como resuelto ✓', 'ok');
+    }
+    await cargarAyuda();
   } catch (e) { toast(e.message, 'error'); }
 }
 
@@ -5511,6 +5650,20 @@ function renderAjustes() {
   $('#set-pin').value = '';
   const inGmaps = $('#set-gmaps');
   if (inGmaps) inGmaps.value = state.settings.gmapsKey || '';
+  /* Contacto: redes + email de avisos */
+  const c = (state.settings && state.settings.contacto) || {};
+  const val = id => { const el = $(id); if (el) el.value = c[id.replace('set-', '')] || ''; };
+  val('#set-whatsapp'); val('#set-instagram'); val('#set-facebook'); val('#set-tiktok');
+  const mailEl = $('#set-contact-email');
+  if (mailEl) mailEl.value = c.email || '';
+  const estMail = $('#mail-estado');
+  if (estMail) {
+    estMail.innerHTML = state.settings.avisoMail
+      ? (c.email
+        ? '✅ <strong>Mail de avisos activo.</strong> Cada registro y pedido de ayuda llega a <strong>' + esc(c.email) + '</strong> además del timbre 🔔 de la app.'
+        : '⚠️ El mail de avisos está activo, pero falta cargar el <strong>email de contacto</strong> de arriba para saber a dónde enviarlo.')
+      : '⚪ Mail de avisos desactivado: los avisos llegan solo al timbre 🔔 de la app. Para activarlos agregá <code>RESEND_API_KEY</code> en <code>server.js</code> y reiniciá el servidor (resend.com).';
+  }
   const estadoG = $('#gmaps-estado');
   if (estadoG) {
     estadoG.innerHTML = state.settings.gmapsKey
@@ -5584,9 +5737,23 @@ async function guardarAjustes() {
   }
   const selCancel = $('#set-cancelacion');
   if (selCancel) body.reglas = Object.assign({}, state.settings.reglas, { cancelacionHoras: Number(selCancel.value) });
+  /* Contacto: redes + email de avisos */
+  const contacto = {
+    whatsapp: ($('#set-whatsapp') || {}).value,
+    instagram: ($('#set-instagram') || {}).value,
+    facebook: ($('#set-facebook') || {}).value,
+    tiktok: ($('#set-tiktok') || {}).value,
+    email: ($('#set-contact-email') || {}).value,
+  };
+  if (contacto.whatsapp !== undefined || contacto.instagram !== undefined || contacto.facebook !== undefined ||
+      contacto.tiktok !== undefined || contacto.email !== undefined) {
+    body.contacto = {};
+    Object.keys(contacto).forEach(k => { if (contacto[k] !== undefined) body.contacto[k] = String(contacto[k]).trim(); });
+  }
   try {
     const data = await api('/api/settings', { method: 'PUT', admin: true, body });
     state = data.state;
+    pintarInstagram();
     if (pin) adminPin = pin;
     const claveDespues = state.settings.gmapsKey || '';
     if (claveDespues !== claveAntes) {
@@ -5729,6 +5896,7 @@ function wireAdmin() {
   $$('.admin-tab[data-tab]').forEach(b => {
     b.onclick = () => {
       window.__usuarios = null;      /* las cuentas se vuelven a pedir al abrir la pestaña */
+      window.__ayuda = null;         /* y también los pedidos de ayuda */
       if (b.dataset.tab === 'solicitudes') listaSolicitudes = null;
       renderAdminTab(b.dataset.tab);
     };
@@ -5766,6 +5934,13 @@ function wireAdmin() {
     if (r) return accionUsuario(r.dataset.userRol, 'rol');
     const d = e.target.closest('[data-user-borrar]');
     if (d) return accionUsuario(d.dataset.userBorrar, 'borrar');
+  };
+  /* Pedidos de ayuda */
+  $('#ayuda-list').onclick = e => {
+    const des = e.target.closest('[data-ayuda-desbloquear]');
+    if (des) return resolverAyuda(des.dataset.ayudaDesbloquear, true);
+    const res = e.target.closest('[data-ayuda-resolver]');
+    if (res) return resolverAyuda(res.dataset.ayudaResolver, false);
   };
   $('#res-prev').onclick = () => cambiarDiaAdmin(-1);
   $('#res-next').onclick = () => cambiarDiaAdmin(1);
