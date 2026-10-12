@@ -86,6 +86,9 @@
   }
 }
 * { box-sizing: border-box; }
+/* Ocultar la barra de desplazamiento en toda la app (se sigue deslizando igual) */
+* { scrollbar-width: none; -ms-overflow-style: none; }
+*::-webkit-scrollbar { width: 0 !important; height: 0 !important; display: none; }
 [hidden] { display: none !important; }
 body {
   margin: 0;
@@ -762,6 +765,23 @@ main {
 .home-indicator {
   width: 120px; height: 4px;
   background: var(--line); border-radius: 9999px; margin-top: 8px;
+}
+
+/* En el Mapa (celular) la barra de 5 opciones va transparente: los íconos
+   flotan sobre el mapa, sin cápsula de fondo. En escritorio el riel no cambia. */
+@media (max-width: 959px) {
+  body.nav-mapa .bottom-nav {
+    background: transparent;
+    border-color: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+  body.nav-mapa .nav-btn,
+  body.nav-mapa .nav-btn-center { text-shadow: 0 1px 3px rgba(0, 0, 0, .6); }
+  body.nav-mapa .nav-btn svg { filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .55)); }
+  body.nav-mapa .nav-circle-btn { border-color: transparent; }
+  body.nav-mapa .home-indicator { background: transparent; }
 }
 
 /* ---------- Visor de fotos (arrastrar / zoom) ---------- */
@@ -1688,6 +1708,14 @@ main {
   margin-bottom: 10px;
 }
 .leaflet-container { font: inherit; background: var(--bg); }
+/* En tema oscuro, el mapa (OpenStreetMap) se oscurece sin cambiar de proveedor */
+:root[data-tema="oscuro"] .leaflet-tile-pane,
+:root[data-tema="auto"] .leaflet-tile-pane {
+  filter: invert(1) hue-rotate(180deg) brightness(.95) contrast(.9) saturate(.7);
+}
+@media (prefers-color-scheme: light) {
+  :root[data-tema="auto"] .leaflet-tile-pane { filter: none; }
+}
 .leaflet-popup-content-wrapper {
   background: var(--panel);
   color: var(--text);
@@ -1735,22 +1763,33 @@ main {
 /* Marcadores con el logo de la sala */
 .mk-wrap { background: transparent; border: none; }
 .mk-sala {
-  width: 46px; height: 46px; border-radius: 50%;
+  width: 28px; height: 28px; border-radius: 50%;
   background: linear-gradient(135deg, var(--panel2), var(--panel));
   border: 2px solid var(--accent);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, .55);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, .5), 0 0 0 2px rgba(255, 255, 255, .85);
   display: grid; place-items: center; overflow: hidden;
-  font-size: 1.2rem;
+  font-size: .9rem;
   transition: transform .15s;
 }
 .mk-sala img { width: 100%; height: 100%; object-fit: cover; }
-.mk-sala:hover { transform: scale(1.08); }
+.mk-sala:hover { transform: scale(1.12); }
+/* Sala sin logo propio: círculo verde con el logo de Más Música en negro */
+.mk-sala.mk-marca { background: var(--accent); border-color: var(--accent); }
+.mk-sala.mk-marca img { width: 16px; height: 16px; object-fit: contain; }
 .mk-res {
-  width: 32px; height: 32px; border-radius: 50%;
+  width: 24px; height: 24px; border-radius: 50%;
   background: var(--accent); border: 2px solid #fff;
-  display: grid; place-items: center; font-size: .95rem;
+  display: grid; place-items: center; font-size: .72rem;
   box-shadow: 0 3px 10px rgba(0, 0, 0, .5);
 }
+/* Tu ubicación: círculo verde con el logo de Más Música en negro */
+.mk-yo {
+  width: 24px; height: 24px; border-radius: 50%;
+  background: var(--accent); border: 2px solid #fff;
+  display: grid; place-items: center; overflow: hidden;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, .5);
+}
+.mk-yo img { width: 14px; height: 14px; object-fit: contain; display: block; }
 
 /* Contenido del popup */
 .pop { display: flex; flex-direction: column; gap: 3px; min-width: 190px; max-width: 240px; }
@@ -1802,6 +1841,167 @@ main {
 .pop-acciones a.btn { text-decoration: none; }
 .mapa-acciones { margin: 10px 0; align-items: center; }
 .mapa-ayuda { margin: 10px 0 0; }
+
+/* ---------- Lista de salas junto al mapa ---------- */
+.mapa-lista { margin-top: 16px; }
+.mapa-lista .sub { margin: 0 0 10px; }
+.mapa-lista-items { display: grid; gap: 10px; grid-template-columns: 1fr; }
+.mapa-item {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--panel2); border: 1px solid var(--line);
+  border-radius: 12px; padding: 10px 12px;
+  transition: border-color .15s, transform .15s;
+}
+.mapa-item[data-mapa-item] { cursor: pointer; }
+.mapa-item[data-mapa-item]:hover { border-color: var(--accent); transform: translateY(-1px); }
+.mapa-item.sin-punto { opacity: .85; }
+.mapa-item-foto {
+  width: 52px; height: 52px; flex: 0 0 52px; border-radius: 50%;
+  overflow: hidden; display: grid; place-items: center; font-size: 1.4rem;
+  background: linear-gradient(135deg, var(--panel2), var(--panel));
+  border: 2px solid var(--accent);
+}
+.mapa-item-foto img { width: 100%; height: 100%; object-fit: cover; }
+.mapa-item-info { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.mapa-item-info strong { font-size: .95rem; }
+.mapa-item-info .small { font-size: .78rem; }
+.mapa-item-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.mapa-item-dist {
+  flex: 0 0 auto; font-size: .72rem; font-weight: 700; color: var(--accent2);
+  background: rgba(23, 192, 91, .14); border: 1px solid rgba(23, 192, 91, .35);
+  border-radius: 999px; padding: 2px 9px; white-space: nowrap;
+}
+.mapa-item-dir { overflow: hidden; text-overflow: ellipsis; }
+.mapa-item-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.mapa-item-acciones { display: flex; flex-direction: column; gap: 6px; align-items: stretch; }
+.mapa-item-acciones a.btn { text-decoration: none; text-align: center; }
+@media (min-width: 720px) {
+  .mapa-lista-items { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
+}
+
+/* ---------- Hoja de salas del mapa ---------- */
+/* En escritorio la lista queda debajo del mapa, como siempre */
+.mapa-hoja { display: block; }
+.mapa-hoja-btn { display: none; }
+.mapa-hoja-cuerpo { display: block; }
+
+/* ---------- Mapa a pantalla completa (celular) ----------
+   El mapa cubre TODA la pantalla; el título, los botones y las 5 opciones
+   flotan por encima. La lista de salas se pliega en una hoja flotante. */
+@media (max-width: 959px) {
+  body.nav-mapa #app-header { display: none; }
+  body.nav-mapa main#view-mapa { padding: 0; max-width: none; overflow: hidden; }
+  body.nav-mapa #view-mapa > .panel {
+    background: none; border: none; border-radius: 0; padding: 0; height: 100%;
+  }
+  body.nav-mapa #mapa {
+    position: fixed; inset: 0;
+    width: 100vw; height: 100vh; height: 100dvh;
+    min-height: 0; max-height: none;
+    border: none; border-radius: 0; z-index: 0;
+  }
+  body.nav-mapa #pane-mapa .mapa-ayuda { display: none; }
+
+  /* Los dos botones del mapa: abajo a la derecha, apilados, junto a las 5 opciones */
+  body.nav-mapa #view-mapa .panel-head {
+    position: fixed;
+    right: max(14px, env(safe-area-inset-right));
+    bottom: calc(98px + env(safe-area-inset-bottom));
+    top: auto; left: auto;
+    z-index: 6; margin: 0; padding: 0;
+    background: none; border: none; box-shadow: none;
+    -webkit-backdrop-filter: none; backdrop-filter: none;
+    flex-direction: column; align-items: flex-end;
+  }
+  body.nav-mapa #view-mapa .panel-head h2 { display: none; }
+  body.nav-mapa #view-mapa .panel-head .row { flex-direction: column; gap: 10px; margin: 0; flex-wrap: nowrap; }
+  body.nav-mapa #view-mapa .panel-head .btn {
+    width: 44px; height: 44px; padding: 0; border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 1.15rem; line-height: 1; color: var(--text);
+    background: var(--pop);
+    -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+    border: 1px solid var(--line);
+    box-shadow: 0 10px 26px rgba(0, 0, 0, .45), inset 0 1px 0 rgba(255, 255, 255, .07);
+    transition: transform .12s ease, border-color .15s ease, color .15s ease;
+  }
+  body.nav-mapa #view-mapa .panel-head .btn:hover { border-color: var(--accent); color: var(--accent2); }
+  body.nav-mapa #view-mapa .panel-head .btn:active { transform: scale(.92); }
+  body.nav-mapa .mapa-btn-txt { display: none; }
+  body.nav-mapa #mapa-fallback:not([hidden]) {
+    position: fixed; left: 16px; right: 16px;
+    top: calc(70px + env(safe-area-inset-top));
+    z-index: 6; margin: 0; padding: 14px;
+    background: var(--pop); border: 1px solid var(--line); border-radius: 14px;
+  }
+
+  /* Hoja de salas flotante, un poco más separada del logo central del mapa */
+  body.nav-mapa #mapa-hoja {
+    position: fixed; left: 12px; right: 12px;
+    bottom: calc(112px + env(safe-area-inset-bottom));
+    z-index: 6;
+    display: flex; flex-direction: column; align-items: stretch;
+    pointer-events: none;
+  }
+  /* Tirador: solo una línea horizontal (sin recuadro) para deslizar y ver las salas */
+  body.nav-mapa .mapa-hoja-btn {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    pointer-events: auto; align-self: center;
+    padding: 13px 44px; margin: 0;
+    background: none; border: none; box-shadow: none;
+    -webkit-backdrop-filter: none; backdrop-filter: none;
+    cursor: grab; touch-action: none;
+  }
+  body.nav-mapa .mapa-hoja-btn:active { cursor: grabbing; }
+  body.nav-mapa .mapa-hoja-linea {
+    display: block; width: 54px; height: 5px; border-radius: 999px;
+    background: var(--muted); opacity: .9;
+    box-shadow: 0 1px 7px rgba(0, 0, 0, .6);
+    transition: width .16s ease, background .16s ease, opacity .16s ease;
+  }
+  body.nav-mapa .mapa-hoja-btn:hover .mapa-hoja-linea,
+  body.nav-mapa .mapa-hoja-btn:active .mapa-hoja-linea {
+    width: 72px; background: var(--accent2); opacity: 1;
+  }
+  /* La hoja: crece siguiendo el dedo (altura animada) */
+  body.nav-mapa .mapa-hoja-cuerpo {
+    pointer-events: auto;
+    width: 100%; max-height: 0; overflow: hidden;
+    margin-bottom: 0;
+    transition: max-height .3s cubic-bezier(.22, .61, .36, 1), margin-bottom .3s ease;
+  }
+  body.nav-mapa #mapa-hoja.abierta .mapa-hoja-cuerpo { margin-bottom: 10px; }
+  body.nav-mapa .mapa-hoja-card {
+    padding: 14px;
+    max-height: 46vh; overflow-y: auto; overscroll-behavior: contain;
+    background: linear-gradient(180deg, var(--panel2), var(--panel));
+    -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+    border: 1px solid var(--line); border-radius: 22px;
+    box-shadow: 0 18px 46px rgba(0, 0, 0, .55), inset 0 1px 0 rgba(255, 255, 255, .05);
+  }
+  body.nav-mapa #mapa-lista { margin-top: 0; }
+  body.nav-mapa #mapa-sin-ubicacion:not(:empty) { margin-bottom: 10px; }
+  /* Cada sala dentro de la hoja: foto + datos arriba, botones abajo */
+  body.nav-mapa .mapa-item {
+    display: grid;
+    grid-template-columns: 54px 1fr;
+    grid-template-areas: "foto info" "acc acc";
+    align-items: start;
+    gap: 10px 12px;
+    padding: 12px;
+    border-radius: 14px;
+  }
+  body.nav-mapa .mapa-item-foto { grid-area: foto; }
+  body.nav-mapa .mapa-item-info { grid-area: info; gap: 3px; }
+  body.nav-mapa .mapa-item-acciones {
+    grid-area: acc;
+    flex-direction: row; flex-wrap: wrap;
+    gap: 6px; margin-top: 2px; padding-top: 10px;
+    border-top: 1px solid var(--line);
+  }
+  body.nav-mapa .mapa-item-acciones .btn { flex: 1 1 auto; }
+  body.nav-mapa .mapa-item-acciones .btn-primary { flex: 1 1 100%; }
+}
 
 /* ================= RESUMEN DEL INICIO ================= */
 #view-mapa { padding: 12px 14px 30px; }

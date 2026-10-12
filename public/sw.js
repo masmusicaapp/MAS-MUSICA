@@ -1,5 +1,5 @@
 /* Service worker de Más Música — cache para funcionamiento offline */
-const CACHE = 'mas-musica-v45';
+const CACHE = 'mas-musica-v62';
 
 const ESTATICOS = [
   './',
@@ -14,6 +14,7 @@ const ESTATICOS = [
   './assets/icon-app-oscuro-512.png',
   './assets/icon-app-claro-192.png',
   './assets/marca-agua.png',
+  './assets/marca-agua-negro.png',
   './assets/lugar/sala-1.png',
   './assets/lugar/sala-2.png',
   './assets/lugar/sala-3.png'

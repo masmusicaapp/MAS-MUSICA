@@ -7,6 +7,7 @@
 <link rel="icon" href="assets/icon-app-oscuro-192.png">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#0d1b2f">
+<link rel="apple-touch-icon" href="assets/icon-app-oscuro-192.png">
 <script>
   /* Tema elegido: se aplica antes de pintar para evitar parpadeos */
   try {
@@ -203,16 +204,26 @@
     <div class="panel-head">
       <h2>🗺 Mapa de salas</h2>
       <div class="row">
-        <button class="btn btn-sm" id="btn-mi-ubicacion">📍 Mi ubicación</button>
-        <button class="btn btn-sm" id="btn-ver-todas">🔎 Ver todas</button>
+        <button class="btn btn-sm" id="btn-mi-ubicacion" title="Mi ubicación" aria-label="Mi ubicación">📍<span class="mapa-btn-txt"> Mi ubicación</span></button>
+        <button class="btn btn-sm" id="btn-ver-todas" title="Ver todas las salas" aria-label="Ver todas las salas">🔎<span class="mapa-btn-txt"> Ver todas</span></button>
       </div>
     </div>
     <div id="pane-mapa">
       <div id="mapa" role="application" aria-label="Mapa de salas de ensayo"></div>
       <p class="muted small mapa-ayuda" id="mapa-fallback" hidden>No se pudo cargar el mapa (hace falta conexión a internet la primera vez). Podés ver las salas igual en la <button class="btn btn-sm" data-ir-lista="1">lista de salas</button>.</p>
-      <p class="muted small mapa-ayuda">Tocá una sala para ver su ficha y sus horarios. Tus reservas aparecen con 🎸 sobre el lugar.</p>
+      <p class="muted small mapa-ayuda">Tocá una sala para ver su ficha y sus horarios. Tus reservas aparecen con 🎸 sobre el lugar. Abajo tenés la lista de salas, ordenada por cercanía cuando tocás «📍 Mi ubicación».</p>
     </div>
-    <div id="mapa-sin-ubicacion"></div>
+    <div id="mapa-hoja" class="mapa-hoja">
+      <button type="button" class="mapa-hoja-btn" id="mapa-hoja-btn" aria-expanded="false" aria-controls="mapa-hoja-cuerpo" aria-label="Ver salas" title="Deslizá para ver las salas">
+        <span class="mapa-hoja-linea" aria-hidden="true"></span>
+      </button>
+      <div class="mapa-hoja-cuerpo" id="mapa-hoja-cuerpo">
+        <div class="mapa-hoja-card">
+          <div id="mapa-sin-ubicacion"></div>
+          <div id="mapa-lista" class="mapa-lista"></div>
+        </div>
+      </div>
+    </div>
   </div>
 </main>
 

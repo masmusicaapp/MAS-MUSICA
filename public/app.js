@@ -510,7 +510,7 @@ function fichaSala(id) {
       ${r.telefono ? `<div><span class="muted">Teléfono</span><strong>${esc(r.telefono)}</strong></div>` : ''}
       ${r.localidad ? `<div><span class="muted">Zona</span><strong>${esc(r.localidad)}</strong></div>` : ''}
     </div>
-    ${r.direccion ? `<p class="ficha-dir">📍 ${esc(r.direccion)}${urlSegura(r.mapa) ? ` · <a href="${urlSegura(r.mapa)}" target="_blank" rel="noopener">ver en el mapa</a>` : ''}</p>` : ''}
+    ${r.direccion ? `<p class="ficha-dir">📍 ${esc(r.direccion)}${linkMapaSala(r) ? ` · <a href="${linkMapaSala(r)}" target="_blank" rel="noopener">ver en el mapa</a>` : ''}</p>` : ''}
     ${r.descripcion ? `<p class="ficha-desc">${esc(r.descripcion)}</p>` : ''}
     ${(r.features || []).length ? `<div class="ficha-chips">${r.features.map(f => `<span class="chip">${esc(f)}</span>`).join('')}</div>` : ''}
     <h4 class="sub">Equipamiento</h4>
@@ -552,6 +552,8 @@ async function alternarFavorita(id) {
 /* ================= Mapa de salas ================= */
 let mapa = null;
 let capaMarcas = null;
+let marcasSala = {};          /* marcador de cada sala, para abrir su popup desde la lista */
+let timerEncuadre = null;     /* encuadre automático pendiente (se cancela si el usuario elige una sala) */
 let vistaSalas = 'mapa';      /* el mapa vive en el Inicio */
 let miUbicacion = null;        /* [lat, lng] del usuario (si autoriza) */
 
@@ -565,6 +567,17 @@ function distKm(lat1, lng1, lat2, lng2) {
   const dLat = rad(lat2 - lat1), dLng = rad(lng2 - lng1);
   const a = Math.sin(dLat / 2) ** 2 + Math.cos(rad(lat1)) * Math.cos(rad(lat2)) * Math.sin(dLng / 2) ** 2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+/* Mejor enlace a Google Maps para una sala: sus coordenadas (si las tiene), si no
+   el enlace cargado por el dueño, y si no, su dirección. Así el enlace guardado
+   a mano (que puede ser genérico) nunca reemplaza al punto exacto de la sala. */
+function linkMapaSala(r) {
+  if (!r) return '';
+  if (tieneUbicacion(r)) return `https://www.google.com/maps/search/?api=1&query=${Number(r.lat)},${Number(r.lng)}`;
+  if (urlSegura(r.mapa)) return urlSegura(r.mapa);
+  const dir = [r.direccion, r.localidad].filter(Boolean).join(', ');
+  return dir ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(dir)}` : '';
 }
 
 /* ================= MAPA: Google Maps (si hay clave) u OpenStreetMap ================= */
@@ -624,6 +637,7 @@ function limpiarMapa() {
   if (gmap) { try { google.maps.event.clearInstanceListeners(gmap); } catch (e) {} gmap = null; }
   if (ginfo) { try { ginfo.close(); } catch (e) {} ginfo = null; }
   gmarcadores = [];
+  marcasSala = {};
   const cont = $('#mapa');
   if (cont) {
     cont.innerHTML = '';
@@ -711,10 +725,8 @@ function popupSala(r) {
   const tel = String(r.telefono || '').trim();
   const telHref = tel.replace(/[^0-9+]/g, '');
   const portada = fotoPortadaSala(r);
-  /* Enlace a Google Maps: el de la sala si tiene, si no, su punto o su dirección */
-  const gmaps = r.mapa
-    || (tieneUbicacion(r) ? `https://www.google.com/maps/search/?api=1&query=${Number(r.lat)},${Number(r.lng)}` : '')
-    || (dir ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(dir)}` : '');
+  /* Enlace a Google Maps: prioriza las coordenadas de la sala */
+  const gmaps = linkMapaSala(r);
   return `
     <div class="pop pop-detalle">
       <div class="pop-cover ${portada ? '' : 'sin-foto'}">
@@ -786,6 +798,82 @@ function renderSalasSinUbicacion() {
     : '';
 }
 
+/* ---------- Lista de salas del mapa (ordenada por cercanía si hay ubicación) ---------- */
+function salasOrdenadasParaMapa() {
+  if (!state) return [];
+  const lista = salasPublicas().slice();
+  const dist = r => (miUbicacion && tieneUbicacion(r))
+    ? distKm(miUbicacion[0], miUbicacion[1], Number(r.lat), Number(r.lng))
+    : Infinity;
+  if (miUbicacion) lista.sort((a, b) => (dist(a) - dist(b)) || String(a.name).localeCompare(String(b.name)));
+  else lista.sort((a, b) => String(a.name).localeCompare(String(b.name)));
+  return lista;
+}
+
+function renderMapaLista() {
+  const caja = $('#mapa-lista');
+  if (!caja || !state) return;
+  const salas = salasOrdenadasParaMapa();
+  const btn = $('#mapa-hoja-btn');
+  const hoja = $('#mapa-hoja');
+  if (!salas.length) {
+    caja.innerHTML = '';
+    if (btn) btn.hidden = true;
+    if (hoja) hoja.classList.remove('abierta');
+    const cuerpoVacio = $('#mapa-hoja-cuerpo');
+    if (cuerpoVacio) cuerpoVacio.style.maxHeight = '0px';
+    return;
+  }
+  if (btn) {
+    btn.hidden = false;
+    btn.setAttribute('aria-label', `Ver salas (${salas.length})`);
+    btn.title = `Deslizá para ver las ${salas.length} salas`;
+  }
+  caja.innerHTML = `
+    <h3 class="sub">${miUbicacion ? '📍 Salas más cercanas a vos' : '🗺 Todas las salas'}</h3>
+    <div class="mapa-lista-items">
+      ${salas.map(r => {
+        const ubic = tieneUbicacion(r);
+        const km = (miUbicacion && ubic)
+          ? distKm(miUbicacion[0], miUbicacion[1], Number(r.lat), Number(r.lng))
+          : null;
+        const dir = [r.direccion, r.localidad].filter(Boolean).join(' · ');
+        const enlace = linkMapaSala(r);
+        return `
+        <article class="mapa-item${ubic ? '' : ' sin-punto'}"${ubic ? ` data-mapa-item="${esc(r.id)}"` : ''}>
+          <div class="mapa-item-foto">${r.foto ? `<img src="${esc(r.foto)}" alt="">` : '<span>🎸</span>'}</div>
+          <div class="mapa-item-info">
+            <div class="mapa-item-head">
+              <strong>${esc(r.name)}</strong>
+              ${km != null ? `<span class="mapa-item-dist" title="Distancia desde tu ubicación">${km.toFixed(1)} km</span>` : ''}
+            </div>
+            <span class="mapa-item-dir muted small">📍 ${esc(dir || 'Sin dirección')}</span>
+            <div class="mapa-item-meta">
+              <span class="chip">💵 ${fmtMoney(r.price)}/hora</span>
+              <span class="chip">👥 hasta ${esc(String(r.capacity))}</span>
+              ${ubic ? '' : '<span class="chip chip-alt">Sin punto en el mapa</span>'}
+            </div>
+          </div>
+          <div class="mapa-item-acciones">
+            ${ubic ? `<button class="btn btn-sm btn-primary" data-mapa-ver="${esc(r.id)}">🗺 Ver en el mapa</button>` : ''}
+            <button class="btn btn-sm" data-mapa-ficha="${esc(r.id)}">ℹ️ Ficha</button>
+            ${enlace ? `<a class="btn btn-sm" href="${enlace}" target="_blank" rel="noopener">📍 Google Maps</a>` : ''}
+          </div>
+        </article>`;
+      }).join('')}
+    </div>`;
+}
+
+/* Centra el mapa en una sala de la lista y abre su ficha en el popup */
+function verSalaEnMapa(id) {
+  const r = (state.rooms || []).find(x => x.id === id);
+  if (!r || !tieneUbicacion(r)) return;
+  const punto = [Number(r.lat), Number(r.lng)];
+  centrarMapa(punto, 15);
+  if (mapaEsGoogle()) { if (gmap) abrirVentanaInfo(popupSala(r)); return; }
+  if (marcasSala[id]) { try { marcasSala[id].openPopup(); } catch (e) {} }
+}
+
 /* ---------- Ventana de información de Google (mismo contenido que los popups) ---------- */
 function abrirVentanaInfo(html) {
   if (!ginfo || !gmap) return;
@@ -808,6 +896,13 @@ function accionesMapa(e) {
   if (lista) { e.preventDefault(); return irSalas(); }
   const foto = e.target.closest('[data-pop-foto]');
   if (foto) { e.preventDefault(); return verFoto(foto.dataset.popFoto, 'Foto de la sala'); }
+  const ver = e.target.closest('[data-mapa-ver]');
+  if (ver) { e.preventDefault(); return verSalaEnMapa(ver.dataset.mapaVer); }
+  /* Tocar una sala de la lista la muestra en el mapa (salvo que toquen un botón o enlace) */
+  if (!e.target.closest('button') && !e.target.closest('a')) {
+    const item = e.target.closest('[data-mapa-item]');
+    if (item) return verSalaEnMapa(item.dataset.mapaItem);
+  }
   const s = e.target.closest('[data-mapa-sala]');
   if (s) { cerrarPopupMapa(); return elegirSala(s.dataset.mapaSala); }
   const fch = e.target.closest('[data-mapa-ficha]');
@@ -820,6 +915,7 @@ function accionesMapa(e) {
 
 /* ---------- Dibujo del mapa ---------- */
 function renderMapa() {
+  renderMapaLista();
   const pane = $('#pane-mapa');
   if (!pane || pane.hidden) return;
   if (claveGoogle() && !gmapaFallo) {
@@ -847,16 +943,17 @@ function renderMapaLeaflet() {
   if (!m) return;
   if (capaMarcas) capaMarcas.remove();
   capaMarcas = L.layerGroup().addTo(m);
+  marcasSala = {};
 
   /* 1. Salas publicadas */
   const salas = salasPublicas().filter(tieneUbicacion);
   salas.forEach(r => {
     const icono = L.divIcon({
       className: 'mk-wrap',
-      html: `<div class="mk-sala">${r.foto ? `<img src="${esc(r.foto)}" alt="">` : '<span>🎸</span>'}</div>`,
-      iconSize: [46, 46], iconAnchor: [23, 23], popupAnchor: [0, -24],
+      html: `<div class="mk-sala${r.foto ? '' : ' mk-marca'}">${r.foto ? `<img src="${esc(r.foto)}" alt="">` : '<img src="assets/marca-agua-negro.png" alt="">'}</div>`,
+      iconSize: [28, 28], iconAnchor: [14, 14], popupAnchor: [0, -16],
     });
-    L.marker([Number(r.lat), Number(r.lng)], { icon: icono, title: r.name })
+    marcasSala[r.id] = L.marker([Number(r.lat), Number(r.lng)], { icon: icono, title: r.name })
       .addTo(capaMarcas)
       .bindPopup(popupSala(r));
   });
@@ -868,24 +965,30 @@ function renderMapaLeaflet() {
     const icono = L.divIcon({
       className: 'mk-wrap',
       html: '<div class="mk-res">🎸</div>',
-      iconSize: [32, 32], iconAnchor: [16, 16], popupAnchor: [0, -18],
+      iconSize: [24, 24], iconAnchor: [12, 12], popupAnchor: [0, -14],
     });
     L.marker([Number(sala.lat), Number(sala.lng)], { icon: icono, title: 'Tu reserva' })
       .addTo(capaMarcas)
       .bindPopup(popupReserva(res, sala));
   });
 
-  /* 3. Dónde está el usuario */
+  /* 3. Dónde está el usuario: círculo verde con el logo negro */
   if (miUbicacion) {
-    L.circleMarker(miUbicacion, {
-      radius: 8, color: '#00a038', fillColor: '#00a038', fillOpacity: .9,
-    }).addTo(capaMarcas).bindPopup('<strong>Estás acá</strong>');
+    const iconoYo = L.divIcon({
+      className: 'mk-wrap',
+      html: '<div class="mk-yo"><img src="assets/marca-agua-negro.png" alt=""></div>',
+      iconSize: [24, 24], iconAnchor: [12, 12], popupAnchor: [0, -14],
+    });
+    L.marker(miUbicacion, { icon: iconoYo, zIndexOffset: 900, title: 'Estás acá' })
+      .addTo(capaMarcas)
+      .bindPopup('<strong>Estás acá</strong>');
   }
 
   /* 4. Salas sin ubicación + encuadre */
   renderSalasSinUbicacion();
   encuadrarMapa();
-  setTimeout(() => { if (mapa) { mapa.invalidateSize(); encuadrarMapa(); } }, 140);
+  if (timerEncuadre) clearTimeout(timerEncuadre);
+  timerEncuadre = setTimeout(() => { if (mapa) { mapa.invalidateSize(); encuadrarMapa(); } }, 140);
 }
 
 /* Mapa con Google Maps (cuando hay clave válida) */
@@ -926,7 +1029,7 @@ async function renderMapaGoogle() {
 
     /* 1. Salas publicadas (logo en un círculo, igual que en OpenStreetMap) */
     const salas = salasPublicas().filter(tieneUbicacion);
-    const iconos = await Promise.all(salas.map(r => iconoCircularGoogle(r.foto, 46, '🎸')));
+    const iconos = await Promise.all(salas.map(r => iconoCircularGoogle(r.foto || 'assets/marca-agua-negro.png', 28, '🎸')));
     if (gmapaFallo || !gmap) return;   /* la clave falló mientras cargaban los íconos */
     salas.forEach((r, i) => {
       const m = new google.maps.Marker({
@@ -935,7 +1038,7 @@ async function renderMapaGoogle() {
         title: r.name,
         zIndex: 4,
         icon: iconos[i]
-          ? { url: iconos[i], scaledSize: new google.maps.Size(46, 46), anchor: new google.maps.Point(23, 23) }
+          ? { url: iconos[i], scaledSize: new google.maps.Size(28, 28), anchor: new google.maps.Point(14, 14) }
           : undefined,
       });
       m.addListener('click', () => abrirVentanaInfo(popupSala(r)));
@@ -943,7 +1046,7 @@ async function renderMapaGoogle() {
     });
 
     /* 2. Reservas del usuario, con 🎸 sobre la sala */
-    const iconoRes = await iconoCircularGoogle('', 34, '🎸');
+    const iconoRes = await iconoCircularGoogle('', 24, '🎸');
     if (gmapaFallo || !gmap) return;
     misReservas().filter(x => x.estado !== 'cancelada').forEach(res => {
       const sala = (state.rooms || []).find(x => x.id === res.roomId);
@@ -953,24 +1056,26 @@ async function renderMapaGoogle() {
         position: { lat: Number(sala.lat), lng: Number(sala.lng) },
         title: 'Tu reserva · ' + sala.name,
         zIndex: 6,
-        icon: { url: iconoRes, scaledSize: new google.maps.Size(34, 34), anchor: new google.maps.Point(17, 17) },
+        icon: { url: iconoRes, scaledSize: new google.maps.Size(24, 24), anchor: new google.maps.Point(12, 12) },
       });
       m.addListener('click', () => abrirVentanaInfo(popupReserva(res, sala)));
       gmarcadores.push(m);
     });
 
-    /* 3. Dónde está el usuario */
+    /* 3. Dónde está el usuario: círculo verde con el logo negro */
     if (miUbicacion) {
-      const circ = new google.maps.Circle({
-        map: gmap,
-        center: { lat: miUbicacion[0], lng: miUbicacion[1] },
-        radius: 50,
-        strokeColor: '#00a038', strokeOpacity: 1, strokeWeight: 2,
-        fillColor: '#00a038', fillOpacity: .35,
-        zIndex: 3,
-      });
-      circ.addListener('click', () => abrirVentanaInfo('<div class="pop"><strong>Estás acá</strong></div>'));
-      gmarcadores.push(circ);
+      const iconoYo = await iconoCircularGoogle('assets/marca-agua-negro.png', 12, '');
+      if (!gmapaFallo && gmap) {
+        const m = new google.maps.Marker({
+          map: gmap,
+          position: { lat: miUbicacion[0], lng: miUbicacion[1] },
+          title: 'Estás acá',
+          zIndex: 9,
+          icon: { url: iconoYo, scaledSize: new google.maps.Size(24, 24), anchor: new google.maps.Point(12, 12) },
+        });
+        m.addListener('click', () => abrirVentanaInfo('<div class="pop"><strong>Estás acá</strong></div>'));
+        gmarcadores.push(m);
+      }
     }
 
     /* 4. Salas sin ubicación + encuadre */
@@ -1011,6 +1116,8 @@ function encuadrarMapa() {
 
 /* Centra el mapa en un punto [lat, lng] */
 function centrarMapa(punto, zoom) {
+  /* si había un encuadre automático pendiente, no dejamos que pise lo que eligió el usuario */
+  if (timerEncuadre) { clearTimeout(timerEncuadre); timerEncuadre = null; }
   if (mapaEsGoogle()) {
     if (!gmap) return;
     gmap.setCenter({ lat: punto[0], lng: punto[1] });
@@ -1124,7 +1231,75 @@ function wireMapa() {
   $('#btn-ver-mapa').onclick = irMapa;
   const bvi = $('#btn-ver-instrumentos');
   if (bvi) bvi.onclick = irInstrumentos;
-  $('#mapa').onclick = accionesMapa;
+  const hojaBtn = $('#mapa-hoja-btn');
+  const hoja = $('#mapa-hoja');
+  const hojaCuerpo = $('#mapa-hoja-cuerpo');
+  // Altura máxima que puede alcanzar la hoja (contenido real, tope 46% de la pantalla)
+  const maxHoja = () => Math.min(hojaCuerpo ? hojaCuerpo.scrollHeight : 0, Math.round(window.innerHeight * 0.46));
+  const abrirHoja = (abrir, animar) => {
+    if (!hoja || !hojaCuerpo) return;
+    if (animar === false) hojaCuerpo.style.transition = 'none';
+    else hojaCuerpo.style.transition = '';
+    hoja.classList.toggle('abierta', !!abrir);
+    hojaCuerpo.style.maxHeight = (abrir ? maxHoja() : 0) + 'px';
+    if (hojaBtn) hojaBtn.setAttribute('aria-expanded', abrir ? 'true' : 'false');
+  };
+  if (hojaBtn && hoja && hojaCuerpo) {
+    hojaBtn.onclick = () => abrirHoja(!hoja.classList.contains('abierta'));
+    // Arrastre en vivo: la hoja acompaña el dedo
+    let arrastrando = false, yArranque = 0, altoArranque = 0, dyFinal = 0;
+    hojaBtn.addEventListener('touchstart', e => {
+      arrastrando = true;
+      yArranque = e.touches[0].clientY;
+      dyFinal = 0;
+      altoArranque = hojaCuerpo.getBoundingClientRect().height;
+      hojaCuerpo.style.transition = 'none';
+    }, { passive: true });
+    hojaBtn.addEventListener('touchmove', e => {
+      if (!arrastrando) return;
+      dyFinal = yArranque - e.touches[0].clientY; // >0 = hacia arriba
+      const alto = Math.max(0, Math.min(maxHoja(), altoArranque + dyFinal));
+      hojaCuerpo.style.maxHeight = alto + 'px';
+      hoja.classList.toggle('abierta', alto > maxHoja() * 0.5);
+    }, { passive: true });
+    const soltarTirador = () => {
+      if (!arrastrando) return;
+      arrastrando = false;
+      hojaCuerpo.style.transition = '';
+      const alto = hojaCuerpo.getBoundingClientRect().height;
+      abrirHoja(dyFinal > -40 && alto > maxHoja() * 0.3);
+    };
+    hojaBtn.addEventListener('touchend', soltarTirador);
+    hojaBtn.addEventListener('touchcancel', soltarTirador);
+    // Deslizar hacia abajo sobre la lista (si está arriba de todo) para cerrar
+    const hojaCard = hojaCuerpo.querySelector('.mapa-hoja-card');
+    let yCuerpo = null, yCuerpoFin = null;
+    hojaCuerpo.addEventListener('touchstart', e => {
+      yCuerpo = (hojaCard ? hojaCard.scrollTop : 0) <= 0 ? e.touches[0].clientY : null;
+      yCuerpoFin = yCuerpo;
+      if (yCuerpo != null) hojaCuerpo.style.transition = 'none';
+    }, { passive: true });
+    hojaCuerpo.addEventListener('touchmove', e => {
+      if (yCuerpo == null) return;
+      yCuerpoFin = e.touches[0].clientY;
+      const dy = yCuerpoFin - yCuerpo; // >0 = hacia abajo
+      if (dy <= 0) return;
+      const alto = Math.max(0, maxHoja() - dy);
+      hojaCuerpo.style.maxHeight = alto + 'px';
+      hoja.classList.toggle('abierta', alto > maxHoja() * 0.5);
+    }, { passive: true });
+    hojaCuerpo.addEventListener('touchend', () => {
+      if (yCuerpo == null) return;
+      const dy = (yCuerpoFin || yCuerpo) - yCuerpo;
+      yCuerpo = null; yCuerpoFin = null;
+      hojaCuerpo.style.transition = '';
+      abrirHoja(dy < 80);
+    });
+  }
+  const cerrarHoja = () => abrirHoja(false);
+  $('#mapa').onclick = e => { cerrarHoja(); accionesMapa(e); };
+  const lista = $('#mapa-lista');
+  if (lista) lista.onclick = accionesMapa;
 }
 
 async function cancelarReservaMia(id) {
@@ -1928,6 +2103,8 @@ function mostrarLugar() {
 function setNav(nav) {
   navActual = nav;
   document.body.classList.toggle('modo-control', esCuentaControl());
+  /* En el Mapa la barra inferior va transparente (solo en celular) */
+  document.body.classList.toggle('nav-mapa', nav === 'mapa');
   $$('#dock-container [data-nav]').forEach(b => b.classList.toggle('active', b.dataset.nav === nav));
   $('#dock-container').hidden = nav === 'admin'; /* el admin usa todo el alto */
   actualizarAccionesHeader();
@@ -1976,7 +2153,8 @@ function irMapa() {
   setNav('mapa');
   renderMapa();
   scrollMainArriba();
-  setTimeout(() => {
+  if (timerEncuadre) clearTimeout(timerEncuadre);
+  timerEncuadre = setTimeout(() => {
     if (mapa) mapa.invalidateSize();
     if (gmap) { try { google.maps.event.trigger(gmap, 'resize'); } catch (e) {} }
     encuadrarMapa();
@@ -6190,10 +6368,21 @@ async function init() {
 
   /* Instalación como app (PWA) */
   let deferredPrompt = null;
+
+  /* ¿Ya está instalada como app (pantalla propia, sin la barra del navegador)? */
+  const esAppInstalada = () =>
+    (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
+    (navigator && navigator.standalone === true);
+
+  /* iPhone/iPad: no hay diálogo de instalar; se agrega con "Añadir a pantalla de inicio" */
+  const esIOS = () => /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
+  const mostrarBtnInstalar = () => { if (!esAppInstalada()) $('#btn-install').hidden = false; };
+
   window.addEventListener('beforeinstallprompt', e => {
     e.preventDefault();
     deferredPrompt = e;
-    $('#btn-install').hidden = false;
+    mostrarBtnInstalar();
   });
   window.addEventListener('appinstalled', () => {
     deferredPrompt = null;
@@ -6201,15 +6390,35 @@ async function init() {
     toast('App instalada ✓', 'ok');
   });
   $('#btn-install').onclick = async () => {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    try {
-      const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === 'accepted') toast('Instalando app…', 'ok');
-    } catch (e) { /* el usuario cerró el diálogo */ }
-    deferredPrompt = null;
-    $('#btn-install').hidden = true;
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      try {
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') toast('Instalando app…', 'ok');
+      } catch (e) { /* el usuario cerró el diálogo */ }
+      deferredPrompt = null;
+      $('#btn-install').hidden = true;
+      return;
+    }
+    if (esIOS()) {
+      openModal(
+        '<h3>📲 Instalar la app</h3>' +
+        '<p>En tu iPhone o iPad:</p>' +
+        '<ol style="padding-left:20px;margin:8px 0;line-height:1.7">' +
+        '<li>Tocá el botón <b>Compartir</b> ⬆️ en la barra del navegador.</li>' +
+        '<li>Elegí <b>Añadir a pantalla de inicio</b>.</li>' +
+        '<li>Tocá <b>Añadir</b> (arriba a la derecha).</li>' +
+        '</ol>' +
+        '<p>¡Listo! La app queda con su ícono en tu pantalla.</p>' +
+        '<div class="modal-acciones"><button class="btn btn-ghost" onclick="closeModal()">Entendido</button></div>'
+      );
+    }
   };
+  /* En iPhone se muestra el botón aunque no llegue el diálogo de instalación */
+  if (esIOS() && !esAppInstalada()) mostrarBtnInstalar();
+
+  /* Colchón de historial: el botón atrás del teléfono cierra capas en vez de salir */
+  if (window.__mantenerColchon) window.__mantenerColchon();
 }
 
 /* Al volver de Mercado Pago (?pago=ok | pendiente | error) */
@@ -6222,5 +6431,32 @@ async function init() {
     else if (pg === 'pendiente') toast('Tu pago está pendiente. Te avisamos cuando se acredite.', 'warn');
     else toast('El pago no se completó. Podés intentarlo de nuevo antes de que venza el horario.', 'warn');
   }, 1500);
+})();
+
+/* ---------- Botón "atrás" del teléfono ---------- */
+/* La app es de una sola pantalla: el botón atrás cierra lo que está encima
+   (modal, hoja del mapa, pasos de la reserva) o vuelve a Inicio, antes de salir. */
+(function () {
+  function mantenerColchon() {
+    try { history.pushState({ mm: 1 }, ''); } catch (e) {}
+  }
+  function cerrarCapaAtras() {
+    const modal = $('#modal');
+    if (modal && modal.classList.contains('open')) { closeModal(); return true; }
+    const hoja = $('#mapa-hoja'), cuerpo = $('#mapa-hoja-cuerpo');
+    if (hoja && hoja.classList.contains('abierta')) {
+      hoja.classList.remove('abierta');
+      if (cuerpo) { cuerpo.style.transition = ''; cuerpo.style.maxHeight = '0px'; }
+      const b = $('#mapa-hoja-btn'); if (b) b.setAttribute('aria-expanded', 'false');
+      return true;
+    }
+    const enReserva = $('#view-public') && !$('#view-public').hidden;
+    if (enReserva && curStep > 1) { goStep(curStep - 1); return true; }
+    const enAuth = $('#view-auth') && !$('#view-auth').hidden;
+    if (!enAuth && navActual && navActual !== 'inicio') { irInicio(); return true; }
+    return false;
+  }
+  window.addEventListener('popstate', () => { if (cerrarCapaAtras()) mantenerColchon(); });
+  window.__mantenerColchon = mantenerColchon;
 })();
 document.addEventListener('DOMContentLoaded', init);
