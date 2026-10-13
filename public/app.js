@@ -3654,7 +3654,7 @@ function renderPerfilCuenta() {
         <span class="aj-txt">Instrumentos<small>${instrumentos || 'No agregaste ninguno'}</small></span>
       </div>
       <div class="aj-row aj-dato">${svgAj(ICO_AJ.cal)}
-        <span class="aj-txt">Cuenta creada<small>${yo.createdAt ? fechaCorta(yo.createdAt) : '—'}</small></span>
+        <span class="aj-txt">Cuenta creada<small>${yo.creado ? fechaCorta(yo.creado) : '—'}</small></span>
       </div>
     </div>`;
 
