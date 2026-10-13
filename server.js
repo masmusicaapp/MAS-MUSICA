@@ -669,16 +669,33 @@ function leerClaveResend() {
     return String(txt).split(/\r?\n/)[0].trim();
   } catch (e) { return ''; }
 }
+/* Remitente de los mails, en este orden:
+     1. variable de entorno RESEND_FROM
+     2. archivo local "resend.from" (una línea, ej: Más Música <reservas@masmusica.app>)
+     3. onboarding@resend.dev (el de prueba de Resend: hoy solo entrega al mail de la cuenta)
+   Cuando verifiques un dominio propio en Resend, creá el archivo "resend.from"
+   con la dirección de ese dominio y los mails de reserva salen con tu nombre. */
+function leerRemitente() {
+  const deEnv = String(process.env.RESEND_FROM || '').trim();
+  if (deEnv) return deEnv;
+  try {
+    const linea = String(fs.readFileSync(path.join(__dirname, 'resend.from'), 'utf8')).split(/\r?\n/)[0].trim();
+    if (linea) return linea;
+  } catch (e) { /* no está el archivo: se usa el de prueba */ }
+  return 'Más Música <onboarding@resend.dev>';
+}
 const RESEND_KEY = leerClaveResend();
-const RESEND_FROM = String(process.env.RESEND_FROM || '').trim() || 'Más Música <onboarding@resend.dev>';
+const RESEND_FROM = leerRemitente();
 
-async function enviarMail(para, asunto, texto) {
+async function enviarMail(para, asunto, texto, html) {
   if (!RESEND_KEY || !para || !validarEmail(para)) return false;
   try {
+    const cuerpo = { from: RESEND_FROM, to: [para], subject: asunto, text: texto };
+    if (html) cuerpo.html = html;
     const r = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { 'Authorization': 'Bearer ' + RESEND_KEY, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from: RESEND_FROM, to: [para], subject: asunto, text: texto }),
+      body: JSON.stringify(cuerpo),
     });
     if (!r.ok) console.error('[mail]', r.status, String(await r.text().catch(() => '')).slice(0, 300));
     return r.ok;
@@ -688,6 +705,61 @@ async function enviarMail(para, asunto, texto) {
 /* Email de destino de los avisos (el de contacto, si está cargado) */
 function emailDeAvisos(state) {
   return (state.settings && state.settings.contacto && state.settings.contacto.email) || '';
+}
+
+/* ================= Mails de confirmación de reserva ================= */
+
+/* Arma el asunto y el texto del mail de una reserva.
+   esDueno=false → para el cliente que reservó;  esDueno=true → para el dueño de la sala */
+function mailReserva(state, r, room, esDueno) {
+  const [yy] = String(r.date).split('-');
+  const cuando = `${fmtFechaCorta(r.date)} de ${yy}`;
+  const horario = `${r.start} a ${r.end}`;
+  const sala = room ? room.name : 'la sala';
+  const dir = room && (room.direccion || room.localidad)
+    ? [room.direccion, room.localidad].filter(Boolean).join(', ')
+    : '';
+
+  if (esDueno) {
+    return {
+      asunto: `Nueva reserva · ${sala} · ${cuando}`,
+      texto:
+        `Te reservaron ${sala}.\n\n` +
+        `Banda o músico: ${r.name}\n` +
+        `Día: ${cuando}\n` +
+        `Horario: ${horario}\n` +
+        `Teléfono: ${r.phone || 'sin teléfono'}\n\n` +
+        `Podés ver todas tus reservas en el panel de Más Música.`,
+    };
+  }
+
+  return {
+    asunto: `Reserva confirmada · ${sala} · ${cuando}`,
+    texto:
+      `¡Listo! Tu reserva quedó confirmada.\n\n` +
+      `Sala: ${sala}${dir ? '\nDirección: ' + dir : ''}\n` +
+      `Día: ${cuando}\n` +
+      `Horario: ${horario}\n` +
+      `A nombre de: ${r.name}\n\n` +
+      `Si tenés que cancelar, hacelo desde «Mis reservas» en la app.\n\n` +
+      `¡Buen ensayo!\nMás Música`,
+  };
+}
+
+/* Manda el mail de confirmación al cliente y, si lo tiene cargado, al dueño de la sala.
+   Nunca interrumpe la reserva: si el mail falla, la reserva igual queda hecha. */
+function avisarReservaPorMail(state, r) {
+  const room = (state.rooms || []).find(x => x.id === r.roomId);
+  const cliente = r.userId ? (state.users || []).find(u => u.id === r.userId) : null;
+  const dueno = (room && room.ownerId) ? (state.users || []).find(u => u.id === room.ownerId) : null;
+  if (cliente) {
+    const m = mailReserva(state, r, room, false);
+    enviarMail(validarEmail(cliente.email), m.asunto, m.texto).catch(() => {});
+  }
+  if (dueno) {
+    const m = mailReserva(state, r, room, true);
+    enviarMail(validarEmail(dueno.email), m.asunto, m.texto).catch(() => {});
+  }
 }
 
 /* Avisa a todas las cuentas de administración general y, si hay mail configurado, lo manda también por email */
@@ -893,6 +965,7 @@ function confirmarPorPago(state, r, pagoId) {
   const detalle = `${room ? room.name : 'Sala'} · ${fmtFechaCorta(r.date)} · ${r.start}–${r.end}`;
   if (r.userId) avisar(state, r.userId, 'Reserva confirmada', `${detalle} · Seña recibida`, 'ok', { reservaId: r.id, roomId: r.roomId });
   if (room && room.ownerId) avisar(state, room.ownerId, 'Nueva reserva', `${r.name} reservó ${room.name} el ${fmtFechaCorta(r.date)}, de ${r.start} a ${r.end} (seña pagada)`, 'info', { reservaId: r.id, roomId: r.roomId, para: 'dueno' });
+  avisarReservaPorMail(state, r);
 }
 
 /* Procesa el aviso de pago. Siempre se consulta el pago a Mercado Pago con nuestro token,
@@ -1355,6 +1428,7 @@ async function handleApi(req, res, url, parts) {
       if (u) avisar(state, u.id, 'Reserva confirmada', `${room.name} · ${fmtFechaCorta(date)} · ${start}–${end}`, 'ok', { reservaId: reservation.id, roomId: room.id });
       if (room.ownerId) avisar(state, room.ownerId, 'Nueva reserva', `${reservation.name} reservó ${room.name} el ${fmtFechaCorta(date)}, de ${start} a ${end}`, 'info', { reservaId: reservation.id, roomId: room.id, para: 'dueno' });
       persist(state);
+      avisarReservaPorMail(state, reservation);
       return sendJson(res, 201, { state: publicState(state), reservation });
     }
     /* Con cobro: la reserva reserva el horario unos minutos hasta que se pague la seña */
