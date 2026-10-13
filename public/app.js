@@ -3349,6 +3349,7 @@ async function abrirPanelNotif() {
   if (!drop) return;
   await cargarNotificaciones();
   renderPanelNotif();
+  prepararSwipeNotif();
   drop.classList.add('open');
   drop.setAttribute('aria-hidden', 'false');
 }
@@ -3368,22 +3369,14 @@ function renderPanelNotif() {
     ? (sinLeer ? `${sinLeer} sin leer · ${notificaciones.length} en total` : `${notificaciones.length} aviso(s)`)
     : 'Nada por acá todavía';
   $('#notif-panel-leer').hidden = !sinLeer;
-
-  const confirmadas = notificaciones.filter(ES_CONFIRMADA);
-  const canceladas = notificaciones.filter(ES_CANCELADA);
-  const otros = notificaciones.filter(n => !ES_CONFIRMADA(n) && !ES_CANCELADA(n));
-  const grupo = (ico, titulo, lista) => lista.length
-    ? `<div class="notif-sec"><h4>${ico} ${titulo} <span class="n">${lista.length}</span></h4>${lista.map(itemNotif).join('')}</div>`
-    : '';
+  $('#notif-panel-borrar-todas').hidden = !notificaciones.length;
 
   const promosHtml = promosActivas().length
-    ? `<div class="notif-sec"><h4>🎉 Promociones y novedades <span class="n">${promosActivas().length}</span></h4>${promosActivas().map(itemPromo).join('')}</div>`
+    ? promosActivas().map(itemPromo).join('')
     : '';
 
   bod.innerHTML = promosHtml + (notificaciones.length
-    ? grupo('✅', 'Reservas confirmadas', confirmadas) +
-      grupo('🚫', 'Reservas canceladas', canceladas) +
-      grupo('📬', 'Otros avisos', otros)
+    ? notificaciones.map(itemNotif).join('')
     : `<div class="notif-vacio"><b>No tenés notificaciones</b>Te avisamos cuando confirmes, modifiquen o cancelen una reserva tuya.</div>`);
 }
 
@@ -3412,6 +3405,19 @@ function itemPromo(p) {
 function abrirPromo(id) {
   const p = (state.promociones || []).find(x => x.id === id);
   if (!p) return;
+  /* Promos de registro → panel de administración (super admin) */
+  if (/registro|registr/i.test(p.titulo || '') && esSuper()) {
+    cerrarPanelNotif();
+    showAdmin();
+    return;
+  }
+  /* Promos de bienvenida / cuenta / perfil → ir al inicio */
+  if (/bienvenido|perfil|cuenta/i.test(p.titulo || '')) {
+    cerrarPanelNotif();
+    const navInicio = document.getElementById('nav-inicio');
+    if (navInicio) navInicio.click();
+    return;
+  }
   openModal(`<h3>${esc(p.titulo)}</h3>
     ${p.flyer ? `<img class="promo-flyer-img" src="${esc(p.flyer)}" alt="Flyer de ${esc(p.titulo)}">` : ''}
     ${p.texto ? `<p>${esc(p.texto)}</p>` : ''}
@@ -3430,6 +3436,7 @@ function itemNotif(n) {
       <span>${esc(n.texto)}</span>
       <small class="${n.leida ? 'muted' : ''}">${fechaNotif(n.fecha)}</small>
     </div>
+    <button class="notif-borrar" data-borrar-notif="${n.id}" title="Borrar aviso" aria-label="Borrar aviso">✕</button>
     <svg class="notif-flecha" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg>
   </div>`;
 }
@@ -3448,6 +3455,70 @@ async function marcarLeidasPanel() {
     await cargarNotificaciones();
     renderPanelNotif();   /* el panel sigue abierto, se repinta */
   } catch (e) { toast(e.message, 'error'); }
+}
+
+/* Borrar una notificación individual */
+async function borrarNotificacion(id) {
+  try {
+    await api('/api/notificaciones/' + id, { method: 'DELETE' });
+    notificaciones = notificaciones.filter(n => n.id !== id);
+    renderPanelNotif();
+    pintarBadgeNotif();
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+/* Borrar todas las notificaciones */
+async function borrarTodasNotificaciones() {
+  if (!notificaciones.length) return;
+  try {
+    await api('/api/notificaciones', { method: 'DELETE' });
+    notificaciones = [];
+    renderPanelNotif();
+    pintarBadgeNotif();
+    toast('Avisos borrados', 'ok');
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+/* Deslizar una notificación para borrarla (swipe a izquierda o derecha) */
+function prepararSwipeNotif() {
+  const cont = $('#notif-sheet-body');
+  if (!cont || cont._swipeOk) return;
+  cont._swipeOk = true;
+  let activo = null, x0 = 0, dx = 0;
+
+  cont.addEventListener('touchstart', e => {
+    const item = e.target.closest('.notif-item');
+    if (!item || e.target.closest('.notif-borrar')) return;
+    activo = item;
+    x0 = e.touches[0].clientX;
+    dx = 0;
+    item.style.transition = 'none';
+  }, { passive: true });
+
+  cont.addEventListener('touchmove', e => {
+    if (!activo) return;
+    dx = e.touches[0].clientX - x0;
+    if (Math.abs(dx) > 10) {
+      activo.style.transform = `translateX(${Math.max(-90, Math.min(90, dx))}px)`;
+      activo.classList.add('swipe-borrando');
+    }
+  }, { passive: true });
+
+  cont.addEventListener('touchend', () => {
+    if (!activo) return;
+    const item = activo;
+    activo = null;
+    item.style.transition = 'transform .25s ease, opacity .25s ease';
+    if (Math.abs(dx) > 60) {
+      const dir = dx < 0 ? -1 : 1;
+      item.style.transform = `translateX(${dir * 100}%)`;
+      item.style.opacity = '0';
+      setTimeout(() => borrarNotificacion(item.dataset.notifId), 250);
+    } else {
+      item.style.transform = '';
+      item.classList.remove('swipe-borrando');
+    }
+  });
 }
 
 /* ---------- Navegación desde una notificación ---------- */
@@ -3475,8 +3546,22 @@ async function irANotificacion(id) {
   }
 
   /* Avisos de reservas propias → "Mis reservas" filtradas (próximas / historial) */
-  irReservasFiltradas(/cancelada/i.test(n.titulo || '') ? 'historial' : 'proximas');
-  if (r) setTimeout(() => resaltarReserva(r.id, '#home-mine-body'), 180);
+  if (r) {
+    irReservasFiltradas(/cancelada/i.test(n.titulo || '') ? 'historial' : 'proximas');
+    setTimeout(() => resaltarReserva(r.id, '#home-mine-body'), 180);
+    return;
+  }
+
+  /* Avisos de nuevo registro → panel de administración */
+  if (/registro|registr/i.test(n.titulo || '') && esSuper()) {
+    showAdmin();
+    return;
+  }
+
+  /* Avisos de cuenta / perfil / bienvenida → Inicio */
+  cerrarPanelNotif();
+  const navInicio = document.getElementById('nav-inicio');
+  if (navInicio) navInicio.click();
 }
 
 /* Marca visualmente la tarjeta de una reserva y la trae al centro */
@@ -4700,8 +4785,11 @@ function wirePublic() {
   $('#notif-panel-cerrar').onclick = cerrarPanelNotif;
   $('#notif-backdrop').onclick = cerrarPanelNotif;
   $('#notif-panel-leer').onclick = marcarLeidasPanel;
+  $('#notif-panel-borrar-todas').onclick = borrarTodasNotificaciones;
   /* Tocar una notificación lleva a la reserva correspondiente */
   $('#notif-sheet-body').onclick = e => {
+    const borrar = e.target.closest('[data-borrar-notif]');
+    if (borrar) { e.stopPropagation(); return borrarNotificacion(borrar.dataset.borrarNotif); }
     const pr = e.target.closest('[data-promo-id]');
     if (pr) return abrirPromo(pr.dataset.promoId);
     const it = e.target.closest('.notif-item');
