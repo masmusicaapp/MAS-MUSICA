@@ -2414,9 +2414,16 @@ main {
 #mapa .gm-style-iw .pop-detalle { color: var(--text); }
 
 /* Marcadores con el logo de la sala */
-.mk-wrap { background: transparent; border: none; }
+.mk-wrap {
+  background: transparent !important;
+  border: none !important;
+  width: 28px !important;
+  height: 28px !important;
+}
 .mk-sala {
-  width: 28px; height: 28px; border-radius: 50%;
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 50%;
   background: linear-gradient(135deg, var(--panel2), var(--panel));
   border: 2px solid var(--accent);
   box-shadow: 0 3px 10px rgba(0, 0, 0, .5), 0 0 0 2px rgba(255, 255, 255, .85);
@@ -2430,14 +2437,18 @@ main {
 .mk-sala.mk-marca { background: var(--accent); border-color: var(--accent); }
 .mk-sala.mk-marca img { width: 16px; height: 16px; object-fit: contain; }
 .mk-res {
-  width: 24px; height: 24px; border-radius: 50%;
+  width: 24px !important;
+  height: 24px !important;
+  border-radius: 50%;
   background: var(--accent); border: 2px solid #fff;
   display: grid; place-items: center; font-size: .72rem;
   box-shadow: 0 3px 10px rgba(0, 0, 0, .5);
 }
 /* Tu ubicación: círculo verde con el logo de Más Música en negro */
 .mk-yo {
-  width: 24px; height: 24px; border-radius: 50%;
+  width: 24px !important;
+  height: 24px !important;
+  border-radius: 50%;
   background: var(--accent); border: 2px solid #fff;
   display: grid; place-items: center; overflow: hidden;
   box-shadow: 0 3px 10px rgba(0, 0, 0, .5);
@@ -3326,8 +3337,8 @@ main {
 
 /* Ajustes generales para celular */
 @media (max-width: 959px) {
-  /* Prevenir overflow general en celular */
-  * {
+  /* Prevenir overflow general en celular (excepto marcadores de Leaflet) */
+  *:not(.leaflet-marker-icon):not(.mk-wrap):not(.mk-sala):not(.mk-res):not(.mk-yo) {
     box-sizing: border-box;
   }
 
@@ -3336,7 +3347,7 @@ main {
     max-width: 100vw;
   }
 
-  main, section, article, div {
+  main, section, article, div:not(.leaflet-marker-icon):not(.mk-wrap):not(.mk-sala) {
     max-width: 100%;
     box-sizing: border-box;
   }
