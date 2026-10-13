@@ -2829,7 +2829,7 @@ function campoPassword(id, etiqueta, opts = {}) {
     <span class="campo-lbl">${etiqueta} <span class="req">*</span></span>
     <span class="pass-wrap">
       <input id="${id}" type="password" autocomplete="${ac}" data-valida="${valida}" data-obligatorio${ph ? ` placeholder="${ph}"` : ''}>
-      <button type="button" class="pass-eye" data-ver="${id}" aria-label="Mostrar u ocultar contraseña" tabindex="-1">👁</button>
+      <button type="button" class="pass-eye" data-ver="${id}" aria-label="Mostrar u ocultar contraseña" tabindex="-1"><svg class="pass-eye-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
     </span>
     ${fuerza ? '<span class="fuerza" data-n="0"><i></i><i></i><i></i><i></i><span class="fuerza-txt"></span></span>' : ''}
     <span class="campo-msg"></span>
@@ -3089,7 +3089,9 @@ function wireAuth() {
       if (inp) {
         const ver = inp.type === 'password';
         inp.type = ver ? 'text' : 'password';
-        eye.textContent = ver ? '🙈' : '👁';
+        eye.innerHTML = ver
+          ? '<svg class="pass-eye-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>'
+          : '<svg class="pass-eye-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
         inp.focus();
       }
       return;

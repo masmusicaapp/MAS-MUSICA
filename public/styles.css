@@ -1262,10 +1262,18 @@ main {
 .pass-wrap input { padding-right: 46px; }
 .pass-eye {
   position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
-  background: none; border: none; padding: 8px; font-size: 1.05rem; line-height: 1;
+  background: none; border: none; padding: 8px; line-height: 1;
   color: var(--muted); border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .2s, color .2s;
 }
-.pass-eye:hover { background: var(--soft2); }
+.pass-eye:hover { background: var(--soft2); color: var(--accent2); }
+.pass-eye-svg {
+  width: 20px; height: 20px;
+  stroke-width: 2;
+  transition: transform .2s;
+}
+.pass-eye:hover .pass-eye-svg { transform: scale(1.1); }
 
 /* Medidor de fuerza de la contraseña */
 .fuerza { display: flex; align-items: center; gap: 5px; margin-top: 7px; }
