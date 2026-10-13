@@ -3753,6 +3753,9 @@ function renderPerfilCuenta() {
 
   box.hidden = false;
   const instrumentos = (yo.instrumentos || []).join(', ');
+  const nReservas = misReservas().length;
+  const nFavoritas = (yo.favoritos || []).length;
+  const nBandas = (state.bandas || []).filter(b => b.integrantes && b.integrantes.some(i => i.nombre && i.nombre.toLowerCase().includes((yo.nombre || '').toLowerCase()))).length || 0;
   box.innerHTML = `
     <div class="panel-head"><h2>Mis datos</h2></div>
     <div class="aj-cuenta">
@@ -3764,11 +3767,18 @@ function renderPerfilCuenta() {
           <span class="badge">${esDueño() ? '🎛️ Dueño de sala' : esSuper() ? '👑 Administración general' : '🎸 Músico'}</span>
           ${miSala ? `<span class="badge ${miSala.estado === 'aprobada' ? '' : 'badge-next'}">Sala: ${esc(miSala.name)} · ${miSala.estado}</span>` : ''}
         </span>
-        <div class="row wrap" style="gap:12px;margin-top:8px">
-          <button class="aj-editar" id="btn-editar-perfil">✏️ Editar perfil</button>
-          <button class="aj-editar" id="btn-cambiar-pass">🔑 Cambiar contraseña</button>
-        </div>
       </div>
+    </div>
+
+    <div class="perfil-stats">
+      <div class="perfil-stat"><strong>${nReservas}</strong><span>Reservas</span></div>
+      <div class="perfil-stat"><strong>${nFavoritas}</strong><span>Favoritas</span></div>
+      <div class="perfil-stat"><strong>${nBandas}</strong><span>Bandas</span></div>
+    </div>
+
+    <div class="row wrap" style="gap:12px;margin-bottom:14px">
+      <button class="aj-editar" id="btn-editar-perfil">✏️ Editar perfil</button>
+      <button class="aj-editar" id="btn-cambiar-pass">🔑 Cambiar contraseña</button>
     </div>
 
     <p class="aj-lbl">Datos</p>

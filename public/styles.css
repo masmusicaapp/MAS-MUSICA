@@ -1341,24 +1341,42 @@ main {
 /* ================= CAMPANA DE NOTIFICACIONES (píldora estilo app) ================= */
 .btn-notif {
   position: relative; flex: 0 0 auto;
-  display: inline-flex; align-items: center; gap: 8px;
-  height: 42px; padding: 0 16px 0 14px;
+  display: inline-flex; align-items: center; gap: 9px;
+  height: 42px; padding: 0 17px 0 15px;
   border-radius: 999px;
-  background: var(--panel2);
+  background: linear-gradient(135deg, var(--panel2), var(--panel));
   border: 1px solid var(--line);
   color: var(--text); font-weight: 700; font-size: .9rem;
   cursor: pointer; white-space: nowrap;
-  transition: border-color .15s, color .15s, background .15s, box-shadow .15s, transform .12s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .12), inset 0 1px 0 rgba(255, 255, 255, .06);
+  transition: border-color .18s, color .18s, background .18s, box-shadow .18s, transform .14s;
 }
-.btn-notif:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-1px); }
-.btn-notif:active { transform: scale(.94); }
+.btn-notif:hover {
+  border-color: var(--accent); color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 160, 56, .22), inset 0 1px 0 rgba(255, 255, 255, .08);
+}
+.btn-notif:active { transform: scale(.95); box-shadow: 0 1px 4px rgba(0, 0, 0, .15); }
 .notif-svg {
-  width: 19px; height: 19px; flex: 0 0 auto;
-  fill: none; stroke: currentColor; stroke-width: 2.1;
+  width: 20px; height: 20px; flex: 0 0 auto;
+  fill: none; stroke: currentColor; stroke-width: 2.2;
   stroke-linecap: round; stroke-linejoin: round;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .18));
+  transition: transform .2s ease;
 }
-.notif-txt { line-height: 1; }
-.btn-notif .badge-notif { top: -6px; right: -6px; border: 2px solid var(--hdr); }
+.btn-notif:hover .notif-svg { transform: scale(1.08); }
+.notif-txt { line-height: 1; letter-spacing: .2px; }
+.btn-notif .badge-notif {
+  top: -7px; right: -7px;
+  border: 2.5px solid var(--hdr);
+  box-shadow: 0 3px 10px rgba(220, 38, 38, .45), 0 0 0 2px rgba(220, 38, 38, .12);
+  font-size: .68rem; padding: 2px 7px; min-width: 19px;
+  animation: badge-pulse 2.2s ease-in-out infinite;
+}
+@keyframes badge-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.12); }
+}
 /* Logo de Instagram en la cabecera: chip redondo con el isologotipo real, a juego con el diseño */
 .btn-ig {
   position: relative; flex: 0 0 auto;
@@ -1377,10 +1395,14 @@ main {
 .btn-notif.tiene-nuevas {
   border-color: var(--accent);
   color: var(--accent);
-  background: rgba(0, 160, 56, .09);
-  box-shadow: 0 0 0 3px rgba(0, 160, 56, .15), 0 4px 16px rgba(0, 160, 56, .35);
+  background: linear-gradient(135deg, rgba(0, 160, 56, .12), rgba(0, 160, 56, .05));
+  box-shadow: 0 0 0 3px rgba(0, 160, 56, .18), 0 6px 22px rgba(0, 160, 56, .32), inset 0 1px 0 rgba(255, 255, 255, .08);
 }
-.btn-notif.tiene-nuevas .notif-svg { animation: notif-sacudida 2.8s ease-in-out infinite; transform-origin: 50% 4px; }
+.btn-notif.tiene-nuevas .notif-svg {
+  animation: notif-sacudida 2.8s ease-in-out infinite;
+  transform-origin: 50% 4px;
+  filter: drop-shadow(0 1px 4px rgba(0, 160, 56, .35));
+}
 @keyframes notif-sacudida {
   0%, 58%, 100% { transform: rotate(0); }
   62% { transform: rotate(14deg); }
@@ -1436,6 +1458,62 @@ main {
   overflow-y: auto; overscroll-behavior: contain;
   padding: 10px 16px 22px;
   -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: var(--accent) transparent;
+}
+/* Barra de scroll visible solo en escritorio, solo donde hay scroll */
+@media (min-width: 960px) {
+  /* Panel de notificaciones */
+  .notif-sheet-body {
+    scrollbar-width: thin;
+    scrollbar-color: var(--accent) var(--panel2);
+  }
+  .notif-sheet-body::-webkit-scrollbar { width: 8px; display: block; }
+  .notif-sheet-body::-webkit-scrollbar-track { background: var(--panel2); border-radius: 8px; }
+  .notif-sheet-body::-webkit-scrollbar-thumb {
+    background: var(--accent); border-radius: 8px;
+    border: 2px solid var(--panel2);
+  }
+  .notif-sheet-body::-webkit-scrollbar-thumb:hover { background: var(--accent2); }
+
+  /* Panel de ajustes */
+  .ajustes-sheet-body {
+    scrollbar-width: thin;
+    scrollbar-color: var(--accent) var(--panel2);
+  }
+  .ajustes-sheet-body::-webkit-scrollbar { width: 8px; display: block; }
+  .ajustes-sheet-body::-webkit-scrollbar-track { background: var(--panel2); border-radius: 8px; }
+  .ajustes-sheet-body::-webkit-scrollbar-thumb {
+    background: var(--accent); border-radius: 8px;
+    border: 2px solid var(--panel2);
+  }
+  .ajustes-sheet-body::-webkit-scrollbar-thumb:hover { background: var(--accent2); }
+
+  /* Contenido principal de cada vista */
+  main {
+    scrollbar-width: thin;
+    scrollbar-color: var(--accent) var(--panel2);
+  }
+  main::-webkit-scrollbar { width: 8px; display: block; }
+  main::-webkit-scrollbar-track { background: var(--panel2); border-radius: 8px; }
+  main::-webkit-scrollbar-thumb {
+    background: var(--accent); border-radius: 8px;
+    border: 2px solid var(--panel2);
+  }
+  main::-webkit-scrollbar-thumb:hover { background: var(--accent2); }
+
+  /* Modales */
+  .modal-box {
+    scrollbar-width: thin;
+    scrollbar-color: var(--accent) var(--panel2);
+  }
+  .modal-box::-webkit-scrollbar { width: 8px; display: block; }
+  .modal-box::-webkit-scrollbar-track { background: var(--panel2); border-radius: 8px; }
+  .modal-box::-webkit-scrollbar-thumb {
+    background: var(--accent); border-radius: 8px;
+    border: 2px solid var(--panel2);
+  }
+  .modal-box::-webkit-scrollbar-thumb:hover { background: var(--accent2); }
 }
 .notif-sec { margin: 8px 0 16px; }
 .notif-sec h4 {
@@ -1465,6 +1543,31 @@ main {
 }
 .notif-item:hover .notif-flecha { color: var(--accent); transform: translateX(2px); }
 .notif-item:hover .notif-txt strong { color: var(--accent2); }
+.notif-borrar {
+  flex: 0 0 auto; align-self: center;
+  width: 28px; height: 28px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: rgba(220, 38, 38, .1); border: 1px solid rgba(220, 38, 38, .2);
+  border-radius: 50%; color: var(--danger, #dc2626);
+  font-size: .75rem; cursor: pointer;
+  opacity: 0; transition: opacity .15s, background .15s, transform .12s;
+}
+.notif-item:hover .notif-borrar { opacity: 1; }
+.notif-borrar:hover { background: rgba(220, 38, 38, .22); transform: scale(1.1); }
+/* En celular (sin hover) el botón de borrar siempre se ve */
+@media (hover: none) {
+  .notif-borrar { opacity: 1; }
+}
+.notif-item.swipe-borrando {
+  border-color: rgba(220, 38, 38, .4);
+  background: rgba(220, 38, 38, .06);
+}
+/* Pista visual de que se puede deslizar para borrar (solo celular) */
+@media (hover: none) {
+  .notif-item {
+    background: linear-gradient(90deg, var(--panel) 0%, var(--panel) 85%, rgba(220, 38, 38, .08) 100%);
+  }
+}
 .notif-item.nueva {
   border-left-color: var(--accent);
   background: rgba(0, 160, 56, .07);
@@ -2054,7 +2157,8 @@ main {
   }
   body.nav-mapa #mapa .leaflet-control-attribution a { color: rgba(255, 255, 255, .9); }
 
-  /* Botones 📍 / 🔎 flotantes, a la izquierda del panel de salas */
+  /* Botones 📍 / 🔎 / ✕ flotantes, a la izquierda del panel de salas.
+     Cuando la lista se oculta, los 3 botones viajan juntos al borde derecho */
   body.nav-mapa #view-mapa .panel-head {
     position: fixed;
     right: calc(min(392px, 35vw) + 32px);
@@ -2064,7 +2168,9 @@ main {
     background: none; border: none; box-shadow: none;
     -webkit-backdrop-filter: none; backdrop-filter: none;
     flex-direction: column; align-items: flex-end;
+    transition: right .34s cubic-bezier(.22, .9, .28, 1);
   }
+  body.nav-mapa.salas-oculta #view-mapa .panel-head { right: 16px; }
   body.nav-mapa #view-mapa .panel-head h2 { display: none; }
   body.nav-mapa #view-mapa .panel-head .row { flex-direction: column; gap: 10px; margin: 0; flex-wrap: nowrap; }
   body.nav-mapa #view-mapa .panel-head .btn {
@@ -2806,3 +2912,245 @@ body.modo-control label:has(> #pd-instrumentos) { display: none !important; }
   border: 1px solid var(--line); background: var(--panel2); color: var(--text); font: inherit;
 }
 .comu-form input:focus { outline: 2px solid var(--accent); outline-offset: 0; border-color: var(--accent); }
+
+/* =====================================================================
+   MEJORAS DE DISEÑO — Actualización visual de toda la app
+   ===================================================================== */
+
+/* ---------- MEJORAS GENERALES ---------- */
+
+/* Tipografía más clara */
+h1, h2, h3 { letter-spacing: -.01em; }
+h2 { font-size: 1.4rem; margin-bottom: 12px; }
+h3 { font-size: 1.1rem; }
+
+/* Bordes más suaves en toda la app */
+.btn { border-radius: 14px; }
+.card, .room-card, .mapa-item { border-radius: 16px; }
+
+/* Transiciones más suaves */
+button, a, .btn { transition: all .2s ease; }
+
+/* ---------- STATS DEL INICIO ---------- */
+
+.resumen-stats .stat {
+  background: linear-gradient(135deg, var(--panel2), var(--panel));
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 14px 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, .12);
+  transition: transform .2s, box-shadow .2s;
+}
+.resumen-stats .stat:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, .18);
+}
+.resumen-stats .stat span { font-size: .75rem; color: var(--muted); }
+.resumen-stats .stat strong {
+  font-size: 1.5rem;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ---------- CARDS DE SALAS ---------- */
+
+.room-card {
+  background: linear-gradient(135deg, var(--panel2), var(--panel));
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 16px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .15);
+  transition: transform .25s, box-shadow .25s, border-color .2s;
+}
+.room-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, .22);
+  border-color: var(--accent);
+}
+
+/* Foto más grande */
+.room-card .room-foto {
+  width: 80px; height: 80px;
+  border-radius: 16px;
+  border: 2px solid var(--accent);
+  box-shadow: 0 4px 12px rgba(0, 160, 56, .2);
+}
+
+/* Badge de precio */
+.room-card .chip {
+  background: linear-gradient(135deg, rgba(0, 160, 56, .15), rgba(0, 160, 56, .05));
+  border: 1px solid rgba(0, 160, 56, .3);
+  border-radius: 10px;
+  padding: 4px 10px;
+  font-weight: 700;
+  color: var(--accent2);
+}
+
+/* Botón "Ver horarios" más llamativo */
+.room-card .btn-primary {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border: none;
+  padding: 10px 18px;
+  font-weight: 700;
+  border-radius: 12px;
+  box-shadow: 0 4px 14px rgba(0, 160, 56, .3);
+  transition: transform .2s, box-shadow .2s;
+}
+.room-card .btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(0, 160, 56, .4);
+}
+
+/* Favorito con animación */
+.room-card .fav-btn {
+  transition: transform .3s ease;
+}
+.room-card .fav-btn:active { transform: scale(1.3); }
+
+/* ---------- PERFIL DEL USUARIO ---------- */
+
+#view-mine .perfil-avatar {
+  width: 64px; height: 64px;
+  border-radius: 50%;
+  border: 3px solid var(--accent);
+  box-shadow: 0 4px 16px rgba(0, 160, 56, .25);
+}
+
+/* Stats del perfil */
+.perfil-stats {
+  display: flex; gap: 12px; margin: 12px 0;
+}
+.perfil-stat {
+  flex: 1; text-align: center;
+  background: var(--panel2);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 10px 8px;
+}
+.perfil-stat strong { font-size: 1.3rem; color: var(--accent2); display: block; }
+.perfil-stat span { font-size: .72rem; color: var(--muted); }
+
+/* Botones de acción del perfil */
+#view-mine .btn {
+  border-radius: 14px;
+  padding: 12px 16px;
+  font-weight: 600;
+  transition: all .2s ease;
+}
+#view-mine .btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, .15);
+}
+
+/* ---------- AJUSTES ---------- */
+
+/* Secciones con títulos */
+.aj-seccion {
+  margin-bottom: 16px;
+}
+.aj-seccion-titulo {
+  font-size: .72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  color: var(--muted);
+  margin-bottom: 8px;
+  padding: 0 4px;
+}
+
+/* Opciones de ajustes */
+.aj-fila {
+  background: var(--panel2);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px 14px;
+  margin-bottom: 6px;
+  transition: background .2s, border-color .2s;
+}
+.aj-fila:hover {
+  background: var(--panel);
+  border-color: var(--accent);
+}
+
+/* Toggle más grande */
+.aj-fila input[type="checkbox"] {
+  width: 48px; height: 28px;
+  border-radius: 14px;
+}
+.aj-fila input[type="checkbox"]::after {
+  width: 22px; height: 22px;
+}
+
+/* Botón cerrar sesión más visible */
+.btn-logout {
+  background: linear-gradient(135deg, var(--danger), var(--salmon));
+  border: none;
+  color: #fff;
+  font-weight: 700;
+  padding: 12px 20px;
+  border-radius: 14px;
+  width: 100%;
+  margin-top: 16px;
+  box-shadow: 0 4px 14px rgba(229, 72, 77, .3);
+  transition: transform .2s, box-shadow .2s;
+}
+.btn-logout:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(229, 72, 77, .4);
+}
+
+/* ---------- ANIMACIONES ---------- */
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Animar elementos al aparecer */
+.room-card, .stat, .notif-item, .promo {
+  animation: fade-in .3s ease both;
+}
+.room-card:nth-child(2) { animation-delay: .05s; }
+.room-card:nth-child(3) { animation-delay: .1s; }
+
+/* ---------- BORDES Y SOMBRAS ---------- */
+
+.modal-box {
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, .5);
+}
+
+.notif-sheet {
+  border-radius: 20px 20px 0 0;
+  box-shadow: 0 -10px 40px rgba(0, 0, 0, .3);
+}
+
+.ajustes-sheet {
+  border-radius: 20px 20px 0 0;
+  box-shadow: 0 -10px 40px rgba(0, 0, 0, .3);
+}
+
+/* ---------- MEJORAS EN BOTONES ---------- */
+
+.btn {
+  font-weight: 600;
+  letter-spacing: .01em;
+}
+
+.btn-sm {
+  padding: 8px 14px;
+  font-size: .82rem;
+}
+
+.btn-big {
+  padding: 14px 24px;
+  font-size: 1rem;
+  border-radius: 16px;
+}
