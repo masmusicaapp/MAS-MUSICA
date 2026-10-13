@@ -57,8 +57,8 @@
       "email": "admin@masmusica.app",
       "telefono": "",
       "pass": {
-        "hash": "d664cf2755f902577442fd6aca70e0363d334b4cdcce0484ad1f712c878ed2b75196a5de36023b4df3509a6e9ed2cf5af8638b1c7684ec9bb5c0d9518a739dfc",
-        "salt": "f1742cec9a2af8f6f50c9e521bd63e54"
+        "hash": "906b81925f9f196a6e520b335c1e4d54b09ace506ff4b1415704c8af859cf6edab190188b6f3db69034d92b3a262f6a080cd071aff6681cb35739142eb97f07b",
+        "salt": "94b7b50bd23c5c429dfa0f8928c181cb"
       },
       "foto": "",
       "localidad": "",
@@ -68,11 +68,18 @@
       "bloqueado": false,
       "favoritos": [],
       "creado": 1791869715837,
-      "ultimoAcceso": 0,
+      "ultimoAcceso": 1791871928474,
       "following": []
     }
   ],
-  "sessions": [],
+  "sessions": [
+    {
+      "tokenHash": "b3e7d723228496fb4e9b039e53d3e434dbf26c65c54590effcb0eec3f7fe53fc",
+      "userId": "mv68ypbrqxg3ci",
+      "creado": 1791871928474,
+      "expira": 1794463928474
+    }
+  ],
   "notificaciones": [],
   "ayuda": [],
   "mensajes": [],
