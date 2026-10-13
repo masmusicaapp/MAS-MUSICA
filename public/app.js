@@ -3461,13 +3461,28 @@ async function marcarLeidasPanel() {
   } catch (e) { toast(e.message, 'error'); }
 }
 
-/* Borrar una notificación individual */
-async function borrarNotificacion(id) {
+/* Borrar una notificación individual (con animación de cierre) */
+async function borrarNotificacion(id, itemEl) {
   try {
     await api('/api/notificaciones/' + id, { method: 'DELETE' });
     notificaciones = notificaciones.filter(n => n.id !== id);
-    renderPanelNotif();
-    pintarBadgeNotif();
+    /* Animar: colapsar la tarjeta para que las demás suban */
+    if (itemEl) {
+      itemEl.style.transition = 'height .3s ease, margin .3s ease, padding .3s ease, opacity .25s ease, transform .25s ease';
+      itemEl.style.height = itemEl.offsetHeight + 'px';
+      itemEl.style.overflow = 'hidden';
+      requestAnimationFrame(() => {
+        itemEl.style.height = '0px';
+        itemEl.style.margin = '0px';
+        itemEl.style.padding = '0px';
+        itemEl.style.opacity = '0';
+        itemEl.style.transform = 'scale(.95)';
+      });
+      setTimeout(() => { renderPanelNotif(); pintarBadgeNotif(); }, 320);
+    } else {
+      renderPanelNotif();
+      pintarBadgeNotif();
+    }
   } catch (e) { toast(e.message, 'error'); }
 }
 
@@ -3483,26 +3498,31 @@ async function borrarTodasNotificaciones() {
   } catch (e) { toast(e.message, 'error'); }
 }
 
-/* Deslizar una notificación para borrarla (swipe a izquierda o derecha) */
+/* Deslizar una notificación para borrarla (swipe a izquierda o derecha)
+   y deslizar hacia arriba para cerrar el panel */
 function prepararSwipeNotif() {
   const cont = $('#notif-sheet-body');
+  const sheet = $('#notif-sheet');
   if (!cont || cont._swipeOk) return;
   cont._swipeOk = true;
-  let activo = null, x0 = 0, dx = 0;
+  let activo = null, x0 = 0, y0 = 0, dx = 0, dy = 0;
 
   cont.addEventListener('touchstart', e => {
     const item = e.target.closest('.notif-item');
     if (!item || e.target.closest('.notif-borrar')) return;
     activo = item;
     x0 = e.touches[0].clientX;
-    dx = 0;
+    y0 = e.touches[0].clientY;
+    dx = 0; dy = 0;
     item.style.transition = 'none';
   }, { passive: true });
 
   cont.addEventListener('touchmove', e => {
     if (!activo) return;
     dx = e.touches[0].clientX - x0;
-    if (Math.abs(dx) > 10) {
+    dy = e.touches[0].clientY - y0;
+    /* Swipe horizontal → borrar */
+    if (Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy)) {
       activo.style.transform = `translateX(${Math.max(-90, Math.min(90, dx))}px)`;
       activo.classList.add('swipe-borrando');
     }
@@ -3512,17 +3532,32 @@ function prepararSwipeNotif() {
     if (!activo) return;
     const item = activo;
     activo = null;
-    item.style.transition = 'transform .25s ease, opacity .25s ease';
-    if (Math.abs(dx) > 60) {
-      const dir = dx < 0 ? -1 : 1;
-      item.style.transform = `translateX(${dir * 100}%)`;
-      item.style.opacity = '0';
-      setTimeout(() => borrarNotificacion(item.dataset.notifId), 250);
+    if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy)) {
+      borrarNotificacion(item.dataset.notifId, item);
     } else {
+      item.style.transition = 'transform .25s ease';
       item.style.transform = '';
       item.classList.remove('swipe-borrando');
     }
   });
+
+  /* Swipe hacia arriba en el panel → cerrar */
+  if (sheet && !sheet._swipeUpOk) {
+    sheet._swipeUpOk = true;
+    let yStart = 0, yEnd = 0;
+    sheet.addEventListener('touchstart', e => {
+      if (e.target.closest('.notif-item')) return;   /* las notificaciones manejan su propio swipe */
+      yStart = e.touches[0].clientY;
+      yEnd = yStart;
+    }, { passive: true });
+    sheet.addEventListener('touchmove', e => {
+      yEnd = e.touches[0].clientY;
+    }, { passive: true });
+    sheet.addEventListener('touchend', () => {
+      if (yStart - yEnd > 80) cerrarPanelNotif();   /* subió más de 80px */
+      yStart = 0; yEnd = 0;
+    });
+  }
 }
 
 /* ---------- Navegación desde una notificación ---------- */
@@ -3564,7 +3599,8 @@ async function irANotificacion(id) {
 
   /* Avisos de cuenta / perfil / bienvenida → solo mostrar, no navegar, se borran solos */
   if (/bienvenido/i.test(n.titulo || '')) {
-    borrarNotificacion(n.id);
+    const itemEl = document.querySelector(`[data-notif-id="${n.id}"]`);
+    borrarNotificacion(n.id, itemEl);
     cerrarPanelNotif();
     return;
   }
@@ -4800,7 +4836,11 @@ function wirePublic() {
   /* Tocar una notificación lleva a la reserva correspondiente */
   $('#notif-sheet-body').onclick = e => {
     const borrar = e.target.closest('[data-borrar-notif]');
-    if (borrar) { e.stopPropagation(); return borrarNotificacion(borrar.dataset.borrarNotif); }
+    if (borrar) {
+      e.stopPropagation();
+      const item = borrar.closest('.notif-item');
+      return borrarNotificacion(borrar.dataset.borrarNotif, item);
+    }
     const pr = e.target.closest('[data-promo-id]');
     if (pr) return abrirPromo(pr.dataset.promoId);
     const it = e.target.closest('.notif-item');
