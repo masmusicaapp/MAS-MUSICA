@@ -3352,6 +3352,8 @@ async function abrirPanelNotif() {
   prepararSwipeNotif();
   drop.classList.add('open');
   drop.setAttribute('aria-hidden', 'false');
+  /* Marcar la bienvenida como vista (solo aparece una vez) */
+  localStorage.setItem('mm-bienvenida-vista', '1');
 }
 
 function cerrarPanelNotif() {
@@ -3371,9 +3373,13 @@ function renderPanelNotif() {
   $('#notif-panel-leer').hidden = !sinLeer;
   $('#notif-panel-borrar-todas').hidden = !notificaciones.length;
 
-  const promosHtml = promosActivas().length
-    ? promosActivas().map(itemPromo).join('')
-    : '';
+  /* Las promos de bienvenida solo se muestran una vez */
+  const bienvenidaVista = localStorage.getItem('mm-bienvenida-vista') === '1';
+  const promos = promosActivas().filter(p => {
+    if (/bienvenido/i.test(p.titulo || '') && bienvenidaVista) return false;
+    return true;
+  });
+  const promosHtml = promos.length ? promos.map(itemPromo).join('') : '';
 
   bod.innerHTML = promosHtml + (notificaciones.length
     ? notificaciones.map(itemNotif).join('')
@@ -3411,11 +3417,9 @@ function abrirPromo(id) {
     showAdmin();
     return;
   }
-  /* Promos de bienvenida / cuenta / perfil → ir al inicio */
-  if (/bienvenido|perfil|cuenta/i.test(p.titulo || '')) {
+  /* Promos de bienvenida → solo cerrar, no navegar */
+  if (/bienvenido/i.test(p.titulo || '')) {
     cerrarPanelNotif();
-    const navInicio = document.getElementById('nav-inicio');
-    if (navInicio) navInicio.click();
     return;
   }
   openModal(`<h3>${esc(p.titulo)}</h3>
@@ -3558,7 +3562,14 @@ async function irANotificacion(id) {
     return;
   }
 
-  /* Avisos de cuenta / perfil / bienvenida → Inicio */
+  /* Avisos de cuenta / perfil / bienvenida → solo mostrar, no navegar, se borran solos */
+  if (/bienvenido/i.test(n.titulo || '')) {
+    borrarNotificacion(n.id);
+    cerrarPanelNotif();
+    return;
+  }
+
+  /* Otros avisos sin reserva → Inicio */
   cerrarPanelNotif();
   const navInicio = document.getElementById('nav-inicio');
   if (navInicio) navInicio.click();
