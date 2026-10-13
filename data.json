@@ -1,0 +1,334 @@
+{
+  "settings": {
+    "currency": "$",
+    "hours": {
+      "0": null,
+      "1": {
+        "open": "10:00",
+        "close": "22:00"
+      },
+      "2": {
+        "open": "10:00",
+        "close": "22:00"
+      },
+      "3": {
+        "open": "10:00",
+        "close": "22:00"
+      },
+      "4": {
+        "open": "10:00",
+        "close": "22:00"
+      },
+      "5": {
+        "open": "10:00",
+        "close": "22:00"
+      },
+      "6": {
+        "open": "11:00",
+        "close": "20:00"
+      }
+    },
+    "reglas": {
+      "cancelacionHoras": 0,
+      "turnos": [
+        30,
+        60,
+        90,
+        120
+      ],
+      "avisoHoras": 24,
+      "senaPorcentaje": 30,
+      "comisionPorcentaje": 8,
+      "minutosPago": 15
+    },
+    "contacto": {
+      "whatsapp": "",
+      "instagram": "",
+      "facebook": "",
+      "email": "",
+      "tiktok": ""
+    }
+  },
+  "users": [
+    {
+      "id": "mv68ypbrqxg3ci",
+      "nombre": "Administración Más Música",
+      "usuario": "admin",
+      "email": "admin@masmusica.app",
+      "telefono": "",
+      "pass": {
+        "hash": "d664cf2755f902577442fd6aca70e0363d334b4cdcce0484ad1f712c878ed2b75196a5de36023b4df3509a6e9ed2cf5af8638b1c7684ec9bb5c0d9518a739dfc",
+        "salt": "f1742cec9a2af8f6f50c9e521bd63e54"
+      },
+      "foto": "",
+      "localidad": "",
+      "instrumentos": [],
+      "rol": "SUPER_ADMIN",
+      "activo": true,
+      "bloqueado": false,
+      "favoritos": [],
+      "creado": 1791869715837,
+      "ultimoAcceso": 0,
+      "following": []
+    }
+  ],
+  "sessions": [],
+  "notificaciones": [],
+  "ayuda": [],
+  "mensajes": [],
+  "promociones": [
+    {
+      "id": "mv68y9k6tlk1g3",
+      "titulo": "🎉 Bienvenido a Más Música",
+      "texto": "Reservá tu sala de ensayo online, guardá tus salas favoritas y gestioná tus reservas desde la app.",
+      "flyer": "",
+      "redes": "",
+      "activa": true,
+      "desde": 1791869695206,
+      "hasta": 1799645695206,
+      "creado": 1791869695206
+    }
+  ],
+  "rooms": [
+    {
+      "id": "r1",
+      "ownerId": null,
+      "estado": "aprobada",
+      "name": "Sala 1",
+      "descripcion": "",
+      "direccion": "",
+      "localidad": "",
+      "mapa": "",
+      "lat": null,
+      "lng": null,
+      "telefono": "",
+      "precio": 15000,
+      "price": 15000,
+      "capacity": 4,
+      "features": [
+        "Batería completa",
+        "Amplificadores"
+      ],
+      "equipos": {
+        "instrumentos": "",
+        "amplificadores": "",
+        "bateria": "",
+        "microfonos": "",
+        "consola": "",
+        "otros": ""
+      },
+      "fotos": [],
+      "foto": "/assets/salas/r1.jpg",
+      "fotoPortada": "",
+      "horario": {
+        "0": null,
+        "1": null,
+        "2": null,
+        "3": null,
+        "4": null,
+        "5": null,
+        "6": null
+      },
+      "horarioPropio": false,
+      "turnoMin": 60,
+      "activo": true,
+      "solicitud": {
+        "fecha": 1791869695206,
+        "revisada": 0,
+        "motivo": "",
+        "revisor": ""
+      },
+      "creado": 1791869695206
+    },
+    {
+      "id": "r2",
+      "ownerId": null,
+      "estado": "aprobada",
+      "name": "Sala 2",
+      "descripcion": "",
+      "direccion": "",
+      "localidad": "",
+      "mapa": "",
+      "lat": null,
+      "lng": null,
+      "telefono": "",
+      "precio": 12000,
+      "price": 12000,
+      "capacity": 3,
+      "features": [
+        "Amplificadores",
+        "Rincón acústico"
+      ],
+      "equipos": {
+        "instrumentos": "",
+        "amplificadores": "",
+        "bateria": "",
+        "microfonos": "",
+        "consola": "",
+        "otros": ""
+      },
+      "fotos": [],
+      "foto": "/assets/lugar/sala-2.png",
+      "fotoPortada": "",
+      "horario": {
+        "0": null,
+        "1": null,
+        "2": null,
+        "3": null,
+        "4": null,
+        "5": null,
+        "6": null
+      },
+      "horarioPropio": false,
+      "turnoMin": 60,
+      "activo": true,
+      "solicitud": {
+        "fecha": 1791869695206,
+        "revisada": 0,
+        "motivo": "",
+        "revisor": ""
+      },
+      "creado": 1791869695206
+    },
+    {
+      "id": "r3",
+      "ownerId": null,
+      "estado": "aprobada",
+      "name": "Sala 3 — Premium",
+      "descripcion": "",
+      "direccion": "",
+      "localidad": "",
+      "mapa": "",
+      "lat": null,
+      "lng": null,
+      "telefono": "",
+      "precio": 22000,
+      "price": 22000,
+      "capacity": 8,
+      "features": [
+        "Batería",
+        "Amplificadores",
+        "Iluminación LED",
+        "Camarín"
+      ],
+      "equipos": {
+        "instrumentos": "",
+        "amplificadores": "",
+        "bateria": "",
+        "microfonos": "",
+        "consola": "",
+        "otros": ""
+      },
+      "fotos": [],
+      "foto": "/assets/lugar/sala-3.png",
+      "fotoPortada": "",
+      "horario": {
+        "0": null,
+        "1": null,
+        "2": null,
+        "3": null,
+        "4": null,
+        "5": null,
+        "6": null
+      },
+      "horarioPropio": false,
+      "turnoMin": 60,
+      "activo": true,
+      "solicitud": {
+        "fecha": 1791869695206,
+        "revisada": 0,
+        "motivo": "",
+        "revisor": ""
+      },
+      "creado": 1791869695206
+    }
+  ],
+  "reservations": [
+    {
+      "id": "mv68y9k6549scr",
+      "roomId": "r1",
+      "date": "2026-10-13",
+      "start": "19:00",
+      "end": "21:00",
+      "name": "Banda Demo",
+      "phone": "",
+      "userId": null,
+      "estado": "confirmada",
+      "createdAt": 1791869695206
+    }
+  ],
+  "blocks": [],
+  "instruments": [
+    {
+      "id": "mv68y9k6x0nz4n",
+      "nombre": "Batería completa",
+      "descripcion": "Pearl Export 5 piezas + platillos y hardware",
+      "foto": "",
+      "activo": true,
+      "alquiler": false,
+      "precioAlquiler": 0
+    },
+    {
+      "id": "mv68y9k6ufj5dy",
+      "nombre": "Amplificador de guitarra",
+      "descripcion": "Fender Frontman 20G, 20 W",
+      "foto": "",
+      "activo": true,
+      "alquiler": true,
+      "precioAlquiler": 8000
+    },
+    {
+      "id": "mv68y9k67a2rop",
+      "nombre": "Amplificador de bajo",
+      "descripcion": "Fender Rumble 40, 40 W",
+      "foto": "",
+      "activo": true,
+      "alquiler": true,
+      "precioAlquiler": 9000
+    },
+    {
+      "id": "mv68y9k6czafsl",
+      "nombre": "Teclado",
+      "descripcion": "Yamaha PSR-E373, 61 teclas",
+      "foto": "",
+      "activo": true,
+      "alquiler": true,
+      "precioAlquiler": 12000
+    },
+    {
+      "id": "mv68y9k6w3i6qs",
+      "nombre": "Micrófonos",
+      "descripcion": "2 × Shure SM58 con cables",
+      "foto": "",
+      "activo": true,
+      "alquiler": true,
+      "precioAlquiler": 5000
+    }
+  ],
+  "placePhotos": [
+    {
+      "id": "mv68y9k6l8yr0b",
+      "titulo": "Sala 1",
+      "foto": "assets/lugar/sala-1.png"
+    },
+    {
+      "id": "mv68y9k648pchw",
+      "titulo": "Sala 2",
+      "foto": "assets/lugar/sala-2.png"
+    },
+    {
+      "id": "mv68y9k62g6r0w",
+      "titulo": "Sala 3 — Premium",
+      "foto": "assets/lugar/sala-3.png"
+    }
+  ],
+  "bands": [
+    {
+      "id": "mv68y9k61l2mtt",
+      "nombre": "Banda Demo",
+      "telefono": "",
+      "foto": "",
+      "createdAt": 1791869695206
+    }
+  ]
+}
