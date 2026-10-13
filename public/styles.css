@@ -1453,20 +1453,46 @@ main {
 .perfil-avatar-circular {
   width: 84px; height: 84px;
   border-radius: 50%;
-  object-fit: contain;              /* nada se corta */
-  padding: 3px;
-  border: 2px solid var(--soft);
+  object-fit: cover;
+  object-position: center;
+  padding: 0;
+  border: 3px solid var(--accent);
   background: radial-gradient(circle at 50% 40%, var(--line), var(--bg-deep));
   display: grid; place-items: center;
   flex: 0 0 auto;
   position: relative; z-index: 1;
   box-shadow: 0 4px 14px rgba(0, 0, 0, .35);
   cursor: zoom-in;
+  overflow: hidden;
 }
-.perfil-avatar-circular.grande { width: 112px; height: 112px; margin: 0 auto 10px; }
-.perfil-avatar-circular.sm { width: 44px; height: 44px; padding: 2px; border-width: 1px; }
-.perfil-avatar-circular.perfil-sin-foto { font-size: 2rem; cursor: default; }
-.perfil-avatar-circular.grande.perfil-sin-foto { font-size: 2.6rem; }
+
+.perfil-avatar-circular img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+}
+
+.perfil-avatar-circular.grande {
+  width: 112px; height: 112px;
+  margin: 0 auto 10px;
+}
+
+.perfil-avatar-circular.sm {
+  width: 44px; height: 44px;
+  padding: 0;
+  border-width: 2px;
+}
+
+.perfil-avatar-circular.perfil-sin-foto {
+  font-size: 2rem;
+  cursor: default;
+  overflow: visible;
+}
+
+.perfil-avatar-circular.grande.perfil-sin-foto {
+  font-size: 2.6rem;
+}
 
 /* Foto grupal horizontal: recubre todo el cuadro, sin tapar los botones */
 .perfil-fondo {
@@ -1712,13 +1738,22 @@ main {
 /* ================= MI CUENTA / PERFIL ================= */
 .user-card { display: flex; gap: 14px; align-items: flex-start; margin-bottom: 12px; }
 .user-avatar {
-  width: 64px; height: 64px; border-radius: 50%;
+  width: 64px; height: 64px;
+  border-radius: 50%;
   background: linear-gradient(135deg, var(--panel2), var(--panel));
   display: grid; place-items: center;
   font-size: 1.6rem; font-weight: 800; color: var(--accent2);
-  border: 2px solid var(--line); overflow: hidden; flex: 0 0 auto;
+  border: 3px solid var(--accent);
+  overflow: hidden;
+  flex: 0 0 auto;
 }
-.user-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+.user-avatar img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+}
 .user-datos { display: flex; flex-direction: column; gap: 2px; font-size: .92rem; }
 .user-datos strong { font-size: 1.05rem; }
 
@@ -3477,6 +3512,53 @@ main {
   .panel, .modal-box, .notif-sheet, .ajustes-sheet {
     max-width: 100%;
     box-sizing: border-box;
+  }
+
+  /* Fotos circulares en celular */
+  .perfil-avatar-circular,
+  .user-avatar,
+  .aj-avatar {
+    width: 56px; height: 56px;
+    border-width: 2px;
+    flex-shrink: 0;
+  }
+
+  .perfil-avatar-circular img,
+  .user-avatar img,
+  .aj-avatar img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    object-position: center;
+  }
+
+  .perfil-avatar-circular.grande {
+    width: 96px; height: 96px;
+  }
+
+  .perfil-avatar-circular.sm {
+    width: 40px; height: 40px;
+  }
+
+  /* Fotos de salas en celular */
+  .room-foto {
+    height: 100px;
+    margin: -14px -14px 10px;
+  }
+
+  .room-foto img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+  }
+
+  /* Fotos del mapa en celular */
+  .mapa-item-foto {
+    width: 48px; height: 48px;
+    flex: 0 0 48px;
+  }
+
+  .mapa-item-foto img {
+    width: 100%; height: 100%;
+    object-fit: cover;
   }
 
   /* Tablas responsive */
