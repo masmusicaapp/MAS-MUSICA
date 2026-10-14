@@ -564,10 +564,16 @@
     <div class="panel">
       <div class="panel-head">
         <h2>🕐 Horarios de atención</h2>
-        <button class="btn btn-primary btn-sm" id="btn-save-hours">Guardar</button>
+        <button class="btn btn-primary btn-sm" id="btn-save-hours">💾 Guardar</button>
       </div>
       <p class="muted">Aplican a todas las salas. Los turnos son de 1 hora, desde la apertura hasta el cierre.</p>
+      <div class="hours-chips">
+        <button class="chip" id="hours-copy-mon">Copiar lunes a todos</button>
+        <button class="chip" id="hours-open-all">Abrir todos</button>
+        <button class="chip" id="hours-close-weekend">Cerrar fin de semana</button>
+      </div>
       <div id="hours-container"></div>
+      <p class="muted small" style="margin-top:12px">💡 Los cambios se aplican de inmediato a las reservas nuevas. Las reservas ya confirmadas no se modifican.</p>
     </div>
   </section>
 

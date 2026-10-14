@@ -4704,3 +4704,263 @@ button, a, .btn { transition: all .2s ease; }
   font-size: 1rem;
   border-radius: 16px;
 }
+
+/* ========== SUSCRIPCION AL CHAT (diseno nuevo) ========== */
+
+.suscripcion-wrap {
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 0 4px;
+}
+
+.suscripcion-hero {
+  text-align: center;
+  padding: 8px 0 24px;
+}
+
+.suscripcion-hero .suscripcion-icono {
+  width: 72px; height: 72px;
+  margin: 0 auto 14px;
+  border-radius: 22px;
+  background: #ffffff;
+  display: grid; place-items: center;
+  box-shadow: 0 10px 30px rgba(0, 161, 62, .35);
+}
+
+.suscripcion-hero h1 {
+  margin: 0;
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: -.2px;
+}
+
+.suscripcion-hero p {
+  color: var(--muted);
+  font-size: .95rem;
+  line-height: 1.5;
+  margin: 8px 0 0;
+}
+
+.suscripcion-perks {
+  background: var(--panel2);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 16px 18px;
+  margin-bottom: 22px;
+}
+
+.suscripcion-perks ul { list-style: none; padding: 0; margin: 0; }
+
+.suscripcion-perks li {
+  display: flex; gap: 12px; align-items: center;
+  font-size: .95rem; padding: 7px 0;
+}
+
+.suscripcion-perks li .check {
+  flex: 0 0 22px; height: 22px; border-radius: 50%;
+  background: rgba(34, 197, 94, .12); color: var(--accent2);
+  display: grid; place-items: center; font-size: .8rem; font-weight: 700;
+}
+
+.suscripcion-section-title {
+  font-size: .82rem; font-weight: 700; letter-spacing: 1px;
+  text-transform: uppercase; color: var(--muted);
+  margin: 0 0 10px 4px;
+}
+
+.suscripcion-features {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 22px;
+}
+
+.suscripcion-feature {
+  background: var(--panel2);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 16px 14px;
+}
+
+.suscripcion-feature .f-icon {
+  width: 40px; height: 40px; border-radius: 12px;
+  background: rgba(34, 197, 94, .12);
+  display: grid; place-items: center; font-size: 1.2rem;
+  margin-bottom: 10px;
+}
+
+.suscripcion-feature h3 { font-size: .95rem; font-weight: 700; margin: 0 0 4px; }
+.suscripcion-feature p { font-size: .82rem; color: var(--muted); line-height: 1.4; margin: 0; }
+
+.suscripcion-plans {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 22px;
+}
+
+.suscripcion-plan {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: var(--panel2);
+  border: 1.5px solid var(--line);
+  border-radius: 18px;
+  padding: 16px 18px;
+  color: var(--text);
+  font: inherit; text-align: left; cursor: pointer;
+  transition: border-color .15s, background .15s, transform .15s;
+}
+
+.suscripcion-plan:active { transform: scale(.99); }
+.suscripcion-plan .plan-name { font-size: .95rem; font-weight: 700; }
+.suscripcion-plan .plan-sub { font-size: .82rem; color: var(--muted); margin-top: 3px; }
+.suscripcion-plan .plan-price { font-size: 1.4rem; font-weight: 800; text-align: right; }
+.suscripcion-plan .plan-price small { display: block; font-size: .75rem; font-weight: 500; color: var(--muted); }
+
+.suscripcion-plan .plan-radio {
+  width: 20px; height: 20px; border-radius: 50%;
+  border: 2px solid var(--line); margin-right: 14px; flex: 0 0 20px;
+}
+
+.suscripcion-plan .plan-left { display: flex; align-items: center; }
+
+.suscripcion-plan.selected {
+  border-color: var(--accent);
+  background: var(--panel);
+}
+
+.suscripcion-plan.selected .plan-radio {
+  border-color: var(--accent);
+  background: radial-gradient(circle, var(--accent) 45%, transparent 50%);
+}
+
+.suscripcion-plan.selected .plan-price { color: var(--accent2); }
+
+.plan-badge {
+  position: absolute; top: -10px; right: 14px;
+  background: var(--accent); color: #04210f;
+  font-size: .7rem; font-weight: 800; letter-spacing: .4px;
+  padding: 4px 10px; border-radius: 999px;
+}
+
+.suscripcion-cta-box {
+  position: sticky; bottom: 0;
+  background: linear-gradient(to top, var(--bg) 70%, transparent);
+  padding-top: 16px;
+}
+
+.suscripcion-summary {
+  display: flex;
+  justify-content: space-between;
+  font-size: .9rem;
+  color: var(--muted);
+  margin-bottom: 10px;
+  padding: 0 4px;
+}
+
+.suscripcion-summary strong { color: var(--text); }
+
+.suscripcion-cta {
+  width: 100%; border: 0; border-radius: 16px;
+  padding: 17px; font: inherit; font-size: 1.1rem; font-weight: 800;
+  color: #04210f;
+  background: linear-gradient(135deg, #34d869, #16a34a);
+  box-shadow: 0 10px 26px rgba(34, 197, 94, .35);
+  cursor: pointer;
+  transition: transform .15s, box-shadow .15s;
+}
+
+.suscripcion-cta:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 32px rgba(34, 197, 94, .45);
+}
+
+.suscripcion-cta:active { transform: scale(.98); }
+
+.suscripcion-fine {
+  text-align: center;
+  font-size: .78rem;
+  color: var(--muted);
+  margin: 10px 0 0;
+}
+
+/* ========== HORARIOS DE ATENCION (diseno nuevo) ========== */
+
+.hours-chips {
+  display: flex; gap: 8px; margin: 14px 0;
+  overflow-x: auto; scrollbar-width: none;
+}
+.hours-chips::-webkit-scrollbar { display: none; }
+
+.hour-day {
+  padding: 16px 0;
+  border-top: 1px solid var(--line);
+  transition: opacity .2s;
+}
+.hour-day:first-child { border-top: 0; }
+.hour-day-head {
+  display: flex; justify-content: space-between; align-items: center;
+}
+.hour-day-name { font-weight: 700; font-size: 1.05rem; }
+.hour-status {
+  font-size: .78rem; font-weight: 700; padding: 3px 10px;
+  border-radius: 999px; margin-top: 4px; display: inline-block;
+}
+.hour-status.open { color: var(--accent2); background: rgba(34,197,94,.12); }
+.hour-status.closed { color: var(--muted); background: var(--soft2); }
+
+/* Toggle switch */
+.hour-switch {
+  position: relative; width: 48px; height: 28px; display: inline-block;
+}
+.hour-switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+.hour-slider {
+  position: absolute; inset: 0; border-radius: 999px;
+  background: var(--closed, #5b6b7d);
+  transition: background .2s; cursor: pointer;
+}
+.hour-slider::before {
+  content: ""; position: absolute;
+  width: 22px; height: 22px; left: 3px; top: 3px;
+  border-radius: 50%; background: #fff;
+  transition: transform .2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,.3);
+}
+.hour-switch input:checked + .hour-slider { background: var(--accent); }
+.hour-switch input:checked + .hour-slider::before { transform: translateX(20px); }
+.hour-switch input:focus-visible + .hour-slider {
+  outline: 2px solid var(--accent2); outline-offset: 2px;
+}
+
+/* Time fields */
+.hour-times {
+  display: grid; grid-template-columns: 1fr auto 1fr;
+  gap: 8px; align-items: center; margin-top: 12px;
+}
+.hour-field {
+  display: flex; flex-direction: column; gap: 4px;
+  background: var(--panel2); border: 1px solid var(--line);
+  border-radius: 14px; padding: 8px 12px;
+}
+.hour-field label {
+  font-size: .7rem; font-weight: 700; color: var(--muted);
+  letter-spacing: .6px; text-transform: uppercase;
+}
+.hour-field input[type="time"] {
+  background: none; border: 0; color: var(--text);
+  font: inherit; font-size: 1.1rem; font-weight: 700;
+  padding: 0; width: 100%; outline: none;
+}
+.hour-field:focus-within { border-color: var(--accent2); }
+.hour-sep { color: var(--muted); font-size: .9rem; text-align: center; }
+.hour-closed .hour-times { opacity: .4; pointer-events: none; }
+.hour-closed .hour-field input { color: var(--muted); }
+
+.hours-note {
+  margin-top: 14px; display: flex; gap: 10px; align-items: flex-start;
+  background: var(--panel2); border-radius: 14px; padding: 12px 14px;
+  color: var(--muted); font-size: .85rem; line-height: 1.45;
+}

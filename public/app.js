@@ -2435,57 +2435,93 @@ async function verificarAccesoChat() {
 /* Mostrar el modal de suscripción al chat global */
 function mostrarSuscripcionChat() {
   const host = $('#comu-chats');
-  if (host) {
-    host.innerHTML = `
-      <div class="suscripcion-chat">
-        <div class="suscripcion-icono">💬</div>
-        <h3>Chat Global de Más Música</h3>
-        <p class="muted">Para chatear con otros músicos necesitás una suscripción al Chat Global. Elegí un plan:</p>
-        <div class="suscripcion-planes">
-          <div class="suscripcion-plan" data-plan="mensual">
-            <div class="suscripcion-plan-nombre">Mensual</div>
-            <div class="suscripcion-plan-precio">$2.000<small>/mes</small></div>
-          </div>
-          <div class="suscripcion-plan" data-plan="trimestral">
-            <div class="suscripcion-plan-nombre">Trimestral</div>
-            <div class="suscripcion-plan-precio">$5.000<small>/3 meses</small></div>
-          </div>
-          <div class="suscripcion-plan" data-plan="anual">
-            <div class="suscripcion-plan-nombre">Anual</div>
-            <div class="suscripcion-plan-precio">$15.000<small>/año</small></div>
-          </div>
+  if (!host) return;
+
+  host.innerHTML = `
+    <div class="suscripcion-wrap">
+      <section class="suscripcion-hero">
+        <div class="suscripcion-icono"><svg width="46" height="52" viewBox="280 210 510 580" xmlns="http://www.w3.org/2000/svg"><g stroke="#00A13E" stroke-width="96" stroke-linecap="round" fill="none"><line x1="424" y1="402" x2="349" y2="720"/><line x1="600" y1="278" x2="497" y2="720"/><line x1="720" y1="397" x2="647" y2="720"/></g></svg></div>
+        <h1>Más Músicos</h1>
+        <p>Charlá con músicos de todo el país que, como vos, usan Más Música.</p>
+      </section>
+
+      <div class="suscripcion-perks">
+        <ul>
+          <li><span class="check">✓</span>Chat con otros músicos suscritos</li>
+          <li><span class="check">✓</span>Salas y consejos de la comunidad</li>
+          <li><span class="check">✓</span>Cancelá cuando quieras</li>
+        </ul>
+      </div>
+
+      <div class="suscripcion-section-title">Incluido en tu suscripción</div>
+      <div class="suscripcion-features">
+        <div class="suscripcion-feature">
+          <div class="f-icon">📍</div>
+          <h3>Músicos cerca</h3>
+          <p>Chateá con músicos de tu zona y armá tu banda.</p>
         </div>
-        <button class="btn btn-primary btn-big" id="suscribirse-chat">🎸 Suscribirme ahora</button>
-      </div>`;
-    
-    const planes = host.querySelectorAll('.suscripcion-plan');
-    let planSeleccionado = 'mensual';
-    
-    planes.forEach(p => {
-      p.onclick = () => {
-        planes.forEach(pp => pp.classList.remove('seleccionado'));
-        p.classList.add('seleccionado');
-        planSeleccionado = p.dataset.plan;
-      };
-    });
-    
-    planes[0]?.classList.add('seleccionado');
-    
-    const btnSuscribir = host.querySelector('#suscribirse-chat');
-    if (btnSuscribir) {
-      btnSuscribir.onclick = async () => {
-        try {
-          const data = await api('/api/comunidad/chat-suscribirse', {
-            method: 'POST',
-            body: { plan: planSeleccionado }
-          });
-          toast('¡Suscripción activada! Ya podés chatear.', 'ok');
-          cargarChatGlobal();
-        } catch (e) {
-          toast(e.message, 'error');
-        }
-      };
-    }
+        <div class="suscripcion-feature">
+          <div class="f-icon">🎶</div>
+          <h3>Encontrá integrantes</h3>
+          <p>Buscá bajista, baterista o cantante para tu banda.</p>
+        </div>
+      </div>
+
+      <div class="suscripcion-section-title">Elegí tu plan</div>
+      <div class="suscripcion-plans" id="suscripcion-plans">
+        <button class="suscripcion-plan" data-plan="mensual">
+          <div class="plan-left"><span class="plan-radio"></span>
+            <div><div class="plan-name">Mensual</div><div class="plan-sub">Se renueva cada mes</div></div>
+          </div>
+          <div class="plan-price">$2.000<small>por mes</small></div>
+        </button>
+        <button class="suscripcion-plan selected" data-plan="trimestral">
+          <span class="plan-badge">AHORRÁS 17%</span>
+          <div class="plan-left"><span class="plan-radio"></span>
+            <div><div class="plan-name">Trimestral</div><div class="plan-sub">$1.667 por mes</div></div>
+          </div>
+          <div class="plan-price">$5.000<small>cada 3 meses</small></div>
+        </button>
+        <button class="suscripcion-plan" data-plan="anual">
+          <span class="plan-badge">MEJOR PRECIO</span>
+          <div class="plan-left"><span class="plan-radio"></span>
+            <div><div class="plan-name">Anual</div><div class="plan-sub">$1.250 por mes</div></div>
+          </div>
+          <div class="plan-price">$15.000<small>por año</small></div>
+        </button>
+      </div>
+
+      <div class="suscripcion-cta-box">
+        <div class="suscripcion-summary"><span id="plan-label">Trimestral</span><strong id="plan-price">$5.000</strong></div>
+        <button class="suscripcion-cta" id="suscribirse-chat">🎸 Suscribirme ahora</button>
+        <p class="suscripcion-fine">Pago seguro. Podés cancelar en cualquier momento desde tu perfil.</p>
+      </div>
+    </div>`;
+
+  const planes = host.querySelectorAll('.suscripcion-plan');
+  const planLabel = host.querySelector('#plan-label');
+  const planPrice = host.querySelector('#plan-price');
+  let planSeleccionado = 'trimestral';
+
+  planes.forEach(p => {
+    p.onclick = () => {
+      planes.forEach(x => x.classList.remove('selected'));
+      p.classList.add('selected');
+      planSeleccionado = p.dataset.plan;
+      if (planLabel) planLabel.textContent = p.querySelector('.plan-name').textContent;
+      if (planPrice) planPrice.textContent = p.querySelector('.plan-price').childNodes[0].textContent.trim();
+    };
+  });
+
+  const btnSuscribir = host.querySelector('#suscribirse-chat');
+  if (btnSuscribir) {
+    btnSuscribir.onclick = async () => {
+      try {
+        await api('/api/comunidad/chat-suscribirse', { method: 'POST', body: { plan: planSeleccionado } });
+        toast('¡Suscripción activada! Ya podés chatear.', 'ok');
+        cargarChatGlobal();
+      } catch (e) { toast(e.message, 'error'); }
+    };
   }
 }
 
@@ -6315,24 +6351,77 @@ function formularioPromocion(id) {
 const DIAS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 
 function renderHorariosAdmin() {
+  const DIAS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
   $('#hours-container').innerHTML = DIAS.map((d, i) => {
     const h = state.settings.hours[String(i)];
+    const abierto = !!h;
     return `
-      <div class="hour-row">
-        <strong>${d}</strong>
-        <label class="check"><input type="checkbox" data-closed="${i}" ${h ? '' : 'checked'}> Cerrado</label>
-        <input type="time" data-open="${i}" value="${h ? h.open : '10:00'}" ${h ? '' : 'disabled'}>
-        <span class="muted">a</span>
-        <input type="time" data-close="${i}" value="${h ? h.close : '22:00'}" ${h ? '' : 'disabled'}>
+      <div class="hour-day ${abierto ? '' : 'hour-closed'}" data-dia="${i}">
+        <div class="hour-day-head">
+          <div>
+            <div class="hour-day-name">${d}</div>
+            <span class="hour-status ${abierto ? 'open' : 'closed'}">${abierto ? 'Abierto' : 'Cerrado'}</span>
+          </div>
+          <label class="hour-switch" aria-label="Abierto los ${d.toLowerCase()}">
+            <input type="checkbox" data-closed="${i}" ${abierto ? 'checked' : ''}>
+            <span class="hour-slider"></span>
+          </label>
+        </div>
+        <div class="hour-times" ${abierto ? '' : 'style="opacity:.4;pointer-events:none"'}>
+          <div class="hour-field">
+            <label>Apertura</label>
+            <input type="time" data-open="${i}" value="${h ? h.open : '10:00'}" ${abierto ? '' : 'disabled'}>
+          </div>
+          <span class="hour-sep">a</span>
+          <div class="hour-field">
+            <label>Cierre</label>
+            <input type="time" data-close="${i}" value="${h ? h.close : '22:00'}" ${abierto ? '' : 'disabled'}>
+          </div>
+        </div>
       </div>`;
   }).join('');
+
+  /* Wiring de toggles */
   $$('#hours-container [data-closed]').forEach(cb => {
     cb.onchange = () => {
       const i = cb.dataset.closed;
-      $(`[data-open="${i}"]`).disabled = cb.checked;
-      $(`[data-close="${i}"]`).disabled = cb.checked;
+      const row = $(`[data-dia="${i}"]`);
+      const times = row ? row.querySelector('.hour-times') : null;
+      if (row) row.classList.toggle('hour-closed', !cb.checked);
+      if (times) {
+        times.style.opacity = cb.checked ? '' : '.4';
+        times.style.pointerEvents = cb.checked ? '' : 'none';
+      }
+      $(`[data-open="${i}"]`).disabled = !cb.checked;
+      $(`[data-close="${i}"]`).disabled = !cb.checked;
     };
   });
+
+  /* Chips de acciones rápidas */
+  const copyMon = $('#hours-copy-mon');
+  if (copyMon) copyMon.onclick = () => {
+    const base = state.settings.hours['1'];
+    for (let i = 2; i <= 6; i++) {
+      state.settings.hours[String(i)] = base ? { ...base } : null;
+    }
+    renderHorariosAdmin();
+    toast('Lunes copiado a todos los días', 'ok');
+  };
+  const openAll = $('#hours-open-all');
+  if (openAll) openAll.onclick = () => {
+    for (let i = 0; i < 7; i++) {
+      state.settings.hours[String(i)] = state.settings.hours[String(i)] || { open: '10:00', close: '22:00' };
+    }
+    renderHorariosAdmin();
+    toast('Todos los días abiertos', 'ok');
+  };
+  const closeWeekend = $('#hours-close-weekend');
+  if (closeWeekend) closeWeekend.onclick = () => {
+    state.settings.hours['0'] = null;
+    state.settings.hours['6'] = null;
+    renderHorariosAdmin();
+    toast('Sábado y domingo cerrados', 'ok');
+  };
 }
 
 async function guardarHorarios() {
