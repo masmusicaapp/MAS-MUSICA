@@ -2281,7 +2281,14 @@ main {
 }
 
 /* ================= FAVORITAS EN LA TARJETA ================= */
-.room-top { position: relative; }
+.room-top {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
 .fav-btn {
   position: absolute; top: 8px; right: 8px;
   width: 34px; height: 34px; border-radius: 50%;
@@ -2404,13 +2411,21 @@ main {
   :root[data-tema="auto"] .leaflet-tile-pane { filter: none; }
 }
 .leaflet-popup-content-wrapper {
-  background: var(--panel);
+  background: var(--panel) !important;
   color: var(--text);
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: 14px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, .5);
+  min-width: 260px;
+  max-width: 320px;
 }
-.leaflet-popup-content { margin: 12px 14px; }
+
+.leaflet-popup-content {
+  margin: 0;
+  padding: 0;
+  width: auto !important;
+  min-width: 260px;
+}
 .leaflet-popup-tip { background: var(--panel); border: 1px solid var(--line); }
 .leaflet-popup-close-button { color: var(--muted) !important; }
 .leaflet-control-attribution {
@@ -2505,32 +2520,88 @@ main {
 .pop-acciones { gap: 6px; margin-top: 8px; flex-wrap: wrap; }
 
 /* Popup con el detalle de la sala: foto horizontal, logo, dirección y teléfono */
-.pop-detalle { gap: 0; min-width: 232px; max-width: 266px; padding-bottom: 2px; }
-.pop-cover { position: relative; margin-bottom: 4px; }
+.pop-detalle {
+  gap: 0;
+  min-width: 240px;
+  max-width: 300px;
+  padding-bottom: 2px;
+  background: var(--panel);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.pop-cover {
+  position: relative;
+  margin-bottom: 4px;
+  background: var(--panel2);
+  border-radius: 12px 12px 0 0;
+  overflow: hidden;
+}
+
 .pop-cover-img {
-  display: block; width: 100%; height: 116px; object-fit: cover;
-  border-radius: 10px; border: 1px solid var(--line);
-  cursor: zoom-in; background: var(--panel2);
+  display: block;
+  width: 100%;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 12px 12px 0 0;
+  cursor: zoom-in;
+  background: var(--panel2);
 }
-.pop-cover-chica .pop-cover-img { height: 74px; }
+
+.pop-cover-chica .pop-cover-img { height: 80px; }
+
 .pop-cover.sin-foto::before {
-  content: '🎸'; display: grid; place-items: center;
-  height: 92px; font-size: 1.8rem; border-radius: 10px;
-  background: linear-gradient(135deg, var(--panel2), var(--panel));
-  border: 1px solid var(--line);
+  content: '';
+  display: none;
 }
+
+.pop-cover.sin-foto {
+  background: linear-gradient(135deg, var(--panel2), var(--panel));
+  border-radius: 12px 12px 0 0;
+  min-height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pop-cover.sin-foto::after {
+  content: '';
+  display: block;
+  width: 80px;
+  height: 80px;
+  background: url('/assets/marca-agua-negro.png') center/contain no-repeat;
+  opacity: .6;
+}
+
 .pop-detalle .pop-logo {
-  position: absolute; left: 8px; bottom: -16px;
-  width: 48px; height: 48px; margin: 0;
-  border-radius: 50%; border: 2px solid var(--panel);
-  object-fit: cover; background: var(--panel2);
+  position: absolute;
+  left: 10px;
+  bottom: -16px;
+  width: 48px;
+  height: 48px;
+  margin: 0;
+  border-radius: 50%;
+  border: 2px solid var(--panel);
+  object-fit: contain;
+  background: var(--panel2);
   box-shadow: 0 4px 12px rgba(0, 0, 0, .5);
+  padding: 3px;
 }
+
 .pop-detalle .pop-logo.sin-foto {
-  display: grid; place-items: center; font-size: 1.3rem;
+  display: grid;
+  place-items: center;
+  font-size: 1.3rem;
   background: linear-gradient(135deg, var(--panel2), var(--panel));
 }
-.pop-datos { display: flex; flex-direction: column; gap: 3px; padding-top: 6px; }
+
+.pop-datos {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  background: var(--panel);
+}
 .pop-nombre { font-size: 1rem; line-height: 1.2; margin-left: 4px; }
 .pop-linea { display: flex; align-items: center; gap: 4px; font-size: .85rem; line-height: 1.3; }
 .pop-linea.muted { color: var(--muted); }
@@ -3859,6 +3930,10 @@ button, a, .btn { transition: all .2s ease; }
   box-shadow: 0 6px 18px rgba(0, 0, 0, .15);
   transition: transform .25s, box-shadow .25s, border-color .2s;
   overflow: hidden;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 14px;
 }
 .room-card:hover {
   transform: translateY(-3px);

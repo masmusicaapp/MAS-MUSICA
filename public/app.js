@@ -711,7 +711,7 @@ function initMapa() {
 function fotoPortadaSala(r) {
   if (r.fotoPortada) return r.fotoPortada;
   const f = (r.fotos || [])[0];
-  return f ? f.foto : '';
+  return f ? f.foto : (r.foto || '');
 }
 
 function popupSala(r) {
@@ -728,8 +728,8 @@ function popupSala(r) {
       <div class="pop-cover ${portada ? '' : 'sin-foto'}">
         ${portada
           ? `<img class="pop-cover-img" src="${esc(portada)}" alt="Foto de ${esc(r.name)}" data-pop-foto="${esc(portada)}" title="Ver la foto en grande">`
-          : '<span>🎸</span>'}
-        ${r.foto ? `<img class="pop-logo" src="${esc(r.foto)}" alt="Logo de ${esc(r.name)}">` : '<div class="pop-logo sin-foto">🎸</div>'}
+          : '<img class="pop-cover-img" src="/assets/marca-agua-negro.png" alt="Logo de Más Música">'}
+        ${r.foto ? `<img class="pop-logo" src="${esc(r.foto)}" alt="Logo de ${esc(r.name)}">` : '<img class="pop-logo" src="/assets/marca-agua-negro.png" alt="Logo de Más Música">'}
       </div>
       <div class="pop-datos">
         <strong class="pop-nombre">${esc(r.name)}</strong>
