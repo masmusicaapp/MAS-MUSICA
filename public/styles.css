@@ -5042,3 +5042,122 @@ button, a, .btn { transition: all .2s ease; }
     border-radius: 16px;
   }
 }
+
+/* ========== SOLICITUDES DE SALAS (rediseno) ========== */
+
+.sol-hero {
+  display: flex; gap: 14px; align-items: center;
+  padding: 12px 0 18px;
+}
+.sol-crown {
+  width: 56px; height: 56px; border-radius: 14px;
+  display: grid; place-items: center; font-size: 1.75rem;
+  background: linear-gradient(160deg, #1B3B2A, #0F2119);
+  border: 1px solid #1F5A36; flex-shrink: 0;
+}
+.sol-hero h2 {
+  font-family: "Barlow Condensed", sans-serif; font-weight: 800; font-style: italic;
+  font-size: 1.65rem; line-height: 1; letter-spacing: .3px;
+}
+.sol-hero p { color: var(--muted); font-size: .88rem; margin: 4px 0 0; }
+
+.sol-stats {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+  margin-bottom: 22px;
+}
+.sol-stat {
+  background: var(--panel2); border: 1px solid var(--line);
+  border-radius: 14px; padding: 12px;
+}
+.sol-stat strong {
+  display: block;
+  font-family: "Barlow Condensed", sans-serif; font-weight: 800;
+  font-size: 1.85rem; line-height: 1;
+}
+.sol-stat small { color: var(--muted); font-size: .82rem; }
+.sol-stat.is-alert strong { color: var(--warn); }
+
+.sol-section {
+  background: var(--panel); border: 1px solid var(--line);
+  border-radius: 20px; padding: 18px;
+}
+.sol-section-head {
+  display: flex; justify-content: space-between; align-items: baseline;
+  margin-bottom: 12px;
+}
+.sol-section-head h2 {
+  font-family: "Barlow Condensed", sans-serif; font-weight: 800; font-style: italic;
+  font-size: 1.35rem;
+}
+.sol-section-head span { color: var(--muted); font-size: .88rem; }
+
+/* Filtros tipo pills (fijos al hacer scroll) */
+.sol-filters {
+  display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none;
+  padding: 4px; margin: 0 -4px 14px; background: var(--panel2);
+  border-radius: 999px;
+  position: sticky; top: 0; z-index: 15;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .12);
+}
+.sol-filters::-webkit-scrollbar { display: none; }
+.sol-chip {
+  flex: 0 0 auto; height: 40px; padding: 0 16px;
+  border-radius: 999px; font-weight: 600; color: var(--muted);
+  display: inline-flex; align-items: center; gap: 8px; white-space: nowrap;
+  transition: background .15s, color .15s;
+}
+.sol-chip em {
+  font-style: normal; font-size: .75rem; min-width: 22px; height: 22px;
+  border-radius: 999px; background: var(--line);
+  display: inline-grid; place-items: center; color: var(--text);
+}
+.sol-chip[aria-selected="true"] { background: var(--accent); color: var(--on-accent); }
+.sol-chip[aria-selected="true"] em { background: rgba(5,46,18,.18); color: var(--on-accent); }
+
+.sol-note { color: var(--muted); font-size: .88rem; margin-bottom: 14px; }
+.sol-note b { color: var(--text); font-weight: 600; }
+
+/* Tarjetas de solicitud */
+.sol-list { display: grid; gap: 12px; }
+.sol-req {
+  background: var(--panel2); border: 1px solid var(--line);
+  border-left: 4px solid var(--warn);
+  border-radius: 14px; padding: 14px;
+}
+.sol-req.sol-aprobada { border-left-color: var(--accent); }
+.sol-req.sol-rechazada { border-left-color: var(--danger); opacity: .8; }
+.sol-req-top { display: flex; justify-content: space-between; gap: 10px; }
+.sol-req h3 { font-size: 1.15rem; font-weight: 700; line-height: 1.2; margin: 0; }
+.sol-req-meta { color: var(--muted); font-size: .88rem; margin: 4px 0 0; }
+.sol-req-desc { color: var(--muted); font-size: .88rem; margin: 8px 0 0; line-height: 1.45; }
+.sol-pill {
+  flex-shrink: 0; align-self: flex-start;
+  font-size: .75rem; font-weight: 700; padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(251,191,36,.14); color: var(--warn);
+}
+.sol-aprobada .sol-pill { background: rgba(34,197,94,.14); color: var(--accent2); }
+.sol-rechazada .sol-pill { background: rgba(229,72,77,.14); color: var(--danger); }
+.sol-req-actions {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px;
+}
+.sol-req-actions .btn {
+  height: 44px; border-radius: 999px; font-weight: 700;
+  border: 1px solid var(--line); color: var(--text);
+}
+.sol-req-actions .btn.ghost { background: transparent; }
+.sol-req-actions .btn.ok {
+  background: var(--accent); border-color: var(--accent); color: var(--on-accent);
+  box-shadow: 0 4px 14px rgba(0,160,56,.3);
+}
+.sol-req-actions .btn:active { transform: scale(.98); }
+
+/* Estado vacio */
+.sol-empty { text-align: center; padding: 28px 12px 12px; }
+.sol-empty-art {
+  width: 64px; height: 64px; margin: 0 auto 12px; border-radius: 50%;
+  display: grid; place-items: center; background: var(--panel2);
+  border: 1px dashed var(--line); font-size: 1.6rem;
+}
+.sol-empty h3 { font-size: 1.15rem; font-weight: 700; margin: 0; }
+.sol-empty p { color: var(--muted); font-size: .88rem; margin: 4px 0 0; }

@@ -5447,35 +5447,51 @@ function renderSolicitudes() {
       .catch(e => { cont.innerHTML = `<p class="muted">${esc(e.message)}</p>`; });
     return;
   }
+
+  /* Estadísticas */
+  const nPend = listaSolicitudes.filter(r => r.estado === 'pendiente').length;
+  const nAprob = listaSolicitudes.filter(r => r.estado === 'aprobada').length;
+  const nRech = listaSolicitudes.filter(r => r.estado === 'rechazada' || r.estado === 'suspendida').length;
+  const elP = $('#sol-stat-pend'); if (elP) elP.textContent = nPend;
+  const elA = $('#sol-stat-aprob'); if (elA) elA.textContent = nAprob;
+  const elR = $('#sol-stat-rech'); if (elR) elR.textContent = nRech;
+  const elT = $('#sol-c-todas'); if (elT) elT.textContent = listaSolicitudes.length;
+  const elCP = $('#sol-c-pend'); if (elCP) elCP.textContent = nPend;
+  const elCA = $('#sol-c-aprob'); if (elCA) elCA.textContent = nAprob;
+  const elCR = $('#sol-c-rech'); if (elCR) elCR.textContent = nRech;
+
   const lista = listaSolicitudes.filter(r => filtroSolicitudes === 'todas' || r.estado === filtroSolicitudes);
   const orden = { pendiente: 0, rechazada: 1, suspendida: 2, aprobada: 3 };
   lista.sort((a, b) => (orden[a.estado] - orden[b.estado]) || ((b.solicitud && b.solicitud.fecha) - (a.solicitud && a.solicitud.fecha)));
-  const ETIQUETA = { pendiente: '🕒 Pendiente', aprobada: '🟢 Aprobada', rechazada: '⛔ Rechazada', suspendida: '⏸ Suspendida' };
+
+  /* Contador */
+  const elCont = $('#sol-contador');
+  if (elCont) elCont.textContent = `${lista.length} de ${listaSolicitudes.length}`;
+
+  /* Estado vacío */
+  const elVacio = $('#sol-vacio');
+  if (elVacio) elVacio.hidden = lista.length > 0;
+
+  const CLASE_ESTADO = { pendiente: 'sol-pendiente', aprobada: 'sol-aprobada', rechazada: 'sol-rechazada', suspendida: 'sol-rechazada' };
+  const PILL_ESTADO = { pendiente: 'Pendiente', aprobada: 'Aprobada', rechazada: 'Rechazada', suspendida: 'Suspendida' };
+
   cont.innerHTML = lista.length ? lista.map(r => `
-    <div class="sol-card ${r.estado}">
-      <div class="sol-top">
-        ${r.foto ? `<img class="sol-logo" src="${esc(r.foto)}" alt="">` : '<span class="sol-logo sin-foto">🎸</span>'}
-        <div class="sol-info">
-          <strong>${esc(r.name)}</strong>
-          <span class="muted small">${esc([r.localidad, r.direccion].filter(Boolean).join(' · '))}</span>
-          <span class="muted small">👤 ${r.duenio ? esc(r.duenio.nombre + ' (@' + r.duenio.usuario + ')') : 'Sin dueño asignado'}${r.duenio && r.duenio.telefono ? ' · 📞 ' + esc(r.duenio.telefono) : ''}</span>
-          <span class="muted small">${fmtMoney(r.price)}/h · 👥 ${r.capacity} · enviada ${r.solicitud && r.solicitud.fecha ? fechaCorta(r.solicitud.fecha) : '—'}</span>
+    <article class="sol-req ${CLASE_ESTADO[r.estado] || ''}">
+      <div class="sol-req-top">
+        <div>
+          <h3>${esc(r.name)}</h3>
+          <p class="sol-req-meta">${esc([r.localidad, r.direccion].filter(Boolean).join(' · '))} · 👥 ${r.capacity}</p>
+          <p class="sol-req-meta">Enviada por ${r.duenio ? '@' + esc(r.duenio.usuario) : '—'}${r.solicitud && r.solicitud.fecha ? ' · ' + fechaCorta(r.solicitud.fecha) : ''}</p>
+          ${r.descripcion ? `<p class="sol-req-desc">${esc(r.descripcion)}</p>` : ''}
         </div>
-        <span class="badge ${r.estado === 'aprobada' ? '' : 'badge-next'}">${ETIQUETA[r.estado]}</span>
+        <span class="sol-pill">${PILL_ESTADO[r.estado] || r.estado}</span>
       </div>
-      ${r.descripcion ? `<p class="sol-desc">${esc(r.descripcion)}</p>` : ''}
-      ${Object.values(r.equipos || {}).filter(Boolean).length ? `<div class="ficha-chips">${Object.entries(r.equipos).filter(([, v]) => v).map(([, v]) => `<span class="chip">${esc(v.slice(0, 28))}</span>`).join('')}</div>` : ''}
-      ${r.solicitud && r.solicitud.motivo ? `<p class="muted small">📝 ${esc(r.solicitud.motivo)}</p>` : ''}
-      <div class="row wrap">
-        ${r.estado === 'pendiente' ? `
-          <button class="btn btn-primary btn-sm" data-sol-ok="${r.id}">✅ Aprobar</button>
-          <button class="btn btn-sm" data-sol-corr="${r.id}">✏️ Pedir correcciones</button>
-          <button class="btn btn-sm btn-danger" data-sol-no="${r.id}">⛔ Rechazar</button>` : `
-          <button class="btn btn-sm" data-sol-ok="${r.id}">🟢 Activar / aprobar</button>
-          <button class="btn btn-sm btn-danger" data-sol-no="${r.id}">${r.estado === 'suspendida' ? '⛔ Rechazar' : '⏸ Suspender'}</button>`}
-        <button class="btn btn-sm" data-sol-editar="${r.id}">✏️ Editar datos</button>
-      </div>
-    </div>`).join('') : '<p class="muted">No hay salas con ese estado.</p>';
+      ${r.estado === 'pendiente' ? `
+      <div class="sol-req-actions">
+        <button class="btn ghost" data-sol-no="${r.id}">Rechazar</button>
+        <button class="btn ok" data-sol-ok="${r.id}">Aprobar</button>
+      </div>` : ''}
+    </article>`).join('') : '';
 }
 
 async function accionSolicitud(id, accion, motivo) {
@@ -6924,7 +6940,11 @@ function wireAdmin() {
   });
   /* Solicitudes de salas: aprobar, rechazar o pedir correcciones */
   $$('[data-estado-sol]').forEach(b => {
-    b.onclick = () => { filtroSolicitudes = b.dataset.estadoSol; renderSolicitudes(); };
+    b.onclick = () => {
+      filtroSolicitudes = b.dataset.estadoSol;
+      $$('#tab-solicitudes .sol-chip').forEach(c => c.setAttribute('aria-selected', c === b ? 'true' : 'false'));
+      renderSolicitudes();
+    };
   });
   $('#solicitudes-list').onclick = e => {
     const ok = e.target.closest('[data-sol-ok]');

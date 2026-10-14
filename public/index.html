@@ -478,17 +478,43 @@
 
   <section id="tab-solicitudes" class="tab">
     <div class="panel">
-      <div class="panel-head">
-        <h2>📥 Solicitudes de salas</h2>
-        <div class="row">
-          <button class="btn btn-sm" data-estado-sol="todas">Todas</button>
-          <button class="btn btn-sm" data-estado-sol="pendiente">Pendientes</button>
-          <button class="btn btn-sm" data-estado-sol="aprobada">Aprobadas</button>
-          <button class="btn btn-sm" data-estado-sol="rechazada">Rechazadas</button>
+      <div class="sol-hero">
+        <div class="sol-crown">👑</div>
+        <div>
+          <h2>Administración central</h2>
+          <p>Control total de Más Música · @admin</p>
         </div>
       </div>
-      <p class="muted small">Las salas registradas por usuarios quedan <strong>pendientes de aprobación</strong> hasta que las revises.</p>
-      <div id="solicitudes-list"></div>
+
+      <div class="sol-stats" role="list">
+        <div class="sol-stat is-alert" role="listitem"><strong id="sol-stat-pend">0</strong><small>Pendientes</small></div>
+        <div class="sol-stat" role="listitem"><strong id="sol-stat-aprob">0</strong><small>Aprobadas</small></div>
+        <div class="sol-stat" role="listitem"><strong id="sol-stat-rech">0</strong><small>Rechazadas</small></div>
+      </div>
+
+      <div class="sol-section">
+        <div class="sol-section-head">
+          <h2>Solicitudes de salas</h2>
+          <span id="sol-contador">0 de 0</span>
+        </div>
+
+        <div class="sol-filters" role="tablist" aria-label="Filtrar solicitudes">
+          <button class="sol-chip" role="tab" aria-selected="true" data-estado-sol="todas">Todas <em id="sol-c-todas">0</em></button>
+          <button class="sol-chip" role="tab" aria-selected="false" data-estado-sol="pendiente">Pendientes <em id="sol-c-pend">0</em></button>
+          <button class="sol-chip" role="tab" aria-selected="false" data-estado-sol="aprobada">Aprobadas <em id="sol-c-aprob">0</em></button>
+          <button class="sol-chip" role="tab" aria-selected="false" data-estado-sol="rechazada">Rechazadas <em id="sol-c-rech">0</em></button>
+        </div>
+
+        <p class="sol-note">Las salas creadas por usuarios quedan <b>pendientes de aprobación</b> hasta que las revises.</p>
+
+        <div class="sol-list" id="solicitudes-list"></div>
+
+        <div class="sol-empty" id="sol-vacio" hidden>
+          <div class="sol-empty-art" aria-hidden="true">📭</div>
+          <h3>No hay salas con ese estado</h3>
+          <p>Cuando un usuario registre una sala, aparecerá aquí para revisarla.</p>
+        </div>
+      </div>
     </div>
   </section>
 
