@@ -7018,6 +7018,12 @@ async function init() {
   startPolling();
   cerrarSplash();
 
+  /* Fallback: si no hay sesión y el auth-body está vacío, forzar pantalla de login */
+  if (!yo && !$('#auth-body').innerHTML.trim()) {
+    $('#view-auth').hidden = false;
+    pantallaAuth('inicio');
+  }
+
   /* Service worker (solo en contextos seguros: HTTPS o localhost) */
   if ('serviceWorker' in navigator &&
       (location.protocol === 'https:' || ['localhost', '127.0.0.1'].includes(location.hostname))) {
