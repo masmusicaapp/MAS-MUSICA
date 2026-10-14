@@ -2323,6 +2323,64 @@ function scrollMainArriba() {
   if (m) m.scrollTop = 0;
 }
 
+/* Swipe horizontal para cambiar de pestañas en Administración central (celular)
+   Las barras de las pestañas acompañan el deslizamiento */
+function prepararSwipeNavegacion() {
+  if (window._swipeNavOk) return;
+  window._swipeNavOk = true;
+
+  /* Detectar swipe horizontal SOLO en el panel de administración */
+  let touchStartX = 0, touchStartY = 0, touchEndX = 0, touchEndY = 0;
+  let swipando = false;
+
+  document.addEventListener('touchstart', e => {
+    const target = e.target;
+    /* Solo en el panel de admin, no en inputs/modales/la app principal */
+    if (target.closest('#dock-container, .modal, .notif-drop, .ajustes-drop, input, textarea, select, .hour-times, .comu-form, .chat-global-form')) return;
+    const admin = document.getElementById('view-admin');
+    if (!admin || admin.hidden) return;
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+    touchEndX = touchStartX;
+    touchEndY = touchStartY;
+    swipando = true;
+  }, { passive: true });
+
+  document.addEventListener('touchmove', e => {
+    if (!swipando) return;
+    touchEndX = e.touches[0].clientX;
+    touchEndY = e.touches[0].clientY;
+  }, { passive: true });
+
+  document.addEventListener('touchend', () => {
+    if (!swipando) return;
+    swipando = false;
+
+    const dx = touchEndX - touchStartX;
+    const dy = touchEndY - touchStartY;
+
+    /* Solo swipe horizontal */
+    if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.2) return;
+
+    /* Pestañas del admin */
+    const tabs = [...document.querySelectorAll('.admin-tab')].map(t => t.dataset.tab).filter(Boolean);
+    const btnActivo = document.querySelector('.admin-tab.active');
+    const tabActual = btnActivo ? btnActivo.dataset.tab : null;
+    const idx = tabs.indexOf(tabActual);
+    if (idx < 0) return;
+
+    if (dx < 0 && idx < tabs.length - 1) {
+      /* Swipe IZQUIERDA → siguiente pestaña */
+      const btn = [...document.querySelectorAll('.admin-tab')].find(t => t.dataset.tab === tabs[idx + 1]);
+      if (btn) btn.click();
+    } else if (dx > 0 && idx > 0) {
+      /* Swipe DERECHA → pestaña anterior */
+      const btn = [...document.querySelectorAll('.admin-tab')].find(t => t.dataset.tab === tabs[idx - 1]);
+      if (btn) btn.click();
+    }
+  }, { passive: true });
+}
+
 function irInicio() {
   ocultarVistas();
   $('#view-public').hidden = false;
@@ -2399,7 +2457,12 @@ const comuAvatar = m => {
 const horaCorta = ts => new Date(ts).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
 
 function irComunidad(tab) {
-  if (!esMúsico()) { toast('La comunidad es solo para músicos', 'warn'); return; }
+  /* Solo los músicos (rol USER) tienen comunidad; admin y dueños van al Perfil */
+  if (!esMúsico()) {
+    const navPerfil = document.getElementById('nav-mine');
+    if (navPerfil) navPerfil.click();
+    return;
+  }
   ocultarVistas();
   $('#view-comunidad').hidden = false;
   setNav('comunidad');
@@ -2934,6 +2997,7 @@ function actualizarBarraSesion() {
   if (naPanel) naPanel.hidden = !esDueño();
   const naComunidad = $('#nav-comunidad');
   if (naComunidad) naComunidad.hidden = !esMúsico();
+  /* Si es admin o dueño, el botón de Comunidad se oculta (ya venía hidden) */
   if (!yo) {
     $('#btn-panel').hidden = true;
     $('#btn-notif').hidden = true;
@@ -5343,6 +5407,26 @@ function renderAdminTab(tab) {
   const pendAyuda = (window.__ayuda || []).filter(a => a.estado === 'pendiente').length;
   const pillAy = $('#pill-ayuda');
   if (pillAy) { pillAy.hidden = !pendAyuda; pillAy.textContent = pendAyuda; }
+  actualizarIndicadorAdmin(tab);
+}
+
+/* Indicador deslizante bajo las pestañas del admin */
+function actualizarIndicadorAdmin(tab) {
+  const cont = document.querySelector('.admin-tabs');
+  if (!cont) return;
+  let indicator = cont.querySelector('.admin-tab-indicator');
+  if (!indicator) {
+    indicator = document.createElement('div');
+    indicator.className = 'admin-tab-indicator';
+    cont.style.position = 'relative';
+    cont.appendChild(indicator);
+  }
+  const btn = [...cont.querySelectorAll('.admin-tab')].find(t => t.dataset.tab === tab);
+  if (!btn) return;
+  const r = btn.getBoundingClientRect();
+  const rc = cont.getBoundingClientRect();
+  indicator.style.width = r.width + 'px';
+  indicator.style.transform = `translateX(${r.left - rc.left + cont.scrollLeft}px)`;
 }
 
 /* ---------- Solicitudes de salas (aprobación) ---------- */
@@ -7120,6 +7204,9 @@ async function init() {
   }
   startPolling();
   cerrarSplash();
+
+  /* Swipe para cambiar de página en celular */
+  prepararSwipeNavegacion();
 
   /* Fallback: si no hay sesión y el auth-body está vacío, forzar pantalla de login */
   if (!yo && !$('#auth-body').innerHTML.trim()) {

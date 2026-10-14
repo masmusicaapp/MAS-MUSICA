@@ -591,10 +591,22 @@ textarea:focus {
   background: none; border: 0; border-bottom: 3px solid transparent;
   color: var(--muted); font-weight: 600; font-size: .93rem;
   white-space: nowrap; cursor: pointer;
-  transition: color .15s, border-color .15s;
+  transition: color .15s;
 }
 .admin-tab:hover { color: var(--text); }
-.admin-tab.active { color: var(--text); border-bottom-color: var(--accent); font-weight: 700; }
+.admin-tab.active { color: var(--text); font-weight: 700; }
+/* Indicador deslizante bajo las pestañas */
+.admin-tabs {
+  position: sticky;
+}
+.admin-tab-indicator {
+  position: absolute;
+  bottom: 0; left: 0; height: 3px;
+  background: var(--accent);
+  border-radius: 3px 3px 0 0;
+  transition: transform .25s cubic-bezier(.22,.9,.28,1), width .25s cubic-bezier(.22,.9,.28,1);
+  pointer-events: none;
+}
 .admin-tab .pill { background: var(--danger); color: #fff; box-shadow: none; }
 
 /* ---------- Reservas del día (referencia del diseño) ---------- */
