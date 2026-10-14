@@ -869,16 +869,17 @@
   /* Fallback: si después de 2s no hay sesión y el auth-body está vacío, forzar login */
   setTimeout(function() {
     try {
-      if (!document.body.classList.contains('app-activa')) {
-        var authBody = document.getElementById('auth-body');
-        if (authBody && !authBody.innerHTML.trim() && typeof pantallaAuth === 'function') {
-          document.getElementById('view-auth').hidden = false;
-          pantallaAuth('inicio');
-          if (typeof wireAuth === 'function') wireAuth();
-        }
+      if (!document.body.classList.contains('app-activa') && typeof verificarSesion === 'function') {
+        verificarSesion().then(function(ok) {
+          if (ok && typeof arrancarApp === 'function') {
+            arrancarApp();
+          } else if (typeof mostrarLogin === 'function') {
+            mostrarLogin();
+          }
+        });
       }
     } catch (e) {}
-  }, 2000);
+  }, 1500);
 </script>
 </body>
 </html>

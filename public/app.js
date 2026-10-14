@@ -2824,6 +2824,43 @@ function mostrarApp() {
   pintarInstagram();
 }
 
+/* Re-verificar sesión (usado al inicio y tras login) */
+async function verificarSesion() {
+  if (!token) return false;
+  try {
+    const data = await api('/api/auth/me');
+    if (data && data.user) {
+      yo = data.user;
+      miSala = data.room || null;
+      adminMode = esSuper();
+      return true;
+    }
+  } catch (e) { guardarToken(''); yo = null; }
+  return false;
+}
+
+/* Arrancar la app con sesión activa */
+function arrancarApp() {
+  document.body.classList.add('app-activa');
+  setNav('inicio');
+  mostrarApp();
+  renderCalendar();
+  renderRooms();
+  goStep(1);
+  renderMapa();
+  cargarNotificaciones().then(() => { pintarBadgeNotif(); });
+}
+
+/* Mostrar pantalla de login */
+function mostrarLogin() {
+  document.body.classList.remove('app-activa');
+  $('#view-auth').hidden = false;
+  $('#app-header').hidden = true;
+  $('#dock-container').hidden = true;
+  pantallaAuth('inicio');
+  if (typeof wireAuth === 'function') wireAuth();
+}
+
 /* Botón de Instagram de la cabecera: enlace a la cuenta para ver contenido (se muestra solo si está cargada) */
 function pintarInstagram() {
   const el = $('#btn-ig');
@@ -3495,14 +3532,8 @@ async function iniciarSesionConToken(data) {
   miSala = data.room || null;
   state = await api('/api/state');
   adminMode = esSuper();
-  await cargarNotificaciones();
-  mostrarApp();
-  renderCalendar();
-  renderRooms();
-  goStep(1);
-  renderMineRapido();
-  renderMapa();
-  renderMine();   /* el perfil se repinta siempre: nada queda de la cuenta anterior */
+  arrancarApp();
+  renderMine();
 }
 
 async function cerrarSesion() {
@@ -3518,13 +3549,11 @@ async function cerrarSesion() {
   guardarToken('');
   yo = null; miSala = null; notificaciones = []; sinLeer = 0;
   adminMode = false; adminPin = '';
-  document.body.classList.remove('app-activa');
   $('#btn-exit-admin').hidden = true;
   cerrarPanelAjustes();
   cerrarPanelNotif();
   closeModal();
-  /* Al salir se vuelve al inicio de todo: registrarse o iniciar sesión (sin modo espectador) */
-  pantallaAuth('inicio');
+  mostrarLogin();
   toast('Sesión cerrada', 'ok');
 }
 
@@ -4991,15 +5020,17 @@ function wirePublic() {
   /* Comunidad (solo músicos) */
   if ($('#view-comunidad')) {
     $$('#view-comunidad .comu-tab').forEach(b => { b.onclick = () => cambiarComuTab(b.dataset.comuTab); });
-    $('#comu-buscar').oninput = e => {
+    const comuBuscar = $('#comu-buscar');
+    if (comuBuscar) comuBuscar.oninput = e => {
       comuBusqueda = e.target.value;
       clearTimeout(comuBuscarTimer);
       comuBuscarTimer = setTimeout(cargarComuMusicos, 300);
     };
-    $('#comu-zona').onclick = () => {
+    const comuZona = $('#comu-zona');
+    if (comuZona) comuZona.onclick = () => {
       if (!yo || !yo.localidad) { toast('Cargá tu localidad en el Perfil para filtrar por zona', 'warn'); return; }
       comuSoloZona = !comuSoloZona;
-      $('#comu-zona').classList.toggle('btn-primary', comuSoloZona);
+      comuZona.classList.toggle('btn-primary', comuSoloZona);
       cargarComuMusicos();
     };
     $('#view-comunidad').onclick = e => {
@@ -6985,29 +7016,11 @@ async function init() {
   wireMapa();
 
   /* Sesión guardada en este dispositivo */
-  if (token) {
-    try {
-      const data = await api('/api/auth/me');
-      yo = data.user;
-      miSala = data.room || null;
-      adminMode = esSuper();
-      if (!yo) guardarToken('');
-    } catch (e) { guardarToken(''); }
-  }
-  await cargarNotificaciones();
-  if (yo) {
-    setNav('inicio');
-    mostrarApp();
-    renderCalendar();
-    renderRooms();
-    goStep(1);
-    renderMapa();
+  const haySesion = await verificarSesion();
+  if (haySesion) {
+    arrancarApp();
   } else {
-    /* Sin sesión: mostrar pantalla de login/registro */
-    $('#view-auth').hidden = false;
-    $('#app-header').hidden = true;
-    $('#dock-container').hidden = true;
-    pantallaAuth('inicio');
+    mostrarLogin();
   }          /* el mapa del Inicio */
 
   /* Acceso directo: .../#admin abre el pedido de acceso */
