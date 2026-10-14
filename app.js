@@ -2475,7 +2475,12 @@ const comuAvatar = m => {
 const horaCorta = ts => new Date(ts).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
 
 function irComunidad(tab) {
-  if (!esMúsico()) { toast('La comunidad es solo para músicos', 'warn'); return; }
+  /* Solo los músicos (rol USER) tienen comunidad; admin y dueños van al Perfil */
+  if (!esMúsico()) {
+    const navPerfil = document.getElementById('nav-mine');
+    if (navPerfil) navPerfil.click();
+    return;
+  }
   ocultarVistas();
   $('#view-comunidad').hidden = false;
   setNav('comunidad');
@@ -3010,6 +3015,7 @@ function actualizarBarraSesion() {
   if (naPanel) naPanel.hidden = !esDueño();
   const naComunidad = $('#nav-comunidad');
   if (naComunidad) naComunidad.hidden = !esMúsico();
+  /* Si es admin o dueño, el botón de Comunidad se oculta (ya venía hidden) */
   if (!yo) {
     $('#btn-panel').hidden = true;
     $('#btn-notif').hidden = true;
