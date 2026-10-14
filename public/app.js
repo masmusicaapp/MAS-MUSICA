@@ -3691,17 +3691,34 @@ function cerrarPanelNotif() {
   drop.setAttribute('aria-hidden', 'true');
 }
 
+/* ---------- Notificaciones (panel) ---------- */
+let notifFiltro = 'todas'; /* 'todas' | 'sin-leer' */
+
 function renderPanelNotif() {
   const bod = $('#notif-sheet-body');
   const sub = $('#notif-sheet-sub');
   if (!bod) return;
+
+  /* Subtítulo */
   sub.textContent = notificaciones.length
     ? (sinLeer ? `${sinLeer} sin leer · ${notificaciones.length} en total` : `${notificaciones.length} aviso(s)`)
     : 'Nada por acá todavía';
+
+  /* Tabs */
+  const tabs = document.querySelectorAll('#notif-tabs .notif-tab');
+  tabs.forEach(t => {
+    t.classList.toggle('active', t.dataset.notifTab === notifFiltro);
+    t.setAttribute('aria-selected', t.dataset.notifTab === notifFiltro ? 'true' : 'false');
+  });
+
+  /* Botones de acción */
   $('#notif-panel-leer').hidden = !sinLeer;
   $('#notif-panel-borrar-todas').hidden = !notificaciones.length;
 
-  /* Las promos de bienvenida solo se muestran una vez */
+  /* Filtrar */
+  const lista = notificaciones.filter(n => notifFiltro !== 'sin-leer' || !n.leida);
+
+  /* Promos (solo la primera vez) */
   const bienvenidaVista = localStorage.getItem('mm-bienvenida-vista') === '1';
   const promos = promosActivas().filter(p => {
     if (/bienvenido/i.test(p.titulo || '') && bienvenidaVista) return false;
@@ -3709,31 +3726,48 @@ function renderPanelNotif() {
   });
   const promosHtml = promos.length ? promos.map(itemPromo).join('') : '';
 
-  bod.innerHTML = promosHtml + (notificaciones.length
-    ? notificaciones.map(itemNotif).join('')
-    : `<div class="notif-vacio"><b>No tenés notificaciones</b>Te avisamos cuando confirmes, modifiquen o cancelen una reserva tuya.</div>`);
+  /* Renderizar */
+  bod.innerHTML = promosHtml + (lista.length
+    ? lista.map(itemNotif).join('')
+    : `<div class="notif-vacio"><div class="notif-vacio-icon">🔔</div><h3>Todo al día</h3><p>Aquí aparecerán tus nuevas reservas y avisos.</p></div>`);
 }
 
-/* Promociones y novedades de la administración → también viven en la campana */
-function promosActivas() {
-  const ahora = Date.now();
-  return (state.promociones || []).filter(p => p.activa !== false
-    && (!p.desde || p.desde <= ahora) && (!p.hasta || p.hasta >= ahora));
+function itemNotif(n) {
+  const icono = n.tipo === 'ok' ? '✓' : n.tipo === 'warn' ? '⚠' : '📬';
+  const cls = n.leida ? '' : 'unread';
+  return `
+  <article class="notif-card ${cls}" data-notif-id="${n.id}" role="button" tabindex="0">
+    <div class="notif-icon" aria-hidden="true">${icono}</div>
+    <div class="notif-content">
+      <div class="notif-row-top">
+        <h4 class="notif-title">${esc(n.titulo)}</h4>
+        <span class="notif-time">${fechaNotif(n.fecha)}</span>
+      </div>
+      <p class="notif-detail">${esc(n.texto)}</p>
+      <div class="notif-card-actions">
+        ${n.leida ? '' : `<button class="notif-link" data-leer-notif="${n.id}">Marcar como leída</button>`}
+      </div>
+    </div>
+    <button class="notif-dismiss" aria-label="Borrar aviso" data-borrar-notif="${n.id}">✕</button>
+  </article>`;
 }
 
 function itemPromo(p) {
   const rango = [p.desde, p.hasta].filter(Boolean)
     .map(ts => new Date(ts).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' }))
     .join(' → ');
-  return `<div class="notif-item promo-item" data-promo-id="${p.id}" role="button" tabindex="0" title="Ver promoción">
-    <span class="notif-chip info">🎉</span>
-    <div class="notif-txt">
-      <strong>${esc(p.titulo)}</strong>
-      <span>${esc(p.texto)}</span>
-      <small class="muted">${rango ? 'Vigencia ' + rango : 'Promoción de las salas'}</small>
+  return `
+  <article class="notif-card" data-promo-id="${p.id}" role="button" tabindex="0" title="Ver promoción">
+    <div class="notif-icon promo" aria-hidden="true">🎉</div>
+    <div class="notif-content">
+      <div class="notif-row-top">
+        <h4 class="notif-title">${esc(p.titulo)}</h4>
+      </div>
+      <p class="notif-detail">${esc(p.texto)}</p>
+      <span class="notif-chip">${rango ? 'Vigencia ' + rango : 'Promoción de las salas'}</span>
     </div>
-    <svg class="notif-flecha" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg>
-  </div>`;
+    <button class="notif-dismiss" aria-label="Descartar promoción" onclick="this.closest('.notif-card').remove()">✕</button>
+  </article>`;
 }
 
 function abrirPromo(id) {
@@ -3787,6 +3821,16 @@ async function marcarLeidasPanel() {
     await cargarNotificaciones();
     renderPanelNotif();   /* el panel sigue abierto, se repinta */
   } catch (e) { toast(e.message, 'error'); }
+}
+
+/* Marcar una notificación como leída */
+async function marcarUnaNotif(id) {
+  const n = notificaciones.find(x => x.id === id);
+  if (!n || n.leida) return;
+  n.leida = true;
+  sinLeer = notificaciones.filter(x => !x.leida).length;
+  renderPanelNotif();
+  pintarBadgeNotif();
 }
 
 /* Borrar una notificación individual (con animación de cierre) */
@@ -5200,20 +5244,33 @@ function wirePublic() {
     const borrar = e.target.closest('[data-borrar-notif]');
     if (borrar) {
       e.stopPropagation();
-      const item = borrar.closest('.notif-item');
-      return borrarNotificacion(borrar.dataset.borrarNotif, item);
+      const card = borrar.closest('.notif-card');
+      return borrarNotificacion(borrar.dataset.borrarNotif, card);
+    }
+    const leer = e.target.closest('[data-leer-notif]');
+    if (leer) {
+      e.stopPropagation();
+      return marcarUnaNotif(leer.dataset.leerNotif);
     }
     const pr = e.target.closest('[data-promo-id]');
     if (pr) return abrirPromo(pr.dataset.promoId);
-    const it = e.target.closest('.notif-item');
+    const it = e.target.closest('.notif-card[data-notif-id]');
     if (it) irANotificacion(it.dataset.notifId);
   };
   $('#notif-sheet-body').onkeydown = e => {
     if (e.key !== 'Enter' && e.key !== ' ') return;
     const pr = e.target.closest('[data-promo-id]');
     if (pr) { e.preventDefault(); return abrirPromo(pr.dataset.promoId); }
-    const it = e.target.closest('.notif-item');
+    const it = e.target.closest('.notif-card[data-notif-id]');
     if (it) { e.preventDefault(); irANotificacion(it.dataset.notifId); }
+  };
+  /* Tabs de notificaciones (Todas / Sin leer) */
+  $('#notif-tabs').onclick = e => {
+    const tab = e.target.closest('.notif-tab');
+    if (!tab) return;
+    notifFiltro = tab.dataset.notifTab;
+    renderPanelNotif();
+    prepararSwipeNotif();
   };
   document.addEventListener('keydown', e => {
     if (e.key !== 'Escape') return;
@@ -5950,27 +6007,87 @@ function renderHistorial() {
 /* ---------- Salas ---------- */
 const ESTADO_SALA_TXT = { pendiente: 'Pendiente de aprobación', aprobada: 'Aprobada', rechazada: 'Rechazada', suspendida: 'Suspendida' };
 
+/* ---------- Salas del admin ---------- */
+let filtroSalasAdmin = '';
+let querySalasAdmin = '';
+
 function renderSalasAdmin() {
-  const grid = $('#salas-grid-admin');
-  grid.innerHTML = state.rooms.length ? state.rooms.map(r => `
-    <article class="room-card ${r.activo === false ? 'inactive' : ''}">
-      ${r.foto ? `<div class="room-foto"><img src="${esc(r.foto)}" alt="${esc(r.name)}"></div>` : ''}
-      <h3>${esc(r.name)} ${r.activo === false ? '<small class="muted">(inactiva)</small>' : ''}</h3>
-      <div class="row wrap">
-        <span class="badge ${r.estado === 'aprobada' ? '' : 'badge-next'}">${esc(ESTADO_SALA_TXT[r.estado] || r.estado)}</span>
-        ${r.ownerId ? '<span class="badge">👤 Con dueño</span>' : '<span class="badge badge-past">Sin dueño</span>'}
+  /* Chips de filtro */
+  const chips = $('#salas-chips');
+  if (chips) {
+    const nTodas = state.rooms.length;
+    const nAprob = state.rooms.filter(r => r.estado === 'aprobada').length;
+    const nPend = state.rooms.filter(r => r.estado === 'pendiente').length;
+    const nSinDueno = state.rooms.filter(r => !r.ownerId).length;
+    const filtros = [
+      ['', 'Todas', nTodas],
+      ['aprobada', 'Aprobadas', nAprob],
+      ['pendiente', 'Pendientes', nPend],
+      ['sin-dueno', 'Sin dueño', nSinDueno],
+    ];
+    chips.innerHTML = filtros.map(([k, label, count]) =>
+      `<button class="salas-chip${filtroSalasAdmin === k ? ' active' : ''}" data-filtro-salas-admin="${k}">${label} <span class="count">${count}</span></button>`
+    ).join('');
+  }
+
+  /* Filtrar y buscar */
+  const q = querySalasAdmin.trim().toLowerCase();
+  const lista = state.rooms.filter(r => {
+    if (filtroSalasAdmin === 'aprobada' && r.estado !== 'aprobada') return false;
+    if (filtroSalasAdmin === 'pendiente' && r.estado !== 'pendiente') return false;
+    if (filtroSalasAdmin === 'sin-dueno' && r.ownerId) return false;
+    if (q && !r.name.toLowerCase().includes(q)) return false;
+    return true;
+  });
+
+  /* Vacío */
+  const elVacio = $('#salas-vacio');
+  if (elVacio) elVacio.hidden = lista.length > 0;
+
+  /* Renderizar tarjetas */
+  const cont = $('#salas-grid-admin');
+  const ESTADO = { aprobada: { label: 'Aprobada', cls: 'ok' }, pendiente: { label: 'Pendiente', cls: 'wait' }, rechazada: { label: 'Rechazada', cls: 'off' } };
+
+  cont.innerHTML = lista.length ? lista.map(r => {
+    const st = ESTADO[r.estado] || { label: r.estado, cls: 'off' };
+    const owner = r.ownerId ? (state.users || []).find(u => u.id === r.ownerId) : null;
+    const dueño = owner ? esc(owner.nombre) : 'Sin dueño';
+    const dueñoNone = !owner;
+    const horas = r.horario ? Object.values(r.horario).filter(Boolean).map(h => h.open + ' – ' + h.close) : [];
+    const horasUniq = [...new Set(horas)];
+    const horasTxt = horasUniq.length ? horasUniq.join(', ') : 'Sin horario';
+
+    return `
+    <article class="sala-card">
+      <div class="sala-card-top">
+        ${r.foto
+          ? `<div class="sala-thumb"><img src="${esc(r.foto)}" alt="${esc(r.name)}"></div>`
+          : `<div class="sala-thumb sin-foto" style="background:${r.color || '#1e3350'}">${esc((r.name||'?')[0].toUpperCase())}</div>`}
+        <div class="sala-card-title">
+          <h3>${esc(r.name)}</h3>
+          <span class="sala-status st-${st.cls}">● ${st.label}</span>
+        </div>
       </div>
-      ${r.localidad || r.direccion ? `<div class="room-ubic">📍 ${esc([r.localidad, r.direccion].filter(Boolean).join(' · '))}</div>` : ''}
-      <div class="price">${fmtMoney(r.price)}<span> /hora</span></div>
-      <div class="cap">👥 Hasta ${r.capacity} ${r.capacity === 1 ? 'persona' : 'personas'}</div>
-      <ul class="feats">${r.features.length ? r.features.map(f => `<li>${esc(f)}</li>`).join('') : '<li>Sin características</li>'}</ul>
-      <div class="row wrap">
-        <button class="btn btn-sm" data-edit-room="${r.id}">Editar</button>
-        <button class="btn btn-sm" data-toggle-room="${r.id}">${r.activo === false ? 'Activar' : 'Desactivar'}</button>
-        <button class="btn btn-sm btn-danger" data-del-room="${r.id}">Eliminar</button>
+
+      <div class="sala-price"><strong>${fmtMoney(r.price)}</strong><span>/hora</span></div>
+
+      <div class="sala-grid">
+        <div class="sala-field"><small>Dueño</small><b class="${dueñoNone ? 'none' : ''}">${dueño}</b></div>
+        <div class="sala-field"><small>Capacidad</small><b>${r.capacity} persona${r.capacity === 1 ? '' : 's'}</b></div>
+        <div class="sala-field" style="grid-column: span 2"><small>Horario</small><b>${esc(horasTxt)}</b></div>
       </div>
-    </article>`).join('')
-    : '<p class="muted">Aún no hay salas. Crea la primera con el botón "Nueva sala".</p>';
+
+      <div class="sala-actions">
+        ${r.estado === 'pendiente'
+          ? `<button class="btn btn-sm ok" data-approve-room="${r.id}">Aprobar</button>`
+          : `<button class="btn btn-sm" data-edit-room="${r.id}">Editar</button>`}
+        ${owner
+          ? `<button class="btn btn-sm" data-change-owner="${r.id}">Cambiar dueño</button>`
+          : `<button class="btn btn-sm warn" data-assign-owner="${r.id}">Asignar dueño</button>`}
+        <button class="btn btn-sm" data-more-room="${r.id}" aria-label="Más opciones">⋮</button>
+      </div>
+    </article>`;
+  }).join('') : '';
 }
 
 function formularioSala(id) {
@@ -7065,18 +7182,41 @@ function wireAdmin() {
     if (cx) return cancelarReserva(cx.dataset.cancel, 'historial');
   };
   $('#btn-new-room').onclick = () => formularioSala(null);
-  $('#salas-grid-admin').onclick = e => {
+  $('#salas-buscar').oninput = e => { querySalasAdmin = e.target.value; renderSalasAdmin(); };
+  $('#salas-chips').onclick = e => {
+    const chip = e.target.closest('[data-filtro-salas-admin]');
+    if (!chip) return;
+    filtroSalasAdmin = chip.dataset.filtroSalasAdmin;
+    renderSalasAdmin();
+  };
+  $('#salas-grid-admin').onclick = async e => {
     const ed = e.target.closest('[data-edit-room]');
     if (ed) return formularioSala(ed.dataset.editRoom);
-    const tg = e.target.closest('[data-toggle-room]');
-    if (tg) {
-      const r = state.rooms.find(x => x.id === tg.dataset.toggleRoom);
-      if (!r) return;
-      api(`/api/rooms/${r.id}`, {
-        method: 'PUT', admin: true,
-        body: { name: r.name, price: r.price, capacity: r.capacity, features: r.features, active: r.activo === false, estado: r.estado, turnoMin: r.turnoMin, foto: r.foto },
-      }).then(data => { state = data.state; renderAdminTab('salas'); })
-        .catch(err => toast(err.message, 'error'));
+    const ap = e.target.closest('[data-approve-room]');
+    if (ap) {
+      try {
+        const data = await api(`/api/admin/solicitudes/${ap.dataset.approveRoom}`, { method: 'PUT', admin: true, body: { accion: 'aprobar' } });
+        state = data.state; renderAdminTab('salas'); toast('Sala aprobada ✓', 'ok');
+      } catch (err) { toast(err.message, 'error'); }
+      return;
+    }
+    const own = e.target.closest('[data-assign-owner]');
+    if (own) {
+      const name = prompt('Nombre del dueño para esta sala:');
+      if (!name || !name.trim()) return;
+      toast('Asignar dueño: pendiente de implementar', 'warn');
+      return;
+    }
+    const chg = e.target.closest('[data-change-owner]');
+    if (chg) {
+      const name = prompt('Nuevo dueño para la sala:');
+      if (!name || !name.trim()) return;
+      toast('Cambiar dueño: pendiente de implementar', 'warn');
+      return;
+    }
+    const more = e.target.closest('[data-more-room]');
+    if (more) {
+      toast('Opciones: eliminar, desactivar, ver historial', 'ok');
       return;
     }
     const del = e.target.closest('[data-del-room]');

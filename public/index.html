@@ -596,7 +596,21 @@
         <h2>🎸 Salas</h2>
         <button class="btn btn-primary btn-sm" id="btn-new-room">＋ Nueva sala</button>
       </div>
-      <div id="salas-grid-admin" class="rooms-grid"></div>
+
+      <label class="salas-buscar">
+        <span aria-hidden="true">🔍</span>
+        <input id="salas-buscar" type="search" placeholder="Buscar sala por nombre" autocomplete="off">
+      </label>
+
+      <div class="salas-chips" id="salas-chips" role="group" aria-label="Filtrar salas"></div>
+
+      <div id="salas-grid-admin"></div>
+
+      <div class="salas-vacio" id="salas-vacio" hidden>
+        <div class="salas-vacio-art">🎸</div>
+        <h3>No hay salas con ese filtro</h3>
+        <p>Probá con otro nombre o filtro.</p>
+      </div>
     </div>
   </section>
 
@@ -813,17 +827,23 @@
 <!-- ============ PANEL DE NOTIFICACIONES (despliega desde arriba) ============ -->
 <div id="notif-drop" aria-hidden="true">
   <div id="notif-backdrop"></div>
-  <section class="notif-sheet" id="notif-sheet" role="dialog" aria-label="Notificaciones y reservas">
+  <section class="notif-sheet" id="notif-sheet" role="dialog" aria-label="Notificaciones">
     <div class="notif-sheet-head">
       <div>
         <h3>Notificaciones</h3>
-        <p class="muted small" id="notif-sheet-sub"></p>
+        <p class="notif-sub" id="notif-sheet-sub"></p>
       </div>
       <div class="notif-sheet-tools">
-        <button class="btn btn-sm" id="notif-panel-leer" hidden>✓ Marcar leídas</button>
-        <button class="btn btn-sm btn-danger" id="notif-panel-borrar-todas" hidden>🗑 Borrar todas</button>
         <button class="notif-cerrar" id="notif-panel-cerrar" aria-label="Cerrar">✕</button>
       </div>
+    </div>
+    <div class="notif-tabs" id="notif-tabs" role="tablist">
+      <button class="notif-tab active" role="tab" aria-selected="true" data-notif-tab="todas">Todas</button>
+      <button class="notif-tab" role="tab" aria-selected="false" data-notif-tab="sin-leer">Sin leer</button>
+    </div>
+    <div class="notif-actions" id="notif-actions">
+      <button class="notif-action primary" id="notif-panel-leer" hidden>Marcar todas como leídas</button>
+      <button class="notif-action danger" id="notif-panel-borrar-todas" hidden>Borrar</button>
     </div>
     <div class="notif-sheet-body" id="notif-sheet-body"></div>
   </section>
