@@ -157,12 +157,20 @@ input, select { font-family: inherit; }
 }
 /* Logo/foto de la sala en las tarjetas */
 .room-foto {
-  height: 120px; margin: -14px -14px 12px;
-  border-radius: 12px 12px 0 0;
+  width: 80px; height: 80px;
+  border-radius: 14px;
   overflow: hidden;
   background: linear-gradient(135deg, var(--panel2), var(--panel));
+  flex-shrink: 0;
+  border: 2px solid var(--accent);
+  box-shadow: 0 4px 12px rgba(0, 160, 56, .2);
 }
-.room-foto img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.room-foto img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+}
 /* Vista previa en el editor de sala */
 .sala-foto-edit { display: grid; place-items: center; margin-bottom: 12px; }
 .sala-foto-edit img {
@@ -339,13 +347,38 @@ h3.sub {
 .rooms-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 14px; }
 .room-card {
   background: var(--panel2); border: 1px solid var(--line); border-radius: 14px;
-  padding: 16px; display: flex; flex-direction: column; gap: 10px;
+  padding: 16px; display: flex; flex-direction: row; gap: 14px;
   transition: transform .12s, box-shadow .12s;
   overflow: hidden;
+  align-items: center;
+}
+
+.room-top {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.room-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+  justify-content: center;
 }
 
 .room-card h3 {
   margin: 0; font-size: 1.05rem;
+  line-height: 1.3;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+.room-ubic {
+  font-size: .85rem;
+  color: var(--muted);
   line-height: 1.3;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
@@ -3508,7 +3541,12 @@ main {
   /* Cards de salas */
   .room-card {
     padding: 14px;
-    gap: 8px;
+    gap: 12px;
+  }
+
+  .room-foto {
+    width: 72px; height: 72px;
+    border-width: 2px;
   }
 
   .room-card .price {

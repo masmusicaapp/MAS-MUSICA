@@ -465,15 +465,11 @@ function renderRooms() {
         ${r.foto ? `<div class="room-foto"><img src="${esc(r.foto)}" alt="${esc(r.name)}"></div>` : ''}
         <button class="fav-btn ${esFavorita(r.id) ? 'on' : ''}" data-fav="${r.id}" title="Guardar como favorita">${esFavorita(r.id) ? '♥' : '♡'}</button>
       </div>
-      <h3>${esc(r.name)}</h3>
-      ${r.localidad || r.direccion ? `<div class="room-ubic">📍 ${esc([r.localidad, r.direccion].filter(Boolean).join(' · '))}</div>` : ''}
-      <div class="price">${fmtMoney(r.price)}<span> /hora</span></div>
-      <div class="cap">👥 Hasta ${r.capacity} ${r.capacity === 1 ? 'persona' : 'personas'}</div>
-      <ul class="feats">${(r.features || []).map(f => `<li>${esc(f)}</li>`).join('')}</ul>
-      ${equip ? `<div class="room-equip">🎚 ${equip} ${equip === 1 ? 'elemento' : 'elementos'} de equipamiento</div>` : ''}
-      <div class="row">
-        <button class="btn btn-primary">Ver horarios →</button>
-        <button class="btn btn-sm" data-ficha="${r.id}">ℹ️ Ficha</button>
+      <div class="room-info">
+        <h3>${esc(r.name)}</h3>
+        ${r.localidad || r.direccion ? `<div class="room-ubic">📍 ${esc([r.localidad, r.direccion].filter(Boolean).join(' · '))}</div>` : ''}
+        <div class="price">${fmtMoney(r.price)}<span> /hora</span></div>
+        <div class="cap">👥 Hasta ${r.capacity} ${r.capacity === 1 ? 'persona' : 'personas'}</div>
       </div>
     </article>`;
   }).join('');
@@ -3780,7 +3776,6 @@ function renderPerfilCuenta() {
 
     <div class="row wrap" style="gap:12px;margin-bottom:14px">
       <button class="aj-editar" id="btn-editar-perfil">✏️ Editar perfil</button>
-      <button class="aj-editar" id="btn-cambiar-pass">🔑 Cambiar contraseña</button>
     </div>
 
     <p class="aj-lbl">Datos</p>
