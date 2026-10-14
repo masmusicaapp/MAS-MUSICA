@@ -5417,6 +5417,7 @@ function showAdmin() {
   ocultarVistas();
   $('#view-admin').hidden = false;
   $('#btn-exit-admin').hidden = false;
+  document.body.classList.add('admin-abierto');
   setNav('admin');
   /* Arranca en las solicitudes pendientes si hay alguna */
   currentAdminTab = 'inicio';
@@ -5433,6 +5434,7 @@ function actualizarAdminHead() {
 function salirAdmin() {
   adminMode = false;
   adminPin = '';
+  document.body.classList.remove('admin-abierto');
   ocultarVistas();
   $('#view-public').hidden = false;
   $('#btn-exit-admin').hidden = true;

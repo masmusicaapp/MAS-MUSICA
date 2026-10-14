@@ -6,6 +6,8 @@ body:not(.app-activa) #app-header,
 body:not(.app-activa) #dock-container { display: none !important; }
 body.app-activa #app-header,
 body.app-activa #dock-container { display: flex !important; }
+/* Ocultar el dock cuando el panel de admin está abierto */
+body.admin-abierto #dock-container { display: none !important; }
 /* El auth siempre se muestra si no hay app-activa */
 body:not(.app-activa) #view-auth { display: flex !important; }
 
@@ -5490,3 +5492,157 @@ button, a, .btn { transition: all .2s ease; }
 
 /* Promo items */
 .notif-card.promo-item { cursor: pointer; }
+
+/* ========== TITULOS DE ADMINISTRACION CENTRAL ========== */
+
+/* T�tulo principal del panel de admin (cuando se entra al admin) */
+#view-admin .panel-head h2 {
+  font-family: "Barlow Condensed", "Barlow", sans-serif;
+  font-style: italic;
+  font-weight: 800;
+  font-size: 1.35rem;
+  letter-spacing: .2px;
+  line-height: 1.1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Subt�tulos (h3) dentro del admin */
+#view-admin h3.sub {
+  font-family: "Barlow Condensed", "Barlow", sans-serif;
+  font-style: italic;
+  font-weight: 800;
+  font-size: 1.05rem;
+  letter-spacing: .15px;
+  color: var(--text);
+  margin: 20px 0 10px;
+}
+
+/* P�rrafos de ayuda/descripci�n bajo los t�tulos */
+#view-admin .panel-head + p,
+#view-admin .panel-head + .muted {
+  margin-top: -6px;
+  margin-bottom: 14px;
+  line-height: 1.5;
+}
+
+/* T�tulo "Administraci�n central" en la hero de solicitudes */
+#tab-solicitudes .sol-hero h2 {
+  font-family: "Barlow Condensed", "Barlow", sans-serif;
+  font-style: italic;
+  font-weight: 800;
+  font-size: 1.5rem;
+  letter-spacing: .3px;
+}
+
+/* Secciones internas (Datos, Preferencias, etc.) */
+#view-admin .sub-seccion,
+#view-admin h3.sub + .aj-card {
+  margin-top: 8px;
+}
+
+/* Etiquetas de secciones (Datos, Contacto, etc.) */
+#view-admin .aj-lbl {
+  font-size: .78rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 20px 0 8px 2px;
+}
+
+/* Labels dentro de formularios del admin */
+#view-admin label {
+  font-size: .88rem;
+  font-weight: 600;
+  color: var(--muted);
+  margin-bottom: 4px;
+  display: block;
+}
+
+/* Inputs dentro del admin */
+#view-admin input[type="text"],
+#view-admin input[type="search"],
+#view-admin input[type="number"],
+#view-admin input[type="email"],
+#view-admin input[type="tel"],
+#view-admin input[type="url"],
+#view-admin input[type="password"],
+#view-admin input[type="month"],
+#view-admin input[type="date"],
+#view-admin input[type="time"],
+#view-admin select,
+#view-admin textarea {
+  font-size: .92rem;
+  padding: 10px 14px;
+  border-radius: 12px;
+}
+
+/* Tarjetas dentro del admin (stats, cards, etc.) */
+#view-admin .stat,
+#view-admin .sol-req,
+#view-admin .sala-card,
+#view-admin .cuentas-card {
+  border-radius: 16px;
+}
+
+/* Botones principales del admin */
+#view-admin .btn-primary {
+  border-radius: 12px;
+  font-size: .92rem;
+  padding: 10px 18px;
+}
+
+#view-admin .btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(0, 160, 56, .3);
+}
+
+/* Chips de filtro del admin */
+#view-admin .sol-chip,
+#view-admin .salas-chip,
+#view-admin .cuentas-chip {
+  border-radius: 999px;
+  font-size: .82rem;
+  font-weight: 600;
+  padding: 8px 14px;
+}
+
+#view-admin .sol-chip.active,
+#view-admin .salas-chip.active,
+#view-admin .cuentas-chip.active {
+  background: var(--accent);
+  color: var(--on-accent);
+  border-color: var(--accent);
+}
+
+/* Barra de b�squeda del admin */
+#view-admin .salas-buscar,
+#view-admin .cuentas-buscar {
+  border-radius: 14px;
+  height: 48px;
+  font-size: .92rem;
+}
+
+/* Nota informativa */
+#view-admin .sol-note,
+#view-admin .muted {
+  font-size: .88rem;
+  line-height: 1.5;
+}
+
+/* Acciones en tarjetas del admin */
+#view-admin .sol-req-actions,
+#view-admin .sala-actions,
+#view-admin .cuentas-actions {
+  border-radius: 12px;
+}
+
+#view-admin .sol-req-actions .btn,
+#view-admin .sala-actions .btn,
+#viewadmin .cuentas-actions .btn {
+  border-radius: 12px;
+  font-size: .88rem;
+  height: 44px;
+}
