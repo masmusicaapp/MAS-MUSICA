@@ -5427,6 +5427,10 @@ function actualizarIndicadorAdmin(tab) {
   const rc = cont.getBoundingClientRect();
   indicator.style.width = r.width + 'px';
   indicator.style.transform = `translateX(${r.left - rc.left + cont.scrollLeft}px)`;
+
+  /* Centrar la pestaña activa en la barra (auto-scroll) */
+  const scrollObjetivo = btn.offsetLeft - (cont.clientWidth - btn.offsetWidth) / 2;
+  cont.scrollTo({ left: Math.max(0, scrollObjetivo), behavior: 'smooth' });
 }
 
 /* ---------- Solicitudes de salas (aprobación) ---------- */
