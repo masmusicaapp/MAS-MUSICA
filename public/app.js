@@ -3770,6 +3770,13 @@ function itemPromo(p) {
   </article>`;
 }
 
+/* Promociones y novedades de la administración → también viven en la campana */
+function promosActivas() {
+  const ahora = Date.now();
+  return (state.promociones || []).filter(p => p.activa !== false
+    && (!p.desde || p.desde <= ahora) && (!p.hasta || p.hasta >= ahora));
+}
+
 function abrirPromo(id) {
   const p = (state.promociones || []).find(x => x.id === id);
   if (!p) return;
