@@ -930,6 +930,50 @@ tr:hover td {
 }
 .modal-acciones .btn-primary { flex: 1; }
 
+/* Modal de confirmación */
+.confirmar-modal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+  padding: 8px 0;
+}
+
+.confirmar-icono {
+  font-size: 2.5rem;
+  line-height: 1;
+}
+
+.confirmar-modal h3 {
+  margin: 0;
+  font-size: 1.15rem;
+  width: 100%;
+}
+
+.confirmar-mensaje {
+  margin: 0;
+  font-size: .95rem;
+  color: var(--muted);
+  line-height: 1.5;
+  width: 100%;
+}
+
+.confirmar-botones {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  margin-top: 8px;
+}
+
+.confirmar-botones .btn {
+  flex: 1;
+  padding: 12px 16px;
+  font-size: .95rem;
+  font-weight: 600;
+  border-radius: 14px;
+}
+
 /* ---------- Toast ---------- */
 #toast {
   position: fixed; bottom: calc(92px + env(safe-area-inset-bottom)); left: 50%; transform: translate(-50%, 80px);
@@ -2517,7 +2561,13 @@ main {
 .pop-logo.res { background: var(--accent); border-color: #fff; }
 .pop strong { font-size: .95rem; }
 .pop .badge { align-self: flex-start; margin-top: 4px; }
-.pop-acciones { gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+.pop-acciones {
+  gap: 6px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+  display: flex;
+}
 
 /* Popup con el detalle de la sala: foto horizontal, logo, dirección y teléfono */
 .pop-detalle {
@@ -2528,6 +2578,7 @@ main {
   background: var(--panel);
   border-radius: 12px;
   overflow: hidden;
+  text-align: center;
 }
 
 .pop-cover {
@@ -2536,6 +2587,9 @@ main {
   background: var(--panel2);
   border-radius: 12px 12px 0 0;
   overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .pop-cover-img {
@@ -2601,9 +2655,27 @@ main {
   gap: 4px;
   padding: 12px 14px;
   background: var(--panel);
+  text-align: center;
+  align-items: center;
 }
-.pop-nombre { font-size: 1rem; line-height: 1.2; margin-left: 4px; }
-.pop-linea { display: flex; align-items: center; gap: 4px; font-size: .85rem; line-height: 1.3; }
+.pop-nombre {
+  font-size: 1rem;
+  line-height: 1.2;
+  margin: 0;
+  text-align: center;
+  width: 100%;
+}
+
+.pop-linea {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: .85rem;
+  line-height: 1.3;
+  text-align: center;
+  width: 100%;
+}
 .pop-linea.muted { color: var(--muted); }
 .pop-tel { color: var(--accent2); font-weight: 600; text-decoration: none; }
 .pop-tel:hover { text-decoration: underline; }

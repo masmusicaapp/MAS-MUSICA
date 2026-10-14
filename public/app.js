@@ -1142,12 +1142,16 @@ function renderMapaLeaflet() {
     const icono = L.divIcon({
       className: 'mk-wrap',
       html: `<div class="mk-sala${r.foto ? '' : ' mk-marca'}">${r.foto ? `<img src="${esc(r.foto)}" alt="">` : '<img src="assets/marca-agua-negro.png" alt="">'}</div>`,
-      iconSize: [28, 28], iconAnchor: [14, 14], popupAnchor: [0, -16],
+      iconSize: [28, 28], iconAnchor: [14, 14], popupAnchor: [0, -14],
     });
     marcasSala[r.id] = L.marker([Number(r.lat), Number(r.lng)], { icon: icono, title: r.name })
       .addTo(capaMarcas)
-      .bindPopup(popupSala(r))
-      .on('click', () => irACarruselSala(r.id));
+      .bindPopup(popupSala(r), { closeButton: true, autoPan: true, autoPanPadding: [40, 40] })
+      .on('click', () => {
+        irACarruselSala(r.id);
+        /* Centrar el mapa en la sala */
+        if (mapa) mapa.panTo([Number(r.lat), Number(r.lng)], { animate: true });
+      });
   });
 
   /* 2. Las reservas del usuario, sobre el lugar de cada sala */
@@ -1497,7 +1501,14 @@ function wireMapa() {
 async function cancelarReservaMia(id) {
   const r = state.reservations.find(x => x.id === id);
   if (!r) return;
-  if (!confirm(`¿Cancelar tu reserva del ${fmtDate(r.date)} ${r.start} – ${r.end}?\nEl horario queda libre.`)) return;
+  const ok = await confirmarAccion(
+    `¿Cancelar tu reserva del ${fmtDate(r.date)} ${r.start} – ${r.end}? El horario queda libre.`,
+    '¿Cancelar reserva?',
+    'Sí, cancelar',
+    'No, mantener',
+    'peligro'
+  );
+  if (!ok) return;
   try {
     const data = await api(`/api/reservations/${r.id}/cancel`, { method: 'POST', body: { name: r.name, phone: r.phone } });
     state = data.state;
@@ -3315,6 +3326,14 @@ async function iniciarSesionConToken(data) {
 }
 
 async function cerrarSesion() {
+  const okSalir = await confirmarAccion(
+    '¿Cerrar sesión?',
+    'Cerrar sesión',
+    'Sí, salir',
+    'No, quedarme',
+    'peligro'
+  );
+  if (!okSalir) return;
   try { await api('/api/auth/logout', { method: 'POST' }); } catch (e) { /* sin conexión */ }
   guardarToken('');
   yo = null; miSala = null; notificaciones = []; sinLeer = 0;
@@ -3461,6 +3480,14 @@ async function marcarLeidasPanel() {
 
 /* Borrar una notificación individual (con animación de cierre) */
 async function borrarNotificacion(id, itemEl) {
+  const okBorrar = await confirmarAccion(
+    '¿Borrar este aviso?',
+    '¿Borrar aviso?',
+    'Sí, borrar',
+    'No',
+    'peligro'
+  );
+  if (!okBorrar) return;
   try {
     await api('/api/notificaciones/' + id, { method: 'DELETE' });
     notificaciones = notificaciones.filter(n => n.id !== id);
@@ -3487,6 +3514,14 @@ async function borrarNotificacion(id, itemEl) {
 /* Borrar todas las notificaciones */
 async function borrarTodasNotificaciones() {
   if (!notificaciones.length) return;
+  const okBorrarTodas = await confirmarAccion(
+    '¿Borrar todos los avisos?',
+    '¿Borrar todo?',
+    'Sí, borrar todo',
+    'No',
+    'peligro'
+  );
+  if (!okBorrarTodas) return;
   try {
     await api('/api/notificaciones', { method: 'DELETE' });
     notificaciones = [];
@@ -4545,7 +4580,14 @@ function wirePanel() {
     if (ed) return editarReservaPanel(ed.dataset.editarRes);
     const cx = e.target.closest('[data-cancelar-res]');
     if (!cx) return;
-    if (!confirm('¿Cancelar esta reserva? Se le avisa al músico.')) return;
+    const okCancel = await confirmarAccion(
+      '¿Cancelar esta reserva? Se le avisa al músico.',
+      '¿Cancelar reserva?',
+      'Sí, cancelar',
+      'No, mantener',
+      'peligro'
+    );
+    if (!okCancel) return;
     try {
       const data = await api(`/api/panel/reserva/${cx.dataset.cancelarRes}?roomId=${encodeURIComponent(panelDatos.room.id)}`, { method: 'DELETE' });
       state = data.state;
@@ -4906,7 +4948,14 @@ function wirePublic() {
     if (!b) return;
     const r = state.reservations.find(x => x.id === b.dataset.mineCancel);
     if (!r) return;
-    if (!confirm(`¿Cancelar tu reserva del ${fmtDate(r.date)} ${r.start} – ${r.end}?\nEl horario quedará libre.`)) return;
+    const okRes = await confirmarAccion(
+      `¿Cancelar tu reserva del ${fmtDate(r.date)} ${r.start} – ${r.end}? El horario quedará libre.`,
+      '¿Cancelar reserva?',
+      'Sí, cancelar',
+      'No, mantener',
+      'peligro'
+    );
+    if (!okRes) return;
     try {
       const data = await api(`/api/reservations/${r.id}/cancel`, {
         method: 'POST',
@@ -5149,7 +5198,14 @@ async function accionUsuario(id, accion) {
   if (!u) return;
   try {
     if (accion === 'borrar') {
-      if (!confirm(`¿Eliminar la cuenta de ${u.nombre}? Se borra su historial de reservas.`)) return;
+      const okEliminar = await confirmarAccion(
+        `¿Eliminar la cuenta de ${u.nombre}? Se borra su historial de reservas.`,
+        '¿Eliminar cuenta?',
+        'Sí, eliminar',
+        'No, mantener',
+        'peligro'
+      );
+      if (!okEliminar) return;
       const data = await api(`/api/admin/usuarios/${id}`, { method: 'DELETE', admin: true });
       state = data.state;
     } else if (accion === 'bloquear') {
@@ -5433,7 +5489,14 @@ function editarReserva(id, backTab = 'reservas') {
 async function cancelarReserva(id, backTab = 'reservas') {
   const r = state.reservations.find(x => x.id === id);
   if (!r) return;
-  if (!confirm(`¿Cancelar la reserva de "${r.name}" (${fmtDate(r.date)} ${r.start} – ${r.end})?\nEl horario quedará libre.`)) return;
+  const okCancelAdmin = await confirmarAccion(
+    `¿Cancelar la reserva de "${r.name}" (${fmtDate(r.date)} ${r.start} – ${r.end})? El horario quedará libre.`,
+    '¿Cancelar reserva?',
+    'Sí, cancelar',
+    'No, mantener',
+    'peligro'
+  );
+  if (!okCancelAdmin) return;
   try {
     const data = await api(`/api/reservations/${id}`, { method: 'DELETE', admin: true });
     state = data.state;
@@ -5673,7 +5736,14 @@ async function eliminarSala(id) {
   const r = state.rooms.find(x => x.id === id);
   if (!r) return;
   const n = state.reservations.filter(x => x.roomId === id).length;
-  if (!confirm(`¿Eliminar "${r.name}"?\nSe borrarán también ${n} reserva(s) y sus bloqueos.`)) return;
+  const okEliminarSala = await confirmarAccion(
+    `¿Eliminar "${r.name}"? Se borrarán también ${n} reserva(s) y sus bloqueos.`,
+    '¿Eliminar sala?',
+    'Sí, eliminar',
+    'No, mantener',
+    'peligro'
+  );
+  if (!okEliminarSala) return;
   try {
     const data = await api(`/api/rooms/${id}`, { method: 'DELETE', admin: true });
     state = data.state;
@@ -5761,7 +5831,14 @@ function formularioInstrumento(id) {
 async function eliminarInstrumento(id) {
   const i = (state.instruments || []).find(x => x.id === id);
   if (!i) return;
-  if (!confirm(`¿Eliminar "${i.nombre}"?`)) return;
+  const okEliminarInst = await confirmarAccion(
+    `¿Eliminar "${i.nombre}"?`,
+    '¿Eliminar instrumento?',
+    'Sí, eliminar',
+    'No, mantener',
+    'peligro'
+  );
+  if (!okEliminarInst) return;
   try {
     const data = await api(`/api/instruments/${id}`, { method: 'DELETE', admin: true });
     state = data.state;
@@ -5806,7 +5883,14 @@ function formularioFotoLugar(id) {
 async function eliminarFotoLugar(id) {
   const p = (state.placePhotos || []).find(x => x.id === id);
   if (!p) return;
-  if (!confirm(`¿Eliminar la foto "${p.titulo || 'sin título'}"?`)) return;
+  const okEliminarFoto = await confirmarAccion(
+    `¿Eliminar la foto "${p.titulo || 'sin título'}"?`,
+    '¿Eliminar foto?',
+    'Sí, eliminar',
+    'No, mantener',
+    'peligro'
+  );
+  if (!okEliminarFoto) return;
   try {
     const data = await api(`/api/place-photos/${id}`, { method: 'DELETE', admin: true });
     state = data.state;
@@ -5843,7 +5927,14 @@ async function eliminarBanda(id) {
   if (!b) return;
   const n = state.reservations.filter(r =>
     String(r.name).trim().toLowerCase() === b.nombre.trim().toLowerCase()).length;
-  if (!confirm(`¿Eliminar la banda "${b.nombre}"?\nLas ${n} reserva(s) con ese nombre se conservan.`)) return;
+  const okEliminarBanda = await confirmarAccion(
+    `¿Eliminar la banda "${b.nombre}"? Las ${n} reserva(s) con ese nombre se conservan.`,
+    '¿Eliminar banda?',
+    'Sí, eliminar',
+    'No, mantener',
+    'peligro'
+  );
+  if (!okEliminarBanda) return;
   try {
     const data = await api(`/api/bands/${id}`, { method: 'DELETE', admin: true });
     state = data.state;
@@ -6331,6 +6422,26 @@ function closeModal() {
   $('#modal').classList.remove('open');
 }
 
+/* Modal de confirmación personalizado (reemplaza a confirm() nativo) */
+function confirmarAccion(mensaje, titulo = '¿Estás seguro?', textoAceptar = 'Aceptar', textoCancelar = 'Cancelar', tipo = 'peligro') {
+  return new Promise(resolve => {
+    const colorAceptar = tipo === 'peligro' ? 'btn-danger' : 'btn-primary';
+    openModal(`
+      <div class="confirmar-modal">
+        <div class="confirmar-icono">${tipo === 'peligro' ? '⚠️' : '❓'}</div>
+        <h3>${titulo}</h3>
+        <p class="confirmar-mensaje">${mensaje}</p>
+        <div class="confirmar-botones">
+          <button class="btn" id="confirmar-no">${textoCancelar}</button>
+          <button class="btn ${colorAceptar}" id="confirmar-si">${textoAceptar}</button>
+        </div>
+      </div>
+    `);
+    $('#confirmar-si').onclick = () => { closeModal(); resolve(true); };
+    $('#confirmar-no').onclick = () => { closeModal(); resolve(false); };
+  });
+}
+
 let toastTimer;
 function toast(msg, type = 'ok') {
   const t = $('#toast');
@@ -6526,7 +6637,14 @@ function wireAdmin() {
     if (ed) return formularioPromocion(ed.dataset.editPromo);
     const del = e.target.closest('[data-del-promo]');
     if (del) {
-      if (!confirm('¿Eliminar esta promoción?')) return;
+      const okEliminarPromo = await confirmarAccion(
+    '¿Eliminar esta promoción?',
+    '¿Eliminar promoción?',
+    'Sí, eliminar',
+    'No, mantener',
+    'peligro'
+  );
+  if (!okEliminarPromo) return;
       try {
         const data = await api(`/api/promociones/${del.dataset.delPromo}`, { method: 'DELETE', admin: true });
         state = data.state;
@@ -6614,7 +6732,14 @@ function wireAdmin() {
     if (del) return eliminarBanda(del.dataset.delBand);
   };
   $('#btn-demo').onclick = async () => {
-    if (!confirm('¿Cargar datos de demostración? Se reemplazarán los datos actuales.')) return;
+    const okDatosDemo = await confirmarAccion(
+    '¿Cargar datos de demostración? Se reemplazarán los datos actuales.',
+    '¿Cargar datos demo?',
+    'Sí, cargar',
+    'No, cancelar',
+    'peligro'
+  );
+  if (!okDatosDemo) return;
     try {
       const data = await api('/api/demo', { method: 'POST', admin: true });
       state = data.state;
@@ -6625,7 +6750,14 @@ function wireAdmin() {
     }
   };
   $('#btn-reset').onclick = async () => {
-    if (!confirm('¿Borrar TODOS los datos (salas, reservas y bloqueos)?')) return;
+    const okBorrarTodo = await confirmarAccion(
+    '¿Borrar TODOS los datos (salas, reservas y bloqueos)?',
+    '¿Borrar todo?',
+    'Sí, borrar todo',
+    'No, cancelar',
+    'peligro'
+  );
+  if (!okBorrarTodo) return;
     try {
       const data = await api('/api/reset', { method: 'POST', admin: true });
       state = data.state;
