@@ -154,6 +154,57 @@ const PLANES_CONFIG = {
   sala_extra:   { id: 'sala_extra',   nombre: 'Sala Adicional',    precioMensual: 5000, moneda: 'ARS' }
 };
 
+/* Suscripción al chat global para músicos */
+const CHAT_PLAN_CONFIG = {
+  mensual: { id: 'mensual', nombre: 'Chat Global - Mensual', precioMensual: 2000, moneda: 'ARS', duracionDias: 30 },
+  trimestral: { id: 'trimestral', nombre: 'Chat Global - Trimestral', precioMensual: 5000, moneda: 'ARS', duracionDias: 90 },
+  anual: { id: 'anual', nombre: 'Chat Global - Anual', precioMensual: 15000, moneda: 'ARS', duracionDias: 365 }
+};
+
+/* Verificar si un usuario tiene acceso al chat global */
+function tieneAccesoChat(state, userId) {
+  if (!userId) return false;
+  const u = (state.users || []).find(x => x.id === userId);
+  if (!u) return false;
+  /* Los administradores tienen acceso siempre */
+  if (u.rol === 'SUPER_ADMIN') return true;
+  /* Verificar suscripción al chat */
+  const sub = (state.chatSubscriptions || []).find(s => s.userId === userId && s.estado === 'activo');
+  if (!sub) return false;
+  /* Verificar si no venció */
+  return sub.venceEn > Date.now();
+}
+
+/* Crear o renovar suscripción al chat */
+function crearSuscripcionChat(state, userId, plan) {
+  state.chatSubscriptions = state.chatSubscriptions || [];
+  const config = CHAT_PLAN_CONFIG[plan] || CHAT_PLAN_CONFIG.mensual;
+  const venceEn = Date.now() + config.duracionDias * 24 * 3600 * 1000;
+  
+  /* Buscar suscripción existente */
+  let sub = state.chatSubscriptions.find(s => s.userId === userId);
+  if (sub) {
+    /* Renovar: extender desde la fecha de vencimiento actual si aún no venció */
+    const desde = sub.venceEn > Date.now() ? sub.venceEn : Date.now();
+    sub.venceEn = desde + config.duracionDias * 24 * 3600 * 1000;
+    sub.plan = plan;
+    sub.estado = 'activo';
+    sub.fechaRenovacion = Date.now();
+  } else {
+    sub = {
+      id: uid(),
+      userId,
+      plan,
+      estado: 'activo',
+      fechaInicio: Date.now(),
+      venceEn,
+      pago: { estado: 'aprobado', fecha: Date.now() }
+    };
+    state.chatSubscriptions.push(sub);
+  }
+  return sub;
+}
+
 function getSuscripcionUsuario(state, userId) {
   state.subscriptions = state.subscriptions || [];
   let sub = state.subscriptions.find(s => s.userId === userId);
@@ -282,6 +333,8 @@ function defaultState() {
     notificaciones: [],
     ayuda: [],           /* pedidos de ayuda de los usuarios (olvidé contraseña / cuenta bloqueada) */
     mensajes: [],
+    chatGlobal: [],
+    chatSubscriptions: [],
     promociones: demoPromociones(),
     rooms: [
       salaNueva({ id: 'r1', estado: 'aprobada', name: 'Sala 1', price: 15000, capacity: 4, features: ['Batería completa', 'Amplificadores'] }),
@@ -1347,6 +1400,27 @@ async function handleApi(req, res, url, parts) {
     return sendJson(res, 200, { ok: true });
   }
 
+  /* Borrar una notificación propia */
+  if (method === 'DELETE' && url.pathname.startsWith('/api/notificaciones/')) {
+    const u = sesionActual(state, req);
+    if (!u) return sendJson(res, 401, { error: 'Iniciá sesión' });
+    const idNotif = url.pathname.split('/').pop();
+    const antes = state.notificaciones.length;
+    state.notificaciones = state.notificaciones.filter(n => !(n.id === idNotif && n.userId === u.id));
+    if (state.notificaciones.length === antes) return sendJson(res, 404, { error: 'No se encontró esa notificación' });
+    persist(state);
+    return sendJson(res, 200, { ok: true });
+  }
+
+  /* Borrar todas las notificaciones propias */
+  if (method === 'DELETE' && url.pathname === '/api/notificaciones') {
+    const u = sesionActual(state, req);
+    if (!u) return sendJson(res, 401, { error: 'Iniciá sesión' });
+    state.notificaciones = state.notificaciones.filter(n => n.userId !== u.id);
+    persist(state);
+    return sendJson(res, 200, { ok: true });
+  }
+
   /* ======================= REGISTRO DE BANDAS (público) ======================= */
 
   if (method === 'POST' && url.pathname === '/api/bands') {
@@ -1400,6 +1474,7 @@ async function handleApi(req, res, url, parts) {
 
   if (method === 'POST' && url.pathname === '/api/reserve') {
     const u = sesionActual(state, req);
+    if (!u) return sendJson(res, 401, { error: 'Iniciá sesión para hacer una reserva' });
     const { date, roomId, start, end } = body;
     const name = String(body.name || (u && u.nombre) || '').trim();
     const phone = String(body.phone || (u && u.telefono) || '').trim();
@@ -2305,7 +2380,86 @@ async function handleApi(req, res, url, parts) {
     }
 
     /* Hilo de mensajes con un músico (marca como leídos los recibidos) */
+    /* Verificar acceso al chat (suscripción) */
+    if (method === 'GET' && url.pathname === '/api/comunidad/chat-acceso') {
+      const tieneAcceso = tieneAccesoChat(state, u.id);
+      const sub = (state.chatSubscriptions || []).find(s => s.userId === u.id);
+      return sendJson(res, 200, {
+        tieneAcceso,
+        suscripcion: sub ? {
+          plan: sub.plan,
+          estado: sub.estado,
+          venceEn: sub.venceEn,
+          diasRestantes: Math.max(0, Math.ceil((sub.venceEn - Date.now()) / (24 * 3600 * 1000))),
+        } : null,
+        planes: CHAT_PLAN_CONFIG,
+      });
+    }
+
+    /* Suscribirse al chat */
+    if (method === 'POST' && url.pathname === '/api/comunidad/chat-suscribirse') {
+      const plan = txt(body.plan) || 'mensual';
+      if (!CHAT_PLAN_CONFIG[plan]) return sendJson(res, 400, { error: 'Plan no válido' });
+      const sub = crearSuscripcionChat(state, u.id, plan);
+      persist(state);
+      avisar(state, u.id, '¡Suscripción activada!', `Tu acceso al Chat Global está activo hasta ${new Date(sub.venceEn).toLocaleDateString('es-AR')}.`, 'ok');
+      return sendJson(res, 200, {
+        ok: true,
+        suscripcion: {
+          plan: sub.plan,
+          estado: sub.estado,
+          venceEn: sub.venceEn,
+          diasRestantes: Math.max(0, Math.ceil((sub.venceEn - Date.now()) / (24 * 3600 * 1000))),
+        },
+      });
+    }
+
+    /* ========== CHAT GLOBAL GRUPAL ========== */
+
+    /* Obtener mensajes del chat global */
+    if (method === 'GET' && url.pathname === '/api/comunidad/chat-global') {
+      if (!tieneAccesoChat(state, u.id)) {
+        return sendJson(res, 403, { error: 'Necesitás una suscripción al Chat Global', requiereSuscripcion: true, planes: CHAT_PLAN_CONFIG });
+      }
+      const desde = Number(url.searchParams.get('desde')) || 0;
+      const msgs = (state.chatGlobal || [])
+        .filter(m => m.fecha > desde)
+        .slice(-100)
+        .map(m => {
+          const autor = (state.users || []).find(x => x.id === m.userId);
+          return {
+            id: m.id,
+            texto: m.texto,
+            fecha: m.fecha,
+            mio: m.userId === u.id,
+            autor: autor ? { nombre: autor.nombre, usuario: autor.usuario, foto: autor.foto || '' } : { nombre: 'Usuario', usuario: '??', foto: '' },
+          };
+        });
+      return sendJson(res, 200, { mensajes: msgs, total: (state.chatGlobal || []).length });
+    }
+
+    /* Enviar mensaje al chat global */
+    if (method === 'POST' && url.pathname === '/api/comunidad/chat-global') {
+      if (!tieneAccesoChat(state, u.id)) {
+        return sendJson(res, 403, { error: 'Necesitás una suscripción al Chat Global', requiereSuscripcion: true, planes: CHAT_PLAN_CONFIG });
+      }
+      const texto = String(body.texto || '').trim().slice(0, 600);
+      if (!texto) return sendJson(res, 400, { error: 'Escribí un mensaje' });
+      state.chatGlobal = state.chatGlobal || [];
+      const m = { id: uid(), userId: u.id, texto, fecha: Date.now() };
+      state.chatGlobal.push(m);
+      /* Mantener solo los últimos 500 mensajes */
+      if (state.chatGlobal.length > 500) state.chatGlobal = state.chatGlobal.slice(-500);
+      persist(state);
+      return sendJson(res, 201, { ok: true, mensaje: { id: m.id, texto: m.texto, fecha: m.fecha } });
+    }
+
+    /* ========== CHAT INDIVIDUAL (MANTENER POR COMPATIBILIDAD) ========== */
+
     if (method === 'GET' && url.pathname === '/api/comunidad/mensajes') {
+      if (!tieneAccesoChat(state, u.id)) {
+        return sendJson(res, 403, { error: 'Necesitás una suscripción al Chat Global', requiereSuscripcion: true, planes: CHAT_PLAN_CONFIG });
+      }
       const otro = musicosActivos().find(x => x.id === txt(url.searchParams.get('con')));
       if (!otro) return sendJson(res, 404, { error: 'Músico no encontrado' });
       let cambio = false;
@@ -2320,8 +2474,11 @@ async function handleApi(req, res, url, parts) {
       return sendJson(res, 200, { musico: musicoMini(otro), mensajes: hilo, siguiendo: sigoA(u, otro.id) });
     }
 
-    /* Enviar mensaje */
+    /* Enviar mensaje individual */
     if (method === 'POST' && url.pathname === '/api/comunidad/mensajes') {
+      if (!tieneAccesoChat(state, u.id)) {
+        return sendJson(res, 403, { error: 'Necesitás una suscripción al Chat Global', requiereSuscripcion: true, planes: CHAT_PLAN_CONFIG });
+      }
       const otro = musicosActivos().find(x => x.id === txt(body.para));
       const texto = txt(body.texto).slice(0, 600);
       if (!otro) return sendJson(res, 404, { error: 'Músico no encontrado' });
