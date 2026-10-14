@@ -4964,3 +4964,69 @@ button, a, .btn { transition: all .2s ease; }
   background: var(--panel2); border-radius: 14px; padding: 12px 14px;
   color: var(--muted); font-size: .85rem; line-height: 1.45;
 }
+
+/* ========== HORARIOS - ESCRITORIO ========== */
+@media (min-width: 1024px) {
+  .hours-chips {
+    gap: 10px;
+    margin: 16px 0;
+  }
+
+  .hours-chips .chip {
+    padding: 8px 16px;
+    font-size: .88rem;
+  }
+
+  .hour-day {
+    padding: 18px 0;
+  }
+
+  .hour-day-name {
+    font-size: 1.15rem;
+  }
+
+  .hour-status {
+    font-size: .82rem;
+    padding: 4px 12px;
+  }
+
+  .hour-switch {
+    width: 52px; height: 30px;
+  }
+
+  .hour-slider::before {
+    width: 24px; height: 24px;
+  }
+
+  .hour-switch input:checked + .hour-slider::before {
+    transform: translateX(22px);
+  }
+
+  .hour-times {
+    gap: 12px;
+    margin-top: 14px;
+  }
+
+  .hour-field {
+    padding: 12px 16px;
+  }
+
+  .hour-field label {
+    font-size: .78rem;
+    letter-spacing: .8px;
+  }
+
+  .hour-field input[type="time"] {
+    font-size: 1.25rem;
+  }
+
+  .hour-sep {
+    font-size: 1rem;
+  }
+
+  .hours-note {
+    font-size: .92rem;
+    padding: 14px 16px;
+    border-radius: 16px;
+  }
+}
