@@ -1656,6 +1656,7 @@ function renderSalasStrip() {
 
 /* Elige una sala (desde el mapa o la lista) y sigue con la fecha o los horarios */
 function elegirSala(roomId) {
+  if (!yo) { toast('Iniciá sesión para hacer una reserva', 'warn'); pantallaAuth('login'); return; }
   ocultarVistas();
   const room = salasPublicas().find(r => r.id === roomId);
   if (!room) return;
@@ -2814,6 +2815,8 @@ let datosDuenio = null;  /* paso 1 del registro de sala (se conserva al pasar al
 
 /* ---------- Mostrar / ocultar pantallas ---------- */
 function mostrarApp() {
+  if (!yo) { pantallaAuth('inicio'); return; }
+  document.body.classList.add('app-activa');
   $('#view-auth').hidden = true;
   $('#app-header').hidden = false;
   $('#dock-container').hidden = false;
@@ -3515,6 +3518,7 @@ async function cerrarSesion() {
   guardarToken('');
   yo = null; miSala = null; notificaciones = []; sinLeer = 0;
   adminMode = false; adminPin = '';
+  document.body.classList.remove('app-activa');
   $('#btn-exit-admin').hidden = true;
   cerrarPanelAjustes();
   cerrarPanelNotif();
@@ -6979,7 +6983,6 @@ async function init() {
   wireAuth();
   wirePanel();
   wireMapa();
-  setNav('inicio');
 
   /* Sesión guardada en este dispositivo */
   if (token) {
@@ -6993,13 +6996,17 @@ async function init() {
   }
   await cargarNotificaciones();
   if (yo) {
+    setNav('inicio');
     mostrarApp();
     renderCalendar();
     renderRooms();
     goStep(1);
     renderMapa();
   } else {
-    /* Sin sesión: solo se puede registrarse o iniciar sesión (no hay modo espectador) */
+    /* Sin sesión: mostrar pantalla de login/registro */
+    $('#view-auth').hidden = false;
+    $('#app-header').hidden = true;
+    $('#dock-container').hidden = true;
     pantallaAuth('inicio');
   }          /* el mapa del Inicio */
 

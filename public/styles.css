@@ -1,3 +1,14 @@
+/* =====================================================================
+   BARRERA DE SEGURIDAD: el header y el dock están ocultos hasta que la
+   app marca body.app-activa (evita que se vea contenido sin sesión).
+   ===================================================================== */
+body:not(.app-activa) #app-header,
+body:not(.app-activa) #dock-container { display: none !important; }
+body.app-activa #app-header,
+body.app-activa #dock-container { display: flex !important; }
+/* El auth siempre se muestra si no hay app-activa */
+body:not(.app-activa) #view-auth { display: flex !important; }
+
 :root {
   /* ===== TEMA OSCURO (por defecto) ===== */
   --bg: #0d1b2f;
