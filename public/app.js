@@ -2820,6 +2820,7 @@ function mostrarApp() {
   $('#view-auth').hidden = true;
   $('#app-header').hidden = false;
   $('#dock-container').hidden = false;
+  $('#view-public').hidden = false;
   actualizarBarraSesion();
   pintarInstagram();
 }
