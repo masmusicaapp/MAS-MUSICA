@@ -265,31 +265,10 @@
 <main id="view-comunidad" hidden>
   <div class="panel">
     <div class="panel-head">
-      <h2>👥 Comunidad</h2>
-      <p class="muted small">Conectá con músicos cercanos: seguilos, escribiles y armá tu próxima banda.</p>
+      <h2>💬 Chat Global</h2>
+      <p class="muted small">Hablá con otros músicos suscritos a Más Música.</p>
     </div>
-    <nav class="comu-tabs">
-      <button class="comu-tab active" data-comu-tab="musicos">🎸 Músicos</button>
-      <button class="comu-tab" data-comu-tab="mensajes">💬 Mensajes<span class="comu-badge" id="comu-msg-badge" hidden>0</span></button>
-      <button class="comu-tab" data-comu-tab="siguiendo">⭐ Siguiendo</button>
-    </nav>
-    <div id="comu-pane-musicos" class="comu-pane">
-      <label class="buscador-mine">Buscar por nombre, usuario o instrumento
-        <input id="comu-buscar" maxlength="60" placeholder="Ej.: guitarra" autocomplete="off">
-      </label>
-      <div class="comu-filtros">
-        <button class="btn btn-sm" id="comu-zona">📍 Mi zona</button>
-        <span class="muted small" id="comu-zona-nota"></span>
-      </div>
-      <div id="comu-lista" class="comu-lista"></div>
-    </div>
-    <div id="comu-pane-mensajes" class="comu-pane" hidden>
-      <div id="comu-chats" class="comu-chats"></div>
-      <div id="comu-chat" class="comu-chat" hidden></div>
-    </div>
-    <div id="comu-pane-siguiendo" class="comu-pane" hidden>
-      <div id="comu-siguiendo"></div>
-    </div>
+    <div id="comu-chats" class="comu-chats"></div>
   </div>
 </main>
 
@@ -796,6 +775,7 @@
       </div>
       <div class="notif-sheet-tools">
         <button class="btn btn-sm" id="notif-panel-leer" hidden>✓ Marcar leídas</button>
+        <button class="btn btn-sm btn-danger" id="notif-panel-borrar-todas" hidden>🗑 Borrar todas</button>
         <button class="notif-cerrar" id="notif-panel-cerrar" aria-label="Cerrar">✕</button>
       </div>
     </div>

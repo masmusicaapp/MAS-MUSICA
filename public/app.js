@@ -1142,14 +1142,18 @@ function renderMapaLeaflet() {
     const icono = L.divIcon({
       className: 'mk-wrap',
       html: `<div class="mk-sala${r.foto ? '' : ' mk-marca'}">${r.foto ? `<img src="${esc(r.foto)}" alt="">` : '<img src="assets/marca-agua-negro.png" alt="">'}</div>`,
-      iconSize: [28, 28], iconAnchor: [14, 14], popupAnchor: [0, -14],
+      iconSize: [28, 28], iconAnchor: [14, 14], popupAnchor: [0, -26],
     });
     marcasSala[r.id] = L.marker([Number(r.lat), Number(r.lng)], { icon: icono, title: r.name })
       .addTo(capaMarcas)
-      .bindPopup(popupSala(r), { closeButton: true, autoPan: true, autoPanPadding: [40, 40] })
+      .bindPopup(popupSala(r), {
+        closeButton: true,
+        autoPan: true,
+        autoPanPadding: [50, 50],
+        className: 'popup-centrado',
+      })
       .on('click', () => {
         irACarruselSala(r.id);
-        /* Centrar el mapa en la sala */
         if (mapa) mapa.panTo([Number(r.lat), Number(r.lng)], { animate: true });
       });
   });
@@ -2398,24 +2402,197 @@ function irComunidad(tab) {
   ocultarVistas();
   $('#view-comunidad').hidden = false;
   setNav('comunidad');
-  cambiarComuTab(tab || comuTab);
   scrollMainArriba();
+  /* Verificar acceso al chat y mostrar chat o suscripción */
+  verificarAccesoChat().then(tieneAcceso => {
+    if (tieneAcceso) {
+      cargarChatGlobal();
+    } else {
+      mostrarSuscripcionChat();
+    }
+  });
 }
 
 function activarComuPane(tab) {
-  comuTab = tab;
-  $$('#view-comunidad .comu-tab').forEach(b => b.classList.toggle('active', b.dataset.comuTab === tab));
-  $('#comu-pane-musicos').hidden = tab !== 'musicos';
-  $('#comu-pane-mensajes').hidden = tab !== 'mensajes';
-  $('#comu-pane-siguiendo').hidden = tab !== 'siguiendo';
+  /* Ya no hay pestañas, solo el chat global */
 }
 
 function cambiarComuTab(tab) {
-  activarComuPane(tab);
-  if (tab === 'musicos') { cerrarComuChat(); cargarComuMusicos(); }
-  if (tab === 'mensajes') { cerrarComuChat(); cargarComuConversaciones(); }
-  if (tab === 'siguiendo') { cargarComuSiguiendo(); }
-  iniciarComuPoll();
+  /* Ya no hay pestañas, el chat se carga directamente desde irComunidad */
+}
+
+/* Verificar si el usuario tiene acceso al chat global */
+async function verificarAccesoChat() {
+  try {
+    const data = await api('/api/comunidad/chat-acceso');
+    return data.tieneAcceso;
+  } catch (e) {
+    return false;
+  }
+}
+
+/* Mostrar el modal de suscripción al chat global */
+function mostrarSuscripcionChat() {
+  const host = $('#comu-chats');
+  if (host) {
+    host.innerHTML = `
+      <div class="suscripcion-chat">
+        <div class="suscripcion-icono">💬</div>
+        <h3>Chat Global de Más Música</h3>
+        <p class="muted">Para chatear con otros músicos necesitás una suscripción al Chat Global. Elegí un plan:</p>
+        <div class="suscripcion-planes">
+          <div class="suscripcion-plan" data-plan="mensual">
+            <div class="suscripcion-plan-nombre">Mensual</div>
+            <div class="suscripcion-plan-precio">$2.000<small>/mes</small></div>
+          </div>
+          <div class="suscripcion-plan" data-plan="trimestral">
+            <div class="suscripcion-plan-nombre">Trimestral</div>
+            <div class="suscripcion-plan-precio">$5.000<small>/3 meses</small></div>
+          </div>
+          <div class="suscripcion-plan" data-plan="anual">
+            <div class="suscripcion-plan-nombre">Anual</div>
+            <div class="suscripcion-plan-precio">$15.000<small>/año</small></div>
+          </div>
+        </div>
+        <button class="btn btn-primary btn-big" id="suscribirse-chat">🎸 Suscribirme ahora</button>
+      </div>`;
+    
+    const planes = host.querySelectorAll('.suscripcion-plan');
+    let planSeleccionado = 'mensual';
+    
+    planes.forEach(p => {
+      p.onclick = () => {
+        planes.forEach(pp => pp.classList.remove('seleccionado'));
+        p.classList.add('seleccionado');
+        planSeleccionado = p.dataset.plan;
+      };
+    });
+    
+    planes[0]?.classList.add('seleccionado');
+    
+    const btnSuscribir = host.querySelector('#suscribirse-chat');
+    if (btnSuscribir) {
+      btnSuscribir.onclick = async () => {
+        try {
+          const data = await api('/api/comunidad/chat-suscribirse', {
+            method: 'POST',
+            body: { plan: planSeleccionado }
+          });
+          toast('¡Suscripción activada! Ya podés chatear.', 'ok');
+          cargarChatGlobal();
+        } catch (e) {
+          toast(e.message, 'error');
+        }
+      };
+    }
+  }
+}
+
+/* ========== CHAT GLOBAL GRUPAL ========== */
+
+let chatGlobalTimer = null;
+let chatGlobalUltimoFecha = 0;
+
+/* Cargar el chat global */
+async function cargarChatGlobal() {
+  const host = $('#comu-chats');
+  if (!host) return;
+
+  // Mostrar el chat global
+  host.innerHTML = `
+    <div class="chat-global">
+      <div class="chat-global-head">
+        <h3>💬 Chat Global</h3>
+        <span class="muted small">Todos los músicos suscritos</span>
+      </div>
+      <div class="chat-global-hilo" id="chat-global-hilo"></div>
+      <div class="chat-global-form">
+        <input type="text" id="chat-global-input" placeholder="Escribí un mensaje..." maxlength="600">
+        <button class="btn btn-primary btn-sm" id="chat-global-enviar">Enviar</button>
+      </div>
+    </div>`;
+
+  // Cargar mensajes
+  await cargarMensajesGlobal();
+
+  // Configurar envío
+  const input = $('#chat-global-input');
+  const btnEnviar = $('#chat-global-enviar');
+
+  const enviar = async () => {
+    const texto = (input.value || '').trim();
+    if (!texto) return;
+    try {
+      await api('/api/comunidad/chat-global', { method: 'POST', body: { texto } });
+      input.value = '';
+      await cargarMensajesGlobal();
+    } catch (e) {
+      toast(e.message, 'error');
+    }
+  };
+
+  if (btnEnviar) btnEnviar.onclick = enviar;
+  if (input) {
+    input.onkeydown = e => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        enviar();
+      }
+    };
+  }
+
+  // Polling para nuevos mensajes
+  clearInterval(chatGlobalTimer);
+  chatGlobalTimer = setInterval(() => {
+    if (!$('#comu-chats')?.querySelector('.chat-global')) return;
+    cargarMensajesGlobal(true);
+  }, 3000);
+}
+
+/* Cargar mensajes del chat global */
+async function cargarMensajesGlobal(silent) {
+  const hilo = $('#chat-global-hilo');
+  if (!hilo) return;
+
+  try {
+    const data = await api('/api/comunidad/chat-global?desde=' + chatGlobalUltimoFecha);
+    const mensajes = data.mensajes || [];
+
+    if (!silent && !mensajes.length) {
+      hilo.innerHTML = '<p class="muted small" style="text-align:center;padding:20px">Todavía no hay mensajes. Sé el primero en escribir 🎸</p>';
+      return;
+    }
+
+    if (mensajes.length) {
+      // Agregar solo mensajes nuevos
+      mensajes.forEach(m => {
+        if (chatGlobalUltimoFecha >= m.fecha) return;
+        const div = document.createElement('div');
+        div.className = 'chat-global-msg' + (m.mio ? ' mio' : '');
+        div.innerHTML = `
+          ${m.mio ? '' : `<div class="chat-global-avatar">${(m.autor?.nombre || '?')[0].toUpperCase()}</div>`}
+          <div class="chat-global-contenido">
+            ${m.mio ? '' : `<span class="chat-global-autor">${esc(m.autor?.nombre || 'Músico')}</span>`}
+            <p class="chat-global-texto">${esc(m.texto)}</p>
+            <span class="chat-global-fecha">${fechaChat(m.fecha)}</span>
+          </div>`;
+        hilo.appendChild(div);
+        chatGlobalUltimoFecha = m.fecha;
+      });
+
+      // Scroll al final
+      hilo.scrollTop = hilo.scrollHeight;
+    }
+  } catch (e) {
+    if (!silent) toast(e.message, 'error');
+  }
+}
+
+/* Formato de fecha para el chat */
+function fechaChat(ts) {
+  const d = new Date(ts);
+  const hm = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  return d.toDateString() === new Date().toDateString() ? `hoy · ${hm}` : `${d.toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })} · ${hm}`;
 }
 
 function pararComuPoll() { if (comuPollTimer) { clearInterval(comuPollTimer); comuPollTimer = null; } }
