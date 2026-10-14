@@ -2323,19 +2323,26 @@ function scrollMainArriba() {
   if (m) m.scrollTop = 0;
 }
 
-/* Swipe horizontal para cambiar de página en celular */
+/* Swipe horizontal para cambiar de página en celular (funciona en todas las secciones) */
 function prepararSwipeNavegacion() {
   if (window._swipeNavOk) return;
   window._swipeNavOk = true;
 
-  /* Orden de las páginas principales */
-  const PAGINAS = ['inicio', 'salas', 'mapa', 'comunidad', 'perfil'];
+  /* Orden de las páginas principales (incluye admin/panel si el rol los tiene) */
+  function paginasVisibles() {
+    const base = ['inicio', 'salas', 'mapa', 'comunidad', 'perfil'];
+    if (esSuper()) base.push('admin');
+    else if (esDueño()) base.push('panel');
+    return base;
+  }
 
-  /* Encontrar la página actual según la vista visible */
+  /* Encontrar la página actual */
   function paginaActual() {
-    if (!document.getElementById('view-mapa').hidden) return 'mapa';
-    if (!document.getElementById('view-comunidad').hidden) return 'comunidad';
-    if (!document.getElementById('view-mine').hidden) return 'perfil';
+    if (!document.getElementById('view-admin') && !document.getElementById('view-admin').hidden) return 'admin';
+    if (!document.getElementById('view-panel') && !document.getElementById('view-panel').hidden) return 'panel';
+    if (!document.getElementById('view-mapa') && !document.getElementById('view-mapa').hidden) return 'mapa';
+    if (!document.getElementById('view-comunidad') && !document.getElementById('view-comunidad').hidden) return 'comunidad';
+    if (!document.getElementById('view-mine') && !document.getElementById('view-mine').hidden) return 'perfil';
     if (!document.getElementById('view-public').hidden) {
       return document.body.classList.contains('nav-mapa') ? 'mapa' : 'salas';
     }
@@ -2350,18 +2357,29 @@ function prepararSwipeNavegacion() {
       mapa: () => { const b = document.getElementById('nav-reservar'); if (b) b.click(); },
       comunidad: () => { const b = document.getElementById('nav-comunidad'); if (b) b.click(); },
       perfil: () => { const b = document.getElementById('nav-mine'); if (b) b.click(); },
+      admin: () => { const b = document.getElementById('nav-admin'); if (b) b.click(); },
+      panel: () => { const b = document.getElementById('nav-panel'); if (b) b.click(); },
     };
     if (ACCIONES[pagina]) ACCIONES[pagina]();
   }
 
-  /* Detectar swipe horizontal en el contenido principal */
+  /* En el admin: swipe entre pestañas */
+  function tabsAdmin() {
+    return [...document.querySelectorAll('.admin-tab')].map(t => t.dataset.tab).filter(Boolean);
+  }
+
+  function irATabAdmin(tab) {
+    const btn = [...document.querySelectorAll('.admin-tab')].find(t => t.dataset.tab === tab);
+    if (btn) btn.click();
+  }
+
+  /* Detectar swipe horizontal */
   let touchStartX = 0, touchStartY = 0, touchEndX = 0, touchEndY = 0;
   let swipando = false;
 
   document.addEventListener('touchstart', e => {
-    /* Solo en el área del contenido (no en dock, header, modales, inputs, etc.) */
     const target = e.target;
-    if (target.closest('#dock-container, .modal, .notif-drop, .ajustes-drop, .comu-form, input, textarea, .hour-times, .chat-global-form')) return;
+    if (target.closest('#dock-container, .modal, .notif-drop, .ajustes-drop, .comu-form, input, textarea, .hour-times, .chat-global-form, select')) return;
     touchStartX = e.touches[0].clientX;
     touchStartY = e.touches[0].clientY;
     touchEndX = touchStartX;
@@ -2382,19 +2400,55 @@ function prepararSwipeNavegacion() {
     const dx = touchEndX - touchStartX;
     const dy = touchEndY - touchStartY;
 
-    /* Solo swipe horizontal (que sea más horizontal que vertical) */
+    /* Solo swipe horizontal */
     if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.2) return;
 
+    /* ¿Estamos en el panel de admin? → swipe entre pestañas */
+    const adminVisible = document.getElementById('view-admin') && !document.getElementById('view-admin').hidden;
+    if (adminVisible) {
+      const tabs = tabsAdmin();
+      const btnActivo = [...document.querySelectorAll('.admin-tab.active, .admin-tab')].find(t => t.classList.contains('active')) || document.querySelector('.admin-tab.active');
+      const tabActual = btnActivo ? btnActivo.dataset.tab : null;
+      const idx = tabs.indexOf(tabActual);
+      if (idx < 0) return;
+      if (dx < 0 && idx < tabs.length - 1) {
+        irATabAdmin(tabs[idx + 1]);
+      } else if (dx > 0 && idx > 0) {
+        irATabAdmin(tabs[idx - 1]);
+      }
+      return;
+    }
+
+    /* En el panel del dueño → swipe entre pestañas */
+    const panelVisible = document.getElementById('view-panel') && !document.getElementById('view-panel').hidden;
+    if (panelVisible) {
+      const tabs = [...document.querySelectorAll('[data-ptab], .ptab-btn')].map(t => t.dataset.ptab).filter(Boolean);
+      const btnActivo = [...document.querySelectorAll('.ptab-btn.active, .ptab-btn')].find(t => t.classList.contains('active'));
+      const tabActual = btnActivo ? btnActivo.dataset.ptab : null;
+      const idx = tabs.indexOf(tabActual);
+      if (idx < 0) return;
+      if (dx < 0 && idx < tabs.length - 1) {
+        const btn = [...document.querySelectorAll('.ptab-btn')].find(t => t.dataset.ptab === tabs[idx + 1]);
+        if (btn) btn.click();
+      } else if (dx > 0 && idx > 0) {
+        const btn = [...document.querySelectorAll('.ptab-btn')].find(t => t.dataset.ptab === tabs[idx - 1]);
+        if (btn) btn.click();
+      }
+      return;
+    }
+
+    /* En la app principal → swipe entre páginas del nav */
+    const paginas = paginasVisibles();
     const actual = paginaActual();
-    const idx = PAGINAS.indexOf(actual);
+    const idx = paginas.indexOf(actual);
     if (idx < 0) return;
 
-    if (dx < 0 && idx < PAGINAS.length - 1) {
-      /* Swipe a la IZQUIERDA → siguiente página */
-      irAPagina(PAGINAS[idx + 1]);
+    if (dx < 0 && idx < paginas.length - 1) {
+      /* Swipe IZQUIERDA → siguiente página */
+      irAPagina(paginas[idx + 1]);
     } else if (dx > 0 && idx > 0) {
-      /* Swipe a la DERECHA → página anterior */
-      irAPagina(PAGINAS[idx - 1]);
+      /* Swipe DERECHA → página anterior */
+      irAPagina(paginas[idx - 1]);
     }
   }, { passive: true });
 }
