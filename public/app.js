@@ -7022,6 +7022,7 @@ async function init() {
   if (!yo && !$('#auth-body').innerHTML.trim()) {
     $('#view-auth').hidden = false;
     pantallaAuth('inicio');
+    if (typeof wireAuth === 'function') wireAuth();
   }
 
   /* Service worker (solo en contextos seguros: HTTPS o localhost) */

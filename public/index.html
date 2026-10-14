@@ -874,6 +874,7 @@
         if (authBody && !authBody.innerHTML.trim() && typeof pantallaAuth === 'function') {
           document.getElementById('view-auth').hidden = false;
           pantallaAuth('inicio');
+          if (typeof wireAuth === 'function') wireAuth();
         }
       }
     } catch (e) {}
