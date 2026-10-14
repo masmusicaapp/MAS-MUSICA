@@ -5512,28 +5512,79 @@ async function accionSolicitud(id, accion, motivo) {
 
 /* ---------- Cuentas registradas ---------- */
 let filtroUsuarios = '';
+
 function renderUsuarios() {
   const cont = $('#usuarios-list');
   if (!cont) return;
   if (!window.__usuarios) { cont.innerHTML = '<p class="muted">Cargando cuentas…</p>'; cargarUsuarios(); return; }
-  const q = filtroUsuarios.trim().toLowerCase();
-  const lista = window.__usuarios.filter(u => !q ||
-    (u.nombre + ' ' + u.usuario + ' ' + u.email).toLowerCase().includes(q));
-  const ROL = { USER: '🎸 Músico', ROOM_ADMIN: '🎛️ Dueño de sala', SUPER_ADMIN: '👑 Administración general' };
-  cont.innerHTML = lista.length ? `<table class="tabla">
-    <thead><tr><th>Cuenta</th><th>Rol</th><th>Salas</th><th>Reservas</th><th>Estado</th><th></th></tr></thead>
-    <tbody>${lista.map(u => `<tr>
-      <td><strong>${esc(u.nombre)}</strong><br><span class="muted small">@${esc(u.usuario)} · ${esc(u.email)}${u.telefono ? ' · 📞 ' + esc(u.telefono) : ''}</span></td>
-      <td>${ROL[u.rol] || esc(u.rol)}${u.localidad ? `<br><span class="muted small">📍 ${esc(u.localidad)}</span>` : ''}</td>
-      <td>${(u.salas || []).map(s => `<span class="chip ${s.estado === 'aprobada' ? '' : 'chip-alt'}">${esc(s.name)}</span>`).join(' ') || '<span class="muted small">—</span>'}</td>
-      <td>${u.reservas || 0}</td>
-      <td>${u.bloqueado ? '<span class="badge badge-past">🚫 Bloqueada</span>' : u.activo === false ? '<span class="badge badge-past">⏸ Desactivada</span>' : '<span class="badge">🟢 Activa</span>'}</td>
-      <td class="acciones-td">
-        <button class="btn btn-sm" data-user-bloquear="${u.id}">${u.bloqueado ? 'Desbloquear' : 'Bloquear'}</button>
-        <button class="btn btn-sm" data-user-rol="${u.id}">Cambiar rol</button>
-        <button class="btn btn-sm btn-danger" data-user-borrar="${u.id}">Eliminar</button>
-      </td>
-    </tr>`).join('')}</tbody></table>` : '<p class="muted">No hay cuentas con ese criterio.</p>';
+
+  const ROL = { USER: { label: 'Músico', emoji: '🎸', cls: 'musico' }, ROOM_ADMIN: { label: 'Dueño de sala', emoji: '🎛️', cls: 'sala' }, SUPER_ADMIN: { label: 'Admin', emoji: '👑', cls: 'admin' } };
+
+  /* Contadores por rol */
+  const counts = { '': window.__usuarios.length };
+  window.__usuarios.forEach(u => { counts[u.rol] = (counts[u.rol] || 0) + 1; });
+
+  /* Chips de filtro */
+  const chips = $('#usuarios-chips');
+  if (chips) {
+    const items = [['', 'Todos'], ['USER', 'Músicos'], ['ROOM_ADMIN', 'Dueños'], ['SUPER_ADMIN', 'Admin']];
+    chips.innerHTML = items.map(([k, label]) =>
+      `<button class="cuentas-chip${filtroUsuarios === k ? ' active' : ''}" data-filtro-usuarios="${k}">${label} ${counts[k] || 0}</button>`
+    ).join('');
+  }
+
+  /* Filtrar y buscar */
+  const q = ($('#usuarios-buscar') || {}).value || '';
+  const qNorm = q.trim().toLowerCase();
+  const lista = window.__usuarios.filter(u =>
+    (!filtroUsuarios || u.rol === filtroUsuarios) &&
+    (!qNorm || (u.nombre + ' ' + u.usuario + ' ' + u.email).toLowerCase().includes(qNorm))
+  );
+
+  /* Contador */
+  const elCont = $('#usuarios-contador');
+  if (elCont) elCont.textContent = `${lista.length} de ${window.__usuarios.length}`;
+
+  /* Vacío */
+  const elVacio = $('#usuarios-vacio');
+  if (elVacio) elVacio.hidden = lista.length > 0;
+
+  /* Renderizar tarjetas */
+  cont.innerHTML = lista.length ? lista.map(u => {
+    const r = ROL[u.rol] || { label: u.rol, emoji: '🎸', cls: '' };
+    const isAdmin = u.rol === 'SUPER_ADMIN';
+    const blocked = u.bloqueado;
+    const off = u.activo === false;
+    const statusPill = blocked ? '<span class="cuentas-pill off">Bloqueada</span>'
+      : off ? '<span class="cuentas-pill off">Desactivada</span>'
+      : `<span class="cuentas-pill ${r.cls}">${r.emoji} ${r.label}</span>`;
+    const meta = [
+      u.email && `<span>📧 ${esc(u.email)}</span>`,
+      u.telefono && `<span>📞 ${esc(u.telefono)}</span>`,
+      u.localidad && `<span>📍 ${esc(u.localidad)}</span>`,
+    ].filter(Boolean).join(' ');
+
+    return `
+      <article class="cuentas-card" data-id="${u.id}">
+        <div class="cuentas-card-top">
+          <div class="cuentas-avatar ${r.cls}">${esc((u.nombre||'?')[0].toUpperCase())}</div>
+          <div class="cuentas-who">
+            <h3>${esc(u.nombre)}</h3>
+            <p>@${esc(u.usuario)}</p>
+          </div>
+          ${statusPill}
+        </div>
+        ${meta ? `<div class="cuentas-meta">${meta}</div>` : ''}
+        <div class="cuentas-actions">
+          <select class="cuentas-rol" aria-label="Cambiar rol de ${esc(u.nombre)}" data-user-rol="${u.id}" ${isAdmin ? 'disabled' : ''}>
+            ${Object.entries(ROL).filter(([k]) => k !== 'SUPER_ADMIN').map(([k, v]) =>
+              `<option value="${k}" ${u.rol === k ? 'selected' : ''}>${v.label}</option>`).join('')}
+          </select>
+          <button class="btn btn-sm" data-user-bloquear="${u.id}" ${isAdmin ? 'disabled' : ''}>${blocked ? 'Desbloquear' : 'Bloquear'}</button>
+          <button class="btn btn-sm btn-danger" data-user-borrar="${u.id}" ${isAdmin ? 'disabled' : ''}>Eliminar</button>
+        </div>
+      </article>`;
+  }).join('') : '';
 }
 
 async function cargarUsuarios() {
@@ -5546,7 +5597,7 @@ async function cargarUsuarios() {
   }
 }
 
-async function accionUsuario(id, accion) {
+async function accionUsuario(id, accion, nuevoRol) {
   const u = (window.__usuarios || []).find(x => x.id === id);
   if (!u) return;
   try {
@@ -5565,11 +5616,8 @@ async function accionUsuario(id, accion) {
       const data = await api(`/api/admin/usuarios/${id}`, { method: 'PUT', admin: true, body: { bloqueado: !u.bloqueado } });
       state = data.state;
     } else if (accion === 'rol') {
-      const nuevo = prompt(
-        `Rol de ${u.nombre}:\n1) USER — músico\n2) ROOM_ADMIN — dueño de sala\n3) SUPER_ADMIN — administración general`,
-        u.rol === 'USER' ? '1' : u.rol === 'ROOM_ADMIN' ? '2' : '3');
-      if (nuevo === null) return;
-      const rol = { 1: 'USER', 2: 'ROOM_ADMIN', 3: 'SUPER_ADMIN' }[nuevo.trim()] || u.rol;
+      const rol = nuevoRol || u.rol;
+      if (rol === u.rol) return;
       const data = await api(`/api/admin/usuarios/${id}`, { method: 'PUT', admin: true, body: { rol } });
       state = data.state;
     }
@@ -6971,10 +7019,18 @@ function wireAdmin() {
   $('#usuarios-list').onclick = e => {
     const b = e.target.closest('[data-user-bloquear]');
     if (b) return accionUsuario(b.dataset.userBloquear, 'bloquear');
-    const r = e.target.closest('[data-user-rol]');
-    if (r) return accionUsuario(r.dataset.userRol, 'rol');
     const d = e.target.closest('[data-user-borrar]');
     if (d) return accionUsuario(d.dataset.userBorrar, 'borrar');
+  };
+  $('#usuarios-list').onchange = e => {
+    const r = e.target.closest('[data-user-rol]');
+    if (r) return accionUsuario(r.dataset.userRol, 'rol', r.value);
+  };
+  $('#usuarios-chips').onclick = e => {
+    const chip = e.target.closest('[data-filtro-usuarios]');
+    if (!chip) return;
+    filtroUsuarios = chip.dataset.filtroUsuarios;
+    renderUsuarios();
   };
   /* Pedidos de ayuda */
   $('#ayuda-list').onclick = e => {

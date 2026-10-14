@@ -5161,3 +5161,115 @@ button, a, .btn { transition: all .2s ease; }
 }
 .sol-empty h3 { font-size: 1.15rem; font-weight: 700; margin: 0; }
 .sol-empty p { color: var(--muted); font-size: .88rem; margin: 4px 0 0; }
+
+/* ========== CUENTAS REGISTRADAS (rediseno) ========== */
+
+.cuentas-buscar {
+  display: flex; align-items: center; gap: 10px;
+  height: 48px; padding: 0 14px;
+  background: var(--panel2); border: 1px solid var(--line);
+  border-radius: 14px; margin: 12px 0;
+  color: var(--muted);
+}
+.cuentas-buscar svg { flex: none; stroke: var(--muted); }
+.cuentas-buscar input {
+  flex: 1; min-width: 0; background: none; border: 0; outline: none;
+  font-size: .95rem; color: var(--text);
+}
+.cuentas-buscar input::placeholder { color: var(--muted); }
+
+.cuentas-chips {
+  display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none;
+  margin: 0 0 14px;
+}
+.cuentas-chips::-webkit-scrollbar { display: none; }
+.cuentas-chip {
+  flex: none; height: 36px; padding: 0 14px; border-radius: 999px;
+  background: var(--panel2); border: 1px solid var(--line);
+  color: var(--muted); font-size: .85rem; font-weight: 600;
+  display: inline-flex; align-items: center; gap: 6px;
+  transition: background .15s, color .15s;
+}
+.cuentas-chip.active {
+  background: var(--accent); color: var(--on-accent);
+  border-color: var(--accent);
+}
+
+/* Tarjetas de cuenta */
+.cuentas-list { display: grid; gap: 12px; }
+.cuentas-card {
+  background: var(--panel2); border: 1px solid var(--line);
+  border-radius: 18px; padding: 14px;
+  transition: border-color .15s;
+}
+.cuentas-card:hover { border-color: var(--accent); }
+
+.cuentas-card-top { display: flex; gap: 12px; align-items: flex-start; }
+
+.cuentas-avatar {
+  width: 44px; height: 44px; border-radius: 50%;
+  flex: none; display: grid; place-items: center;
+  font-family: "Barlow Condensed", sans-serif; font-weight: 800;
+  font-size: 1.25rem; color: #06210f; background: var(--accent);
+}
+.cuentas-avatar.admin { background: #facc15; color: #3d2e00; }
+.cuentas-avatar.sala { background: #60a5fa; color: #0b2545; }
+
+.cuentas-who { flex: 1; min-width: 0; }
+.cuentas-who h3 {
+  margin: 0; font-size: 1.05rem; font-weight: 700;
+  line-height: 1.2; overflow-wrap: anywhere;
+}
+.cuentas-who p {
+  margin: 2px 0 0; color: var(--muted); font-size: .88rem;
+  overflow-wrap: anywhere;
+}
+
+.cuentas-pill {
+  flex: none; font-size: .78rem; font-weight: 700;
+  padding: 4px 10px; border-radius: 999px; white-space: nowrap;
+  background: rgba(34,197,94,.14); color: #4ade80;
+}
+.cuentas-pill.admin { background: rgba(250,204,21,.14); color: #fde047; }
+.cuentas-pill.sala { background: rgba(96,165,250,.14); color: #93c5fd; }
+.cuentas-pill.off { background: var(--surface-2, #1a2943); color: var(--muted); }
+
+.cuentas-meta {
+  display: flex; flex-wrap: wrap; gap: 6px 14px;
+  margin: 12px 0 0; font-size: .88rem; color: #c3cee0;
+}
+.cuentas-meta span {
+  display: inline-flex; align-items: center; gap: 4px;
+}
+
+.cuentas-actions {
+  display: grid; grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px; margin-top: 14px; padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+.cuentas-rol {
+  height: 40px; border-radius: 12px; border: 1px solid var(--line);
+  background: var(--panel2); padding: 0 8px;
+  font-size: .85rem; font-weight: 600; color: var(--text);
+  min-width: 0; width: 100%;
+}
+.cuentas-rol:focus { outline: 2px solid var(--accent); }
+
+.cuentas-card .btn {
+  height: 40px; border-radius: 12px; border: 1px solid var(--line);
+  background: var(--panel2); font-size: .85rem; font-weight: 600;
+  padding: 0 8px; white-space: nowrap;
+}
+.cuentas-card .btn.danger {
+  color: var(--danger); border-color: rgba(229,72,77,.35);
+  background: transparent;
+}
+
+.cuentas-vacio {
+  text-align: center; color: var(--muted);
+  padding: 40px 12px; border: 1px dashed var(--line);
+  border-radius: 18px;
+}
+.cuentas-vacio-art { font-size: 2.5rem; margin-bottom: 8px; }
+.cuentas-vacio h3 { font-size: 1.15rem; font-weight: 700; margin: 0; }
+.cuentas-vacio p { font-size: .88rem; margin: 4px 0 0; }
