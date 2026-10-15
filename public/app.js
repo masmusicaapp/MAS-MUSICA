@@ -2455,11 +2455,19 @@ function irComunidad(tab) {
   $('#view-comunidad').hidden = false;
   setNav('comunidad');
   scrollMainArriba();
+  /* El chat va a pantalla completa: el estado se aplica ya (síncrono) y el
+     contenido viejo se limpia, para que no aparezca un instante antes del chat.
+     Si hace falta suscribirse, se deshace y vuelven las 5 opciones de abajo. */
+  document.body.classList.add('chat-abierto');
+  $('#dock-container').hidden = true;
+  $('#comu-chats').innerHTML = '<p class="muted small comu-cargando">Cargando chat…</p>';
   /* Verificar acceso al chat y mostrar chat o suscripción */
   verificarAccesoChat().then(tieneAcceso => {
     if (tieneAcceso) {
       cargarChatGlobal();
     } else {
+      document.body.classList.remove('chat-abierto');
+      $('#dock-container').hidden = false;
       mostrarSuscripcionChat();
     }
   });
@@ -2557,12 +2565,15 @@ async function cargarChatGlobal() {
   const host = $('#comu-chats');
   if (!host) return;
 
-  // Mostrar el chat global
+  // Mostrar el chat global (a pantalla completa)
   host.innerHTML = `
     <div class="chat-global">
       <div class="chat-global-head">
-        <h3>💬 Chat Global</h3>
-        <span class="muted small">Todos los músicos suscritos</span>
+        <button class="chat-global-volver" id="chat-global-volver" type="button" title="Volver" aria-label="Volver a Inicio">←</button>
+        <div class="chat-global-tit">
+          <h3>💬 Chat Global</h3>
+          <span class="muted small">Todos los músicos suscritos</span>
+        </div>
       </div>
       <div class="chat-global-hilo" id="chat-global-hilo"></div>
       <div class="chat-global-form">
@@ -2571,7 +2582,14 @@ async function cargarChatGlobal() {
       </div>
     </div>`;
 
-  // Cargar mensajes
+  /* Se ocultan las 5 opciones de abajo: mientras se chatea el chat ocupa toda la pantalla */
+  document.body.classList.add('chat-abierto');
+  $('#dock-container').hidden = true;
+  const btnVolver = $('#chat-global-volver');
+  if (btnVolver) btnVolver.onclick = irInicio;
+
+  // Cargar mensajes (desde cero: el hilo se acaba de crear de nuevo)
+  chatGlobalUltimoFecha = 0;
   await cargarMensajesGlobal();
 
   // Configurar envío
@@ -2943,6 +2961,9 @@ function mostrarAcceso() {
 /* Cierra todas las vistas menos la que se vaya a mostrar */
 function ocultarVistas() {
   pararComuPoll();
+  clearInterval(chatGlobalTimer);
+  chatGlobalTimer = null;
+  document.body.classList.remove('chat-abierto');
   ['view-public', 'view-mine', 'view-lugar', 'view-panel', 'view-admin', 'view-mapa', 'view-comunidad', 'view-auth']
     .forEach(v => { const el = $('#' + v); if (el) el.hidden = true; });
 }

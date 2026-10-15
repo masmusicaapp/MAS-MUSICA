@@ -4272,18 +4272,41 @@ body.modo-control label:has(> #pd-instrumentos) { display: none !important; }
 
 .chat-global-head {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 14px 16px;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
   border-bottom: 1px solid var(--line);
   background: var(--panel2);
   border-radius: 14px 14px 0 0;
+}
+
+.chat-global-tit {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
 }
 
 .chat-global-head h3 {
   margin: 0;
   font-size: 1.1rem;
 }
+
+/* Botón de volver: sale del chat y vuelve al Inicio */
+.chat-global-volver {
+  flex: none;
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+  color: var(--text);
+  font-size: 1.2rem;
+  line-height: 1;
+}
+.chat-global-volver:active { transform: scale(.94); }
 
 .chat-global-hilo {
   flex: 1;
@@ -4388,6 +4411,53 @@ body.modo-control label:has(> #pd-instrumentos) { display: none !important; }
   border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(0, 160, 56, .18);
 }
+
+/* ===================================================================
+   CHAT GLOBAL A PANTALLA COMPLETA
+   Al entrar al chat, app.js oculta las 5 opciones de abajo
+   (#dock-container[hidden]) y agrega body.chat-abierto: el chat ocupa
+   toda la pantalla y se vuelve con la flecha de su cabecera.
+   =================================================================== */
+body.chat-abierto main#view-comunidad {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  max-width: none;
+  overflow: hidden;
+}
+body.chat-abierto #view-comunidad > .panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+/* La cabecera "Chat global" queda afuera: título y volver van en el chat */
+body.chat-abierto #view-comunidad .comu-head { display: none; }
+body.chat-abierto #comu-chats {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+body.chat-abierto .chat-global {
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 0;
+}
+body.chat-abierto #dock-container { display: none !important; }
+body.chat-abierto .chat-global-head { border-radius: 0; }
+body.chat-abierto .chat-global-hilo { max-height: none; }
+body.chat-abierto .chat-global-form {
+  border-radius: 0;
+  padding-bottom: calc(12px + env(safe-area-inset-bottom));
+}
+/* Mientras se verifica el acceso, el texto de carga conserva su aire */
+.comu-cargando { margin: 0; padding: 16px; }
 
 .suscripcion-icono {
   font-size: 3.5rem;
