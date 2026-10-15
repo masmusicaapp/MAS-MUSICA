@@ -1382,13 +1382,14 @@ function promosInicioHTML() {
   </div>`;
 }
 
-/* El Inicio del músico ya no muestra el bloque "🛎 Resumen" (estadísticas).
-   El panel queda solo para las promociones y, si no hay sesión, el ingreso. */
+/* El Inicio del músico ya no muestra el bloque "🛎 Resumen" (estadísticas)
+   ni "🎉 Promociones y novedades". Solo queda el ingreso si no hay sesión. */
 function renderResumenInicio() {
   const box = $('#inicio-resumen');
   if (!box || !state) return;
-  const contenido = promosInicioHTML()
-    + (!yo ? `<div class="row wrap"><button class="btn btn-sm" id="sum-login">👤 Iniciar sesión</button></div>` : '');
+  const contenido = !yo
+    ? `<div class="row wrap"><button class="btn btn-sm" id="sum-login">👤 Iniciar sesión</button></div>`
+    : '';
   /* Sin novedades ni botón, se oculta el panel para no dejar una tarjeta vacía */
   box.hidden = !contenido.trim();
   box.innerHTML = contenido;
@@ -3676,16 +3677,8 @@ function renderPanelNotif() {
   /* Filtrar */
   const lista = notificaciones.filter(n => notifFiltro !== 'sin-leer' || !n.leida);
 
-  /* Promos (solo la primera vez) */
-  const bienvenidaVista = localStorage.getItem('mm-bienvenida-vista') === '1';
-  const promos = promosActivas().filter(p => {
-    if (/bienvenido/i.test(p.titulo || '') && bienvenidaVista) return false;
-    return true;
-  });
-  const promosHtml = promos.length ? promos.map(itemPromo).join('') : '';
-
-  /* Renderizar */
-  bod.innerHTML = promosHtml + (lista.length
+  /* Renderizar: la campana ya no muestra promociones, solo avisos */
+  bod.innerHTML = (lista.length
     ? lista.map(itemNotif).join('')
     : `<div class="notif-vacio"><div class="notif-vacio-icon">🔔</div><h3>Todo al día</h3><p>Aquí aparecerán tus nuevas reservas y avisos.</p></div>`);
 }
@@ -3728,7 +3721,7 @@ function itemPromo(p) {
   </article>`;
 }
 
-/* Promociones y novedades de la administración → también viven en la campana */
+/* Promociones y novedades de la administración (se gestionan en sus paneles) */
 function promosActivas() {
   const ahora = Date.now();
   return (state.promociones || []).filter(p => p.activa !== false
