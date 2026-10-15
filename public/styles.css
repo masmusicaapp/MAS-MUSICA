@@ -4685,6 +4685,10 @@ main#view-comunidad:has(.suscripcion-wrap) > .panel {
   box-shadow: none;
 }
 
+/* La cabecera "Chat global" (burbuja + subtítulo) no se muestra sobre la
+   pantalla de suscripción; vuelve sola cuando ya se ve el chat. */
+main#view-comunidad:has(.suscripcion-wrap) > .panel > .comu-head { display: none; }
+
 /* Encabezado "Chat global" con burbuja (estilo mock) */
 .comu-head { flex-direction: column; align-items: flex-start; gap: 6px; }
 .comu-title {
