@@ -17,6 +17,14 @@ const fmtMoney = n => {
 };
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
+/* Limpia un @usuario de red social para armar un enlace seguro (solo letras, números, . _ -) */
+const limpiarIdentRed = v => String(v || '').trim().replace(/^@+/, '').replace(/[^A-Za-z0-9._-]/g, '');
+/* Solo permite enlaces web (http/https): bloquea javascript:, data: y otros esquemas en href */
+const urlSegura = s => {
+  const u = String(s || '').trim();
+  return /^https?:\/\/[^\s"'<>]+$/i.test(u) ? u : '';
+};
+
 /* ---------- Bandas ---------- */
 const ETIQUETA_FORMATO = { vertical: 'vertical 3:4', horizontal: 'horizontal 4:3', cuadrado: 'cuadrado 1:1' };
 const bandas = () => state.bands || [];
@@ -114,7 +122,7 @@ const esFavorita = id => !!(yo && (yo.favoritos || []).includes(id));
 
 async function api(path, { method = 'GET', body, admin = false } = {}) {
   const headers = { 'Content-Type': 'application/json' };
-  if (admin && adminPin) headers['x-admin-pin'] = adminPin;
+  if (adminPin) headers['x-admin-pin'] = adminPin;
   if (token) headers['Authorization'] = 'Bearer ' + token;
   const res = await fetch(path, {
     method,
@@ -457,15 +465,11 @@ function renderRooms() {
         ${r.foto ? `<div class="room-foto"><img src="${esc(r.foto)}" alt="${esc(r.name)}"></div>` : ''}
         <button class="fav-btn ${esFavorita(r.id) ? 'on' : ''}" data-fav="${r.id}" title="Guardar como favorita">${esFavorita(r.id) ? '♥' : '♡'}</button>
       </div>
-      <h3>${esc(r.name)}</h3>
-      ${r.localidad || r.direccion ? `<div class="room-ubic">📍 ${esc([r.localidad, r.direccion].filter(Boolean).join(' · '))}</div>` : ''}
-      <div class="price">${fmtMoney(r.price)}<span> /hora</span></div>
-      <div class="cap">👥 Hasta ${r.capacity} ${r.capacity === 1 ? 'persona' : 'personas'}</div>
-      <ul class="feats">${(r.features || []).map(f => `<li>${esc(f)}</li>`).join('')}</ul>
-      ${equip ? `<div class="room-equip">🎚 ${equip} ${equip === 1 ? 'elemento' : 'elementos'} de equipamiento</div>` : ''}
-      <div class="row">
-        <button class="btn btn-primary">Ver horarios →</button>
-        <button class="btn btn-sm" data-ficha="${r.id}">ℹ️ Ficha</button>
+      <div class="room-info">
+        <h3>${esc(r.name)}</h3>
+        ${r.localidad || r.direccion ? `<div class="room-ubic">📍 ${esc([r.localidad, r.direccion].filter(Boolean).join(' · '))}</div>` : ''}
+        <div class="price">${fmtMoney(r.price)}<span> /hora</span></div>
+        <div class="cap">👥 Hasta ${r.capacity} ${r.capacity === 1 ? 'persona' : 'personas'}</div>
       </div>
     </article>`;
   }).join('');
@@ -502,7 +506,7 @@ function fichaSala(id) {
       ${r.telefono ? `<div><span class="muted">Teléfono</span><strong>${esc(r.telefono)}</strong></div>` : ''}
       ${r.localidad ? `<div><span class="muted">Zona</span><strong>${esc(r.localidad)}</strong></div>` : ''}
     </div>
-    ${r.direccion ? `<p class="ficha-dir">📍 ${esc(r.direccion)}${r.mapa ? ` · <a href="${esc(r.mapa)}" target="_blank" rel="noopener">ver en el mapa</a>` : ''}</p>` : ''}
+    ${r.direccion ? `<p class="ficha-dir">📍 ${esc(r.direccion)}${linkMapaSala(r) ? ` · <a href="${linkMapaSala(r)}" target="_blank" rel="noopener">ver en el mapa</a>` : ''}</p>` : ''}
     ${r.descripcion ? `<p class="ficha-desc">${esc(r.descripcion)}</p>` : ''}
     ${(r.features || []).length ? `<div class="ficha-chips">${r.features.map(f => `<span class="chip">${esc(f)}</span>`).join('')}</div>` : ''}
     <h4 class="sub">Equipamiento</h4>
@@ -544,6 +548,8 @@ async function alternarFavorita(id) {
 /* ================= Mapa de salas ================= */
 let mapa = null;
 let capaMarcas = null;
+let marcasSala = {};          /* marcador de cada sala, para abrir su popup desde la lista */
+let timerEncuadre = null;     /* encuadre automático pendiente (se cancela si el usuario elige una sala) */
 let vistaSalas = 'mapa';      /* el mapa vive en el Inicio */
 let miUbicacion = null;        /* [lat, lng] del usuario (si autoriza) */
 
@@ -557,6 +563,17 @@ function distKm(lat1, lng1, lat2, lng2) {
   const dLat = rad(lat2 - lat1), dLng = rad(lng2 - lng1);
   const a = Math.sin(dLat / 2) ** 2 + Math.cos(rad(lat1)) * Math.cos(rad(lat2)) * Math.sin(dLng / 2) ** 2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+/* Mejor enlace a Google Maps para una sala: sus coordenadas (si las tiene), si no
+   el enlace cargado por el dueño, y si no, su dirección. Así el enlace guardado
+   a mano (que puede ser genérico) nunca reemplaza al punto exacto de la sala. */
+function linkMapaSala(r) {
+  if (!r) return '';
+  if (tieneUbicacion(r)) return `https://www.google.com/maps/search/?api=1&query=${Number(r.lat)},${Number(r.lng)}`;
+  if (urlSegura(r.mapa)) return urlSegura(r.mapa);
+  const dir = [r.direccion, r.localidad].filter(Boolean).join(', ');
+  return dir ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(dir)}` : '';
 }
 
 /* ================= MAPA: Google Maps (si hay clave) u OpenStreetMap ================= */
@@ -616,6 +633,7 @@ function limpiarMapa() {
   if (gmap) { try { google.maps.event.clearInstanceListeners(gmap); } catch (e) {} gmap = null; }
   if (ginfo) { try { ginfo.close(); } catch (e) {} ginfo = null; }
   gmarcadores = [];
+  marcasSala = {};
   const cont = $('#mapa');
   if (cont) {
     cont.innerHTML = '';
@@ -693,7 +711,7 @@ function initMapa() {
 function fotoPortadaSala(r) {
   if (r.fotoPortada) return r.fotoPortada;
   const f = (r.fotos || [])[0];
-  return f ? f.foto : '';
+  return f ? f.foto : (r.foto || '');
 }
 
 function popupSala(r) {
@@ -703,17 +721,15 @@ function popupSala(r) {
   const tel = String(r.telefono || '').trim();
   const telHref = tel.replace(/[^0-9+]/g, '');
   const portada = fotoPortadaSala(r);
-  /* Enlace a Google Maps: el de la sala si tiene, si no, su punto o su dirección */
-  const gmaps = r.mapa
-    || (tieneUbicacion(r) ? `https://www.google.com/maps/search/?api=1&query=${Number(r.lat)},${Number(r.lng)}` : '')
-    || (dir ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(dir)}` : '');
+  /* Enlace a Google Maps: prioriza las coordenadas de la sala */
+  const gmaps = linkMapaSala(r);
   return `
     <div class="pop pop-detalle">
       <div class="pop-cover ${portada ? '' : 'sin-foto'}">
         ${portada
           ? `<img class="pop-cover-img" src="${esc(portada)}" alt="Foto de ${esc(r.name)}" data-pop-foto="${esc(portada)}" title="Ver la foto en grande">`
-          : '<span>🎸</span>'}
-        ${r.foto ? `<img class="pop-logo" src="${esc(r.foto)}" alt="Logo de ${esc(r.name)}">` : '<div class="pop-logo sin-foto">🎸</div>'}
+          : '<img class="pop-cover-img" src="/assets/marca-agua-negro.png" alt="Logo de Más Música">'}
+        ${r.foto ? `<img class="pop-logo" src="${esc(r.foto)}" alt="Logo de ${esc(r.name)}">` : '<img class="pop-logo" src="/assets/marca-agua-negro.png" alt="Logo de Más Música">'}
       </div>
       <div class="pop-datos">
         <strong class="pop-nombre">${esc(r.name)}</strong>
@@ -722,12 +738,12 @@ function popupSala(r) {
           ? `<a class="pop-linea pop-tel" href="tel:${esc(telHref)}">📞 ${esc(tel)}</a>`
           : '<span class="pop-linea muted">📞 Teléfono sin cargar</span>'}
         <span class="muted small">${fmtMoney(r.price)}/hora · 👥 ${r.capacity}${dist}${eq ? ` · 🎚 ${eq} elemento(s)` : ''}</span>
-                <div class="row pop-acciones" style="margin-top: 6px; gap: 4px;">
+        <div class="row pop-acciones">
           <button class="btn btn-primary btn-sm" data-mapa-sala="${r.id}">Ver horarios</button>
           <button class="btn btn-sm" data-mapa-ficha="${r.id}">ℹ️ Ficha</button>
-          ${gmaps ? `<a class="btn btn-sm" href="${esc(gmaps)}" target="_blank" rel="noopener" title="Google Maps" style="padding: 4px 8px;">📍</a>` : ''}
-          ${tel ? `<a class="btn btn-sm" href="tel:${esc(telHref)}" title="Llamar" style="padding: 4px 8px;">📞</a>` : ''}
-          ${yo ? `<button class="btn btn-sm" data-mapa-fav="${r.id}" title="Favorita" style="padding: 4px 8px;">${esFavorita(r.id) ? '♥' : '♡'}</button>` : ''}
+          ${urlSegura(gmaps) ? `<a class="btn btn-sm" href="${urlSegura(gmaps)}" target="_blank" rel="noopener">📍 Google Maps</a>` : ''}
+          ${tel ? `<a class="btn btn-sm" href="tel:${esc(telHref)}">📞 Llamar</a>` : ''}
+          ${yo ? `<button class="btn btn-sm" data-mapa-fav="${r.id}">${esFavorita(r.id) ? '♥' : '♡'}</button>` : ''}
         </div>
       </div>
     </div>`;
@@ -778,6 +794,277 @@ function renderSalasSinUbicacion() {
     : '';
 }
 
+/* ---------- Lista de salas del mapa (ordenada por cercanía si hay ubicación) ---------- */
+function salasOrdenadasParaMapa() {
+  if (!state) return [];
+  const lista = salasPublicas().slice();
+  const dist = r => (miUbicacion && tieneUbicacion(r))
+    ? distKm(miUbicacion[0], miUbicacion[1], Number(r.lat), Number(r.lng))
+    : Infinity;
+  if (miUbicacion) lista.sort((a, b) => (dist(a) - dist(b)) || String(a.name).localeCompare(String(b.name)));
+  else lista.sort((a, b) => String(a.name).localeCompare(String(b.name)));
+  return lista;
+}
+
+function renderMapaLista() {
+  const caja = $('#mapa-lista');
+  if (!caja || !state) return;
+  const salas = salasOrdenadasParaMapa();
+  const btn = $('#mapa-hoja-btn');
+  const hoja = $('#mapa-hoja');
+  if (!salas.length) {
+    caja.innerHTML = '';
+    if (btn) btn.hidden = true;
+    if (hoja) hoja.classList.remove('abierta');
+    const cuerpoVacio = $('#mapa-hoja-cuerpo');
+    if (cuerpoVacio) cuerpoVacio.style.maxHeight = '0px';
+    return;
+  }
+  if (btn) {
+    btn.hidden = false;
+    btn.setAttribute('aria-label', `Ver salas (${salas.length})`);
+    btn.title = `Deslizá para ver las ${salas.length} salas`;
+  }
+  caja.innerHTML = `
+    <div class="mapa-lista-head">
+      <h3 class="sub">${miUbicacion ? '📍 Salas más cercanas a vos' : '🗺 Todas las salas'}</h3>
+      <div class="mapa-lista-ctrl">
+        <span class="mapa-indice" id="mapa-indice">1 / ${salas.length}</span>
+        <button type="button" class="mapa-flecha" id="mapa-prev" aria-label="Sala anterior" title="Anterior">‹</button>
+        <button type="button" class="mapa-flecha" id="mapa-next" aria-label="Sala siguiente" title="Siguiente">›</button>
+      </div>
+    </div>
+    <div class="mapa-lista-items" aria-label="Salas (deslizá de costado)">
+      ${salas.map(r => {
+        const ubic = tieneUbicacion(r);
+        const km = (miUbicacion && ubic)
+          ? distKm(miUbicacion[0], miUbicacion[1], Number(r.lat), Number(r.lng))
+          : null;
+        const dir = [r.direccion, r.localidad].filter(Boolean).join(' · ');
+        const enlace = linkMapaSala(r);
+        return `
+        <article class="mapa-item${ubic ? '' : ' sin-punto'}"${ubic ? ` data-mapa-item="${esc(r.id)}"` : ''}>
+          <div class="mapa-item-foto">${r.foto ? `<img src="${esc(r.foto)}" alt="">` : '<span>🎸</span>'}</div>
+          <div class="mapa-item-info">
+            <div class="mapa-item-head">
+              <strong>${esc(r.name)}</strong>
+              ${km != null ? `<span class="mapa-item-dist" title="Distancia desde tu ubicación">${km.toFixed(1)} km</span>` : ''}
+            </div>
+            <span class="mapa-item-dir muted small">📍 ${esc(dir || 'Sin dirección')}</span>
+            <div class="mapa-item-meta">
+              <span class="chip">💵 ${fmtMoney(r.price)}/hora</span>
+              <span class="chip">👥 hasta ${esc(String(r.capacity))}</span>
+              ${ubic ? '' : '<span class="chip chip-alt">Sin punto en el mapa</span>'}
+            </div>
+          </div>
+          <div class="mapa-item-acciones">
+            ${ubic ? `<button class="btn btn-sm btn-primary" data-mapa-ver="${esc(r.id)}">🗺 Ver en el mapa</button>` : ''}
+            <button class="btn btn-sm" data-mapa-ficha="${esc(r.id)}">ℹ️ Ficha</button>
+            ${enlace ? `<a class="btn btn-sm" href="${enlace}" target="_blank" rel="noopener">📍 Google Maps</a>` : ''}
+          </div>
+        </article>`;
+      }).join('')}
+    </div>`;
+  if (window.matchMedia('(min-width: 960px)').matches) prepararCarruselDesktop();
+}
+
+/* ---------- Carrusel horizontal de salas (solo escritorio) ---------- */
+
+/* En pantallas anchas arma cada tarjeta con la foto + datos arriba y los
+   botones abajo, y conecta flechas, rueda del mouse y arrastre */
+function prepararCarruselDesktop() {
+  const track = document.querySelector('#mapa-lista .mapa-lista-items');
+  if (!track) return;
+  track.querySelectorAll('.mapa-item').forEach(art => {
+    const foto = art.querySelector('.mapa-item-foto');
+    const info = art.querySelector('.mapa-item-info');
+    if (!foto || !info || art.querySelector('.mapa-item-top')) return;
+    const top = document.createElement('div');
+    top.className = 'mapa-item-top';
+    art.insertBefore(top, foto);
+    top.appendChild(foto);
+    top.appendChild(info);
+  });
+  const prev = $('#mapa-prev');
+  const next = $('#mapa-next');
+  if (prev) prev.onclick = () => moverCarrusel(-1);
+  if (next) next.onclick = () => moverCarrusel(1);
+  conectarBotonSalas();
+  carruselMapaDrag();
+  actualizarCarrusel(track);
+  let t = null;
+  track.addEventListener('scroll', () => {
+    if (t) return;
+    t = setTimeout(() => { t = null; actualizarCarrusel(track); }, 80);
+  });
+}
+
+/* Botón "ocultar / mostrar" la lista de salas (solo escritorio) */
+function conectarBotonSalas() {
+  const tog = $('#mapa-lista-toggle');
+  if (!tog || tog._ok) return;
+  tog._ok = true;
+  tog.onclick = () => {
+    const oculta = document.body.classList.toggle('salas-oculta');
+    actualizarBotonSalas();
+    if (!oculta) {
+      const track = document.querySelector('#mapa-lista .mapa-lista-items');
+      setTimeout(() => { if (track) actualizarCarrusel(track); }, 360);
+    }
+  };
+  actualizarBotonSalas();
+}
+
+function actualizarBotonSalas() {
+  const tog = $('#mapa-lista-toggle');
+  if (!tog) return;
+  const oculta = document.body.classList.contains('salas-oculta');
+  tog.textContent = oculta ? '🗒️' : '✕';
+  const txt = oculta ? 'Mostrar la lista de salas' : 'Ocultar la lista de salas';
+  tog.title = txt;
+  tog.setAttribute('aria-label', txt);
+}
+
+/* Arrastre con el mouse: la tira sigue al cursor y al soltar encaja sola
+   en la tarjeta más cercana (en el celular el desplazamiento es nativo) */
+function carruselMapaDrag() {
+  const track = document.querySelector('#mapa-lista .mapa-lista-items');
+  if (!track || track._carruselOk) return;
+  track._carruselOk = true;
+  let drag = null;
+
+  track.addEventListener('pointerdown', e => {
+    if (e.pointerType === 'touch') return;   /* el dedo usa el scroll nativo */
+    if (e.button !== 0) return;
+    if (e.target.closest('button, a')) return;
+    drag = { x: e.clientX, sl: track.scrollLeft, movido: false };
+    track._carruselMovido = false;
+    track.style.scrollSnapType = 'none';   /* que siga al cursor sin saltar */
+    track.style.cursor = 'grabbing';
+    try { track.setPointerCapture(e.pointerId); } catch (err) {}
+  });
+
+  track.addEventListener('pointermove', e => {
+    if (!drag) return;
+    const dx = drag.x - e.clientX;
+    if (Math.abs(dx) > 5) drag.movido = true;
+    track.scrollLeft = drag.sl + dx;   /* la tira acompaña al mouse */
+  });
+
+  const soltar = e => {
+    if (!drag) return;
+    const movido = drag.movido;
+    drag = null;
+    track.style.cursor = '';
+    try { track.releasePointerCapture(e.pointerId); } catch (err) {}
+    track._carruselMovido = movido;
+    encajarCarrusel(track);
+    track.style.scrollSnapType = '';   /* vuelve el encaje suave */
+  };
+  track.addEventListener('pointerup', soltar);
+  track.addEventListener('pointercancel', soltar);
+
+  /* La rueda del mouse desliza la tira de costado */
+  track.addEventListener('wheel', e => {
+    if (Math.abs(e.deltaX) >= Math.abs(e.deltaY)) return;  /* scroll horizontal nativo */
+    const antes = track.scrollLeft;
+    track.scrollLeft = antes + e.deltaY;
+    if (track.scrollLeft !== antes) e.preventDefault();
+  }, { passive: false });
+
+  /* Si veníamos de arrastrar, ese clic no abre la sala */
+  track.addEventListener('click', e => {
+    if (track._carruselMovido) {
+      track._carruselMovido = false;
+      e.stopPropagation();
+      e.preventDefault();
+    }
+  });
+}
+
+/* Centra la tira en una tarjeta */
+function centrarEnTarjeta(track, card) {
+  const t = track.getBoundingClientRect();
+  const c = card.getBoundingClientRect();
+  const destino = track.scrollLeft + (c.left - t.left) - (track.clientWidth - c.width) / 2;
+  const max = Math.max(0, track.scrollWidth - track.clientWidth);
+  track.scrollLeft = Math.max(0, Math.min(max, destino));
+}
+
+/* Devuelve la tarjeta más cercana al centro (índice 0-based) */
+function posicionCarrusel(track) {
+  const cards = Array.from(track.querySelectorAll('.mapa-item'));
+  const n = cards.length;
+  if (!n) return { idx: 0, n: 0 };
+  const t = track.getBoundingClientRect();
+  const centro = t.left + t.width / 2;
+  let idx = 0, min = Infinity;
+  cards.forEach((c, i) => {
+    const r = c.getBoundingClientRect();
+    const d = Math.abs((r.left + r.width / 2) - centro);
+    if (d < min) { min = d; idx = i; }
+  });
+  return { idx, n };
+}
+
+/* Encaja la tira en la tarjeta más cercana al centro */
+function encajarCarrusel(track) {
+  const cards = Array.from(track.querySelectorAll('.mapa-item'));
+  if (!cards.length) return;
+  const { idx } = posicionCarrusel(track);
+  centrarEnTarjeta(track, cards[idx]);
+  actualizarCarrusel(track);
+}
+
+/* Pinta el contador "n / N" y habilita/deshabilita las flechas */
+function pintarCarrusel(idx, n) {
+  const ind = $('#mapa-indice');
+  if (ind && n) ind.textContent = (idx + 1) + ' / ' + n;
+  const prev = $('#mapa-prev');
+  const next = $('#mapa-next');
+  if (prev) prev.disabled = idx <= 0;
+  if (next) next.disabled = idx >= n - 1;
+}
+
+function actualizarCarrusel(track) {
+  const p = posicionCarrusel(track);
+  pintarCarrusel(p.idx, p.n);
+  return p;
+}
+
+/* Pasa de a una sala con las flechas ‹ › */
+function moverCarrusel(dir) {
+  const track = document.querySelector('#mapa-lista .mapa-lista-items');
+  if (!track) return;
+  const cards = Array.from(track.querySelectorAll('.mapa-item'));
+  if (!cards.length) return;
+  const { idx, n } = posicionCarrusel(track);
+  const nuevo = Math.max(0, Math.min(n - 1, idx + dir));
+  centrarEnTarjeta(track, cards[nuevo]);
+  pintarCarrusel(nuevo, n);
+}
+
+/* Lleva la tira hasta la tarjeta de una sala (al tocar su marcador) */
+function irACarruselSala(id) {
+  const track = document.querySelector('#mapa-lista .mapa-lista-items');
+  if (!track) return;
+  const card = track.querySelector('[data-mapa-item="' + CSS.escape(String(id)) + '"]');
+  if (!card) return;
+  centrarEnTarjeta(track, card);
+  actualizarCarrusel(track);
+}
+
+/* Centra el mapa en una sala de la lista y abre su ficha en el popup */
+function verSalaEnMapa(id) {
+  const r = (state.rooms || []).find(x => x.id === id);
+  if (!r || !tieneUbicacion(r)) return;
+  const punto = [Number(r.lat), Number(r.lng)];
+  centrarMapa(punto, 15);
+  if (mapaEsGoogle()) { if (gmap) abrirVentanaInfo(popupSala(r)); return; }
+  if (marcasSala[id]) { try { marcasSala[id].openPopup(); } catch (e) {} }
+  irACarruselSala(id);
+}
+
 /* ---------- Ventana de información de Google (mismo contenido que los popups) ---------- */
 function abrirVentanaInfo(html) {
   if (!ginfo || !gmap) return;
@@ -800,6 +1087,13 @@ function accionesMapa(e) {
   if (lista) { e.preventDefault(); return irSalas(); }
   const foto = e.target.closest('[data-pop-foto]');
   if (foto) { e.preventDefault(); return verFoto(foto.dataset.popFoto, 'Foto de la sala'); }
+  const ver = e.target.closest('[data-mapa-ver]');
+  if (ver) { e.preventDefault(); return verSalaEnMapa(ver.dataset.mapaVer); }
+  /* Tocar una sala de la lista la muestra en el mapa (salvo que toquen un botón o enlace) */
+  if (!e.target.closest('button') && !e.target.closest('a')) {
+    const item = e.target.closest('[data-mapa-item]');
+    if (item) return verSalaEnMapa(item.dataset.mapaItem);
+  }
   const s = e.target.closest('[data-mapa-sala]');
   if (s) { cerrarPopupMapa(); return elegirSala(s.dataset.mapaSala); }
   const fch = e.target.closest('[data-mapa-ficha]');
@@ -812,6 +1106,7 @@ function accionesMapa(e) {
 
 /* ---------- Dibujo del mapa ---------- */
 function renderMapa() {
+  renderMapaLista();
   const pane = $('#pane-mapa');
   if (!pane || pane.hidden) return;
   if (claveGoogle() && !gmapaFallo) {
@@ -839,18 +1134,28 @@ function renderMapaLeaflet() {
   if (!m) return;
   if (capaMarcas) capaMarcas.remove();
   capaMarcas = L.layerGroup().addTo(m);
+  marcasSala = {};
 
   /* 1. Salas publicadas */
   const salas = salasPublicas().filter(tieneUbicacion);
   salas.forEach(r => {
     const icono = L.divIcon({
       className: 'mk-wrap',
-      html: `<div class="mk-sala">${r.foto ? `<img src="${esc(r.foto)}" alt="">` : '<span>🎸</span>'}</div>`,
-      iconSize: [30, 30], iconAnchor: [15, 15], popupAnchor: [0, -17],
+      html: `<div class="mk-sala${r.foto ? '' : ' mk-marca'}">${r.foto ? `<img src="${esc(r.foto)}" alt="">` : '<img src="assets/marca-agua-negro.png" alt="">'}</div>`,
+      iconSize: [28, 28], iconAnchor: [14, 14], popupAnchor: [0, -26],
     });
-    L.marker([Number(r.lat), Number(r.lng)], { icon: icono, title: r.name })
+    marcasSala[r.id] = L.marker([Number(r.lat), Number(r.lng)], { icon: icono, title: r.name })
       .addTo(capaMarcas)
-      .bindPopup(popupSala(r));
+      .bindPopup(popupSala(r), {
+        closeButton: true,
+        autoPan: true,
+        autoPanPadding: [50, 50],
+        className: 'popup-centrado',
+      })
+      .on('click', () => {
+        irACarruselSala(r.id);
+        if (mapa) mapa.panTo([Number(r.lat), Number(r.lng)], { animate: true });
+      });
   });
 
   /* 2. Las reservas del usuario, sobre el lugar de cada sala */
@@ -867,17 +1172,23 @@ function renderMapaLeaflet() {
       .bindPopup(popupReserva(res, sala));
   });
 
-  /* 3. Dónde está el usuario */
+  /* 3. Dónde está el usuario: círculo verde con el logo negro */
   if (miUbicacion) {
-    L.circleMarker(miUbicacion, {
-      radius: 8, color: '#00a038', fillColor: '#00a038', fillOpacity: .9,
-    }).addTo(capaMarcas).bindPopup('<strong>Estás acá</strong>');
+    const iconoYo = L.divIcon({
+      className: 'mk-wrap',
+      html: '<div class="mk-yo"><img src="assets/marca-agua-negro.png" alt=""></div>',
+      iconSize: [24, 24], iconAnchor: [12, 12], popupAnchor: [0, -14],
+    });
+    L.marker(miUbicacion, { icon: iconoYo, zIndexOffset: 900, title: 'Estás acá' })
+      .addTo(capaMarcas)
+      .bindPopup('<strong>Estás acá</strong>');
   }
 
   /* 4. Salas sin ubicación + encuadre */
   renderSalasSinUbicacion();
   encuadrarMapa();
-  setTimeout(() => { if (mapa) { mapa.invalidateSize(); encuadrarMapa(); } }, 140);
+  if (timerEncuadre) clearTimeout(timerEncuadre);
+  timerEncuadre = setTimeout(() => { if (mapa) { mapa.invalidateSize(); encuadrarMapa(); } }, 140);
 }
 
 /* Mapa con Google Maps (cuando hay clave válida) */
@@ -918,7 +1229,7 @@ async function renderMapaGoogle() {
 
     /* 1. Salas publicadas (logo en un círculo, igual que en OpenStreetMap) */
     const salas = salasPublicas().filter(tieneUbicacion);
-    const iconos = await Promise.all(salas.map(r => iconoCircularGoogle(r.foto, 30, '🎸')));
+    const iconos = await Promise.all(salas.map(r => iconoCircularGoogle(r.foto || 'assets/marca-agua-negro.png', 28, '🎸')));
     if (gmapaFallo || !gmap) return;   /* la clave falló mientras cargaban los íconos */
     salas.forEach((r, i) => {
       const m = new google.maps.Marker({
@@ -927,7 +1238,7 @@ async function renderMapaGoogle() {
         title: r.name,
         zIndex: 4,
         icon: iconos[i]
-          ? { url: iconos[i], scaledSize: new google.maps.Size(30, 30), anchor: new google.maps.Point(15, 15) }
+          ? { url: iconos[i], scaledSize: new google.maps.Size(28, 28), anchor: new google.maps.Point(14, 14) }
           : undefined,
       });
       m.addListener('click', () => abrirVentanaInfo(popupSala(r)));
@@ -951,18 +1262,20 @@ async function renderMapaGoogle() {
       gmarcadores.push(m);
     });
 
-    /* 3. Dónde está el usuario */
+    /* 3. Dónde está el usuario: círculo verde con el logo negro */
     if (miUbicacion) {
-      const circ = new google.maps.Circle({
-        map: gmap,
-        center: { lat: miUbicacion[0], lng: miUbicacion[1] },
-        radius: 50,
-        strokeColor: '#00a038', strokeOpacity: 1, strokeWeight: 2,
-        fillColor: '#00a038', fillOpacity: .35,
-        zIndex: 3,
-      });
-      circ.addListener('click', () => abrirVentanaInfo('<div class="pop"><strong>Estás acá</strong></div>'));
-      gmarcadores.push(circ);
+      const iconoYo = await iconoCircularGoogle('assets/marca-agua-negro.png', 12, '');
+      if (!gmapaFallo && gmap) {
+        const m = new google.maps.Marker({
+          map: gmap,
+          position: { lat: miUbicacion[0], lng: miUbicacion[1] },
+          title: 'Estás acá',
+          zIndex: 9,
+          icon: { url: iconoYo, scaledSize: new google.maps.Size(24, 24), anchor: new google.maps.Point(12, 12) },
+        });
+        m.addListener('click', () => abrirVentanaInfo('<div class="pop"><strong>Estás acá</strong></div>'));
+        gmarcadores.push(m);
+      }
     }
 
     /* 4. Salas sin ubicación + encuadre */
@@ -1003,6 +1316,8 @@ function encuadrarMapa() {
 
 /* Centra el mapa en un punto [lat, lng] */
 function centrarMapa(punto, zoom) {
+  /* si había un encuadre automático pendiente, no dejamos que pise lo que eligió el usuario */
+  if (timerEncuadre) { clearTimeout(timerEncuadre); timerEncuadre = null; }
   if (mapaEsGoogle()) {
     if (!gmap) return;
     gmap.setCenter({ lat: punto[0], lng: punto[1] });
@@ -1038,7 +1353,7 @@ const nombreRed = href => {
   return h;
 };
 function linksRedesHTML(txt) {
-  const links = parseRedes(txt);
+  const links = parseRedes(txt).map(urlSegura).filter(Boolean);
   return links.length ? `<div class="promo-links">${links.map(href =>
     `<a class="promo-link" href="${esc(href)}" target="_blank" rel="noopener">${esc(nombreRed(href))}</a>`).join('')}</div>` : '';
 }
@@ -1114,13 +1429,90 @@ function wireMapa() {
   $('#btn-mi-ubicacion').onclick = pedirMiUbicacion;
   $('#btn-ver-todas').onclick = () => { renderMapa(); encuadrarMapa(); };
   $('#btn-ver-mapa').onclick = irMapa;
-  $('#mapa').onclick = accionesMapa;
+  const bvi = $('#btn-ver-instrumentos');
+  if (bvi) bvi.onclick = irInstrumentos;
+  const hojaBtn = $('#mapa-hoja-btn');
+  const hoja = $('#mapa-hoja');
+  const hojaCuerpo = $('#mapa-hoja-cuerpo');
+  // Altura máxima que puede alcanzar la hoja (contenido real, tope 46% de la pantalla)
+  const maxHoja = () => Math.min(hojaCuerpo ? hojaCuerpo.scrollHeight : 0, Math.round(window.innerHeight * 0.46));
+  const abrirHoja = (abrir, animar) => {
+    if (!hoja || !hojaCuerpo) return;
+    if (animar === false) hojaCuerpo.style.transition = 'none';
+    else hojaCuerpo.style.transition = '';
+    hoja.classList.toggle('abierta', !!abrir);
+    hojaCuerpo.style.maxHeight = (abrir ? maxHoja() : 0) + 'px';
+    if (hojaBtn) hojaBtn.setAttribute('aria-expanded', abrir ? 'true' : 'false');
+  };
+  if (hojaBtn && hoja && hojaCuerpo) {
+    hojaBtn.onclick = () => abrirHoja(!hoja.classList.contains('abierta'));
+    // Arrastre en vivo: la hoja acompaña el dedo
+    let arrastrando = false, yArranque = 0, altoArranque = 0, dyFinal = 0;
+    hojaBtn.addEventListener('touchstart', e => {
+      arrastrando = true;
+      yArranque = e.touches[0].clientY;
+      dyFinal = 0;
+      altoArranque = hojaCuerpo.getBoundingClientRect().height;
+      hojaCuerpo.style.transition = 'none';
+    }, { passive: true });
+    hojaBtn.addEventListener('touchmove', e => {
+      if (!arrastrando) return;
+      dyFinal = yArranque - e.touches[0].clientY; // >0 = hacia arriba
+      const alto = Math.max(0, Math.min(maxHoja(), altoArranque + dyFinal));
+      hojaCuerpo.style.maxHeight = alto + 'px';
+      hoja.classList.toggle('abierta', alto > maxHoja() * 0.5);
+    }, { passive: true });
+    const soltarTirador = () => {
+      if (!arrastrando) return;
+      arrastrando = false;
+      hojaCuerpo.style.transition = '';
+      const alto = hojaCuerpo.getBoundingClientRect().height;
+      abrirHoja(dyFinal > -40 && alto > maxHoja() * 0.3);
+    };
+    hojaBtn.addEventListener('touchend', soltarTirador);
+    hojaBtn.addEventListener('touchcancel', soltarTirador);
+    // Deslizar hacia abajo sobre la lista (si está arriba de todo) para cerrar
+    const hojaCard = hojaCuerpo.querySelector('.mapa-hoja-card');
+    let yCuerpo = null, yCuerpoFin = null;
+    hojaCuerpo.addEventListener('touchstart', e => {
+      yCuerpo = (hojaCard ? hojaCard.scrollTop : 0) <= 0 ? e.touches[0].clientY : null;
+      yCuerpoFin = yCuerpo;
+      if (yCuerpo != null) hojaCuerpo.style.transition = 'none';
+    }, { passive: true });
+    hojaCuerpo.addEventListener('touchmove', e => {
+      if (yCuerpo == null) return;
+      yCuerpoFin = e.touches[0].clientY;
+      const dy = yCuerpoFin - yCuerpo; // >0 = hacia abajo
+      if (dy <= 0) return;
+      const alto = Math.max(0, maxHoja() - dy);
+      hojaCuerpo.style.maxHeight = alto + 'px';
+      hoja.classList.toggle('abierta', alto > maxHoja() * 0.5);
+    }, { passive: true });
+    hojaCuerpo.addEventListener('touchend', () => {
+      if (yCuerpo == null) return;
+      const dy = (yCuerpoFin || yCuerpo) - yCuerpo;
+      yCuerpo = null; yCuerpoFin = null;
+      hojaCuerpo.style.transition = '';
+      abrirHoja(dy < 80);
+    });
+  }
+  const cerrarHoja = () => abrirHoja(false);
+  $('#mapa').onclick = e => { cerrarHoja(); accionesMapa(e); };
+  const lista = $('#mapa-lista');
+  if (lista) lista.onclick = accionesMapa;
 }
 
 async function cancelarReservaMia(id) {
   const r = state.reservations.find(x => x.id === id);
   if (!r) return;
-  if (!confirm(`¿Cancelar tu reserva del ${fmtDate(r.date)} ${r.start} – ${r.end}?\nEl horario queda libre.`)) return;
+  const ok = await confirmarAccion(
+    `¿Cancelar tu reserva del ${fmtDate(r.date)} ${r.start} – ${r.end}? El horario queda libre.`,
+    '¿Cancelar reserva?',
+    'Sí, cancelar',
+    'No, mantener',
+    'peligro'
+  );
+  if (!ok) return;
   try {
     const data = await api(`/api/reservations/${r.id}/cancel`, { method: 'POST', body: { name: r.name, phone: r.phone } });
     state = data.state;
@@ -1264,6 +1656,7 @@ function renderSalasStrip() {
 
 /* Elige una sala (desde el mapa o la lista) y sigue con la fecha o los horarios */
 function elegirSala(roomId) {
+  if (!yo) { toast('Iniciá sesión para hacer una reserva', 'warn'); pantallaAuth('login'); return; }
   ocultarVistas();
   const room = salasPublicas().find(r => r.id === roomId);
   if (!room) return;
@@ -1848,14 +2241,14 @@ async function confirmBooking() {
         <p class="accent"><strong>Seña a pagar ahora: ${fmtMoney(data.pago.sena)}</strong></p>
         <p class="muted small">Total ${fmtMoney(data.pago.total)} · el saldo de ${fmtMoney(data.pago.saldo)} se paga en la sala.</p>
         <p class="muted small">Tu horario queda reservado hasta las ${hasta}. Si no se paga la seña, se libera.</p>
-        ${data.pago.url
-          ? `<a class="btn btn-primary" href="${esc(data.pago.url)}">Pagar la seña con Mercado Pago</a>`
+        ${data.pago.url && urlSegura(data.pago.url)
+          ? `<a class="btn btn-primary" href="${urlSegura(data.pago.url)}">Pagar la seña con Mercado Pago</a>`
           : '<p class="muted small">Modo de prueba: el pago no está conectado todavía.</p>'}
         <button class="btn" id="bk-mine">👤 Ver mis reservas</button>
       </div>`;
     $('#bk-mine').onclick = () => { mostrarMisReservas(); };
     renderMineRapido();
-    if (data.pago.url) { toast('Te llevamos a Mercado Pago para pagar la seña…', 'ok'); setTimeout(() => { location.href = data.pago.url; }, 1500); }
+    if (urlSegura(data.pago.url)) { toast('Te llevamos a Mercado Pago para pagar la seña…', 'ok'); setTimeout(() => { location.href = urlSegura(data.pago.url); }, 1500); }
     return;
   }
   const room = state.rooms.find(r => r.id === sel.roomId);
@@ -1910,7 +2303,7 @@ function mostrarLugar() {
   $('#view-public').hidden = true;
   $('#view-mine').hidden = true;
   $('#view-lugar').hidden = false;
-  setNav('instrumentos');
+  setNav('salas');
   renderLugarTab('instrumentos');
 }
 
@@ -1918,6 +2311,8 @@ function mostrarLugar() {
 function setNav(nav) {
   navActual = nav;
   document.body.classList.toggle('modo-control', esCuentaControl());
+  /* En el Mapa la barra inferior va transparente (solo en celular) */
+  document.body.classList.toggle('nav-mapa', nav === 'mapa');
   $$('#dock-container [data-nav]').forEach(b => b.classList.toggle('active', b.dataset.nav === nav));
   $('#dock-container').hidden = nav === 'admin'; /* el admin usa todo el alto */
   actualizarAccionesHeader();
@@ -1926,6 +2321,64 @@ function setNav(nav) {
 function scrollMainArriba() {
   const m = document.querySelector('main:not([hidden])');
   if (m) m.scrollTop = 0;
+}
+
+/* Swipe horizontal para cambiar de pestañas en Administración central (celular)
+   Las barras de las pestañas acompañan el deslizamiento */
+function prepararSwipeNavegacion() {
+  if (window._swipeNavOk) return;
+  window._swipeNavOk = true;
+
+  /* Detectar swipe horizontal SOLO en el panel de administración */
+  let touchStartX = 0, touchStartY = 0, touchEndX = 0, touchEndY = 0;
+  let swipando = false;
+
+  document.addEventListener('touchstart', e => {
+    const target = e.target;
+    /* Solo en el panel de admin, no en inputs/modales/la app principal */
+    if (target.closest('#dock-container, .modal, .notif-drop, .ajustes-drop, input, textarea, select, .hour-times, .comu-form, .chat-global-form')) return;
+    const admin = document.getElementById('view-admin');
+    if (!admin || admin.hidden) return;
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+    touchEndX = touchStartX;
+    touchEndY = touchStartY;
+    swipando = true;
+  }, { passive: true });
+
+  document.addEventListener('touchmove', e => {
+    if (!swipando) return;
+    touchEndX = e.touches[0].clientX;
+    touchEndY = e.touches[0].clientY;
+  }, { passive: true });
+
+  document.addEventListener('touchend', () => {
+    if (!swipando) return;
+    swipando = false;
+
+    const dx = touchEndX - touchStartX;
+    const dy = touchEndY - touchStartY;
+
+    /* Solo swipe horizontal */
+    if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.2) return;
+
+    /* Pestañas del admin */
+    const tabs = [...document.querySelectorAll('.admin-tab')].map(t => t.dataset.tab).filter(Boolean);
+    const btnActivo = document.querySelector('.admin-tab.active');
+    const tabActual = btnActivo ? btnActivo.dataset.tab : null;
+    const idx = tabs.indexOf(tabActual);
+    if (idx < 0) return;
+
+    if (dx < 0 && idx < tabs.length - 1) {
+      /* Swipe IZQUIERDA → siguiente pestaña */
+      const btn = [...document.querySelectorAll('.admin-tab')].find(t => t.dataset.tab === tabs[idx + 1]);
+      if (btn) btn.click();
+    } else if (dx > 0 && idx > 0) {
+      /* Swipe DERECHA → pestaña anterior */
+      const btn = [...document.querySelectorAll('.admin-tab')].find(t => t.dataset.tab === tabs[idx - 1]);
+      if (btn) btn.click();
+    }
+  }, { passive: true });
 }
 
 function irInicio() {
@@ -1966,7 +2419,8 @@ function irMapa() {
   setNav('mapa');
   renderMapa();
   scrollMainArriba();
-  setTimeout(() => {
+  if (timerEncuadre) clearTimeout(timerEncuadre);
+  timerEncuadre = setTimeout(() => {
     if (mapa) mapa.invalidateSize();
     if (gmap) { try { google.maps.event.trigger(gmap, 'resize'); } catch (e) {} }
     encuadrarMapa();
@@ -1982,6 +2436,470 @@ function nuevaReserva() {
 function irInstrumentos() { mostrarLugar(); }
 function irMisReservas() { mostrarMisReservas(); }
 
+/* ================= Comunidad (solo músicos) ================= */
+let comuTab = 'musicos';
+let comuBusqueda = '';
+let comuSoloZona = false;
+let comuLista = [];
+let comuChatCon = null;
+let comuPollTimer = null;
+let comuBuscarTimer = null;
+let comuConvFirma = '';
+let comuHiloFirma = '';
+
+const comuAvatar = m => {
+  const inicial = esc(String((m && m.nombre) || '?').trim().charAt(0).toUpperCase() || '?');
+  return m && m.foto
+    ? `<span class="comu-avatar"><img src="${esc(m.foto)}" alt=""></span>`
+    : `<span class="comu-avatar comu-avatar-letra">${inicial}</span>`;
+};
+
+const horaCorta = ts => new Date(ts).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+
+function irComunidad(tab) {
+  /* Solo los músicos (rol USER) tienen comunidad; admin y dueños van al Perfil */
+  if (!esMúsico()) {
+    const navPerfil = document.getElementById('nav-mine');
+    if (navPerfil) navPerfil.click();
+    return;
+  }
+  ocultarVistas();
+  $('#view-comunidad').hidden = false;
+  setNav('comunidad');
+  scrollMainArriba();
+  /* Verificar acceso al chat y mostrar chat o suscripción */
+  verificarAccesoChat().then(tieneAcceso => {
+    if (tieneAcceso) {
+      cargarChatGlobal();
+    } else {
+      mostrarSuscripcionChat();
+    }
+  });
+}
+
+function activarComuPane(tab) {
+  /* Ya no hay pestañas, solo el chat global */
+}
+
+function cambiarComuTab(tab) {
+  /* Ya no hay pestañas, el chat se carga directamente desde irComunidad */
+}
+
+/* Verificar si el usuario tiene acceso al chat global */
+async function verificarAccesoChat() {
+  try {
+    const data = await api('/api/comunidad/chat-acceso');
+    return data.tieneAcceso;
+  } catch (e) {
+    return false;
+  }
+}
+
+/* Mostrar el modal de suscripción al chat global */
+function mostrarSuscripcionChat() {
+  const host = $('#comu-chats');
+  if (!host) return;
+
+  host.innerHTML = `
+    <div class="suscripcion-wrap">
+      <section class="suscripcion-hero">
+        <div class="suscripcion-icono"><svg width="46" height="52" viewBox="280 210 510 580" xmlns="http://www.w3.org/2000/svg"><g stroke="#00A13E" stroke-width="96" stroke-linecap="round" fill="none"><line x1="424" y1="402" x2="349" y2="720"/><line x1="600" y1="278" x2="497" y2="720"/><line x1="720" y1="397" x2="647" y2="720"/></g></svg></div>
+        <h1>Más Músicos</h1>
+        <p>Charlá con músicos de todo el país que, como vos, usan Más Música.</p>
+      </section>
+
+      <div class="suscripcion-perks">
+        <ul>
+          <li><span class="check">✓</span>Chat con otros músicos suscritos</li>
+          <li><span class="check">✓</span>Salas y consejos de la comunidad</li>
+          <li><span class="check">✓</span>Cancelá cuando quieras</li>
+        </ul>
+      </div>
+
+      <div class="suscripcion-section-title">Incluido en tu suscripción</div>
+      <div class="suscripcion-features">
+        <div class="suscripcion-feature">
+          <div class="f-icon">📍</div>
+          <h3>Músicos cerca</h3>
+          <p>Chateá con músicos de tu zona y armá tu banda.</p>
+        </div>
+        <div class="suscripcion-feature">
+          <div class="f-icon">🎶</div>
+          <h3>Encontrá integrantes</h3>
+          <p>Buscá bajista, baterista o cantante para tu banda.</p>
+        </div>
+      </div>
+
+      <div class="suscripcion-section-title">Elegí tu plan</div>
+      <div class="suscripcion-plans" id="suscripcion-plans">
+        <button class="suscripcion-plan" data-plan="mensual">
+          <div class="plan-left"><span class="plan-radio"></span>
+            <div><div class="plan-name">Mensual</div><div class="plan-sub">Se renueva cada mes</div></div>
+          </div>
+          <div class="plan-price">$2.000<small>por mes</small></div>
+        </button>
+        <button class="suscripcion-plan selected" data-plan="trimestral">
+          <span class="plan-badge">AHORRÁS 17%</span>
+          <div class="plan-left"><span class="plan-radio"></span>
+            <div><div class="plan-name">Trimestral</div><div class="plan-sub">$1.667 por mes</div></div>
+          </div>
+          <div class="plan-price">$5.000<small>cada 3 meses</small></div>
+        </button>
+        <button class="suscripcion-plan" data-plan="anual">
+          <span class="plan-badge">MEJOR PRECIO</span>
+          <div class="plan-left"><span class="plan-radio"></span>
+            <div><div class="plan-name">Anual</div><div class="plan-sub">$1.250 por mes</div></div>
+          </div>
+          <div class="plan-price">$15.000<small>por año</small></div>
+        </button>
+      </div>
+
+      <div class="suscripcion-cta-box">
+        <div class="suscripcion-summary"><span id="plan-label">Trimestral</span><strong id="plan-price">$5.000</strong></div>
+        <button class="suscripcion-cta" id="suscribirse-chat">🎸 Suscribirme ahora</button>
+        <p class="suscripcion-fine">Pago seguro. Podés cancelar en cualquier momento desde tu perfil.</p>
+      </div>
+    </div>`;
+
+  const planes = host.querySelectorAll('.suscripcion-plan');
+  const planLabel = host.querySelector('#plan-label');
+  const planPrice = host.querySelector('#plan-price');
+  let planSeleccionado = 'trimestral';
+
+  planes.forEach(p => {
+    p.onclick = () => {
+      planes.forEach(x => x.classList.remove('selected'));
+      p.classList.add('selected');
+      planSeleccionado = p.dataset.plan;
+      if (planLabel) planLabel.textContent = p.querySelector('.plan-name').textContent;
+      if (planPrice) planPrice.textContent = p.querySelector('.plan-price').childNodes[0].textContent.trim();
+    };
+  });
+
+  const btnSuscribir = host.querySelector('#suscribirse-chat');
+  if (btnSuscribir) {
+    btnSuscribir.onclick = async () => {
+      try {
+        await api('/api/comunidad/chat-suscribirse', { method: 'POST', body: { plan: planSeleccionado } });
+        toast('¡Suscripción activada! Ya podés chatear.', 'ok');
+        cargarChatGlobal();
+      } catch (e) { toast(e.message, 'error'); }
+    };
+  }
+}
+
+/* ========== CHAT GLOBAL GRUPAL ========== */
+
+let chatGlobalTimer = null;
+let chatGlobalUltimoFecha = 0;
+
+/* Cargar el chat global */
+async function cargarChatGlobal() {
+  const host = $('#comu-chats');
+  if (!host) return;
+
+  // Mostrar el chat global
+  host.innerHTML = `
+    <div class="chat-global">
+      <div class="chat-global-head">
+        <h3>💬 Chat Global</h3>
+        <span class="muted small">Todos los músicos suscritos</span>
+      </div>
+      <div class="chat-global-hilo" id="chat-global-hilo"></div>
+      <div class="chat-global-form">
+        <input type="text" id="chat-global-input" placeholder="Escribí un mensaje..." maxlength="600">
+        <button class="btn btn-primary btn-sm" id="chat-global-enviar">Enviar</button>
+      </div>
+    </div>`;
+
+  // Cargar mensajes
+  await cargarMensajesGlobal();
+
+  // Configurar envío
+  const input = $('#chat-global-input');
+  const btnEnviar = $('#chat-global-enviar');
+
+  const enviar = async () => {
+    const texto = (input.value || '').trim();
+    if (!texto) return;
+    try {
+      await api('/api/comunidad/chat-global', { method: 'POST', body: { texto } });
+      input.value = '';
+      await cargarMensajesGlobal();
+    } catch (e) {
+      toast(e.message, 'error');
+    }
+  };
+
+  if (btnEnviar) btnEnviar.onclick = enviar;
+  if (input) {
+    input.onkeydown = e => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        enviar();
+      }
+    };
+  }
+
+  // Polling para nuevos mensajes
+  clearInterval(chatGlobalTimer);
+  chatGlobalTimer = setInterval(() => {
+    if (!$('#comu-chats')?.querySelector('.chat-global')) return;
+    cargarMensajesGlobal(true);
+  }, 3000);
+}
+
+/* Cargar mensajes del chat global */
+async function cargarMensajesGlobal(silent) {
+  const hilo = $('#chat-global-hilo');
+  if (!hilo) return;
+
+  try {
+    const data = await api('/api/comunidad/chat-global?desde=' + chatGlobalUltimoFecha);
+    const mensajes = data.mensajes || [];
+
+    if (!silent && !mensajes.length) {
+      hilo.innerHTML = '<p class="muted small" style="text-align:center;padding:20px">Todavía no hay mensajes. Sé el primero en escribir 🎸</p>';
+      return;
+    }
+
+    if (mensajes.length) {
+      // Agregar solo mensajes nuevos
+      mensajes.forEach(m => {
+        if (chatGlobalUltimoFecha >= m.fecha) return;
+        const div = document.createElement('div');
+        div.className = 'chat-global-msg' + (m.mio ? ' mio' : '');
+        div.innerHTML = `
+          ${m.mio ? '' : `<div class="chat-global-avatar">${(m.autor?.nombre || '?')[0].toUpperCase()}</div>`}
+          <div class="chat-global-contenido">
+            ${m.mio ? '' : `<span class="chat-global-autor">${esc(m.autor?.nombre || 'Músico')}</span>`}
+            <p class="chat-global-texto">${esc(m.texto)}</p>
+            <span class="chat-global-fecha">${fechaChat(m.fecha)}</span>
+          </div>`;
+        hilo.appendChild(div);
+        chatGlobalUltimoFecha = m.fecha;
+      });
+
+      // Scroll al final
+      hilo.scrollTop = hilo.scrollHeight;
+    }
+  } catch (e) {
+    if (!silent) toast(e.message, 'error');
+  }
+}
+
+/* Formato de fecha para el chat */
+function fechaChat(ts) {
+  const d = new Date(ts);
+  const hm = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  return d.toDateString() === new Date().toDateString() ? `hoy · ${hm}` : `${d.toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })} · ${hm}`;
+}
+
+function pararComuPoll() { if (comuPollTimer) { clearInterval(comuPollTimer); comuPollTimer = null; } }
+function iniciarComuPoll() {
+  pararComuPoll();
+  comuPollTimer = setInterval(() => {
+    const v = $('#view-comunidad');
+    if (!v || v.hidden) return;
+    if (comuTab === 'mensajes') {
+      if (comuChatCon) cargarComuChat(comuChatCon, true);
+      else cargarComuConversaciones(true);
+    }
+  }, 5000);
+}
+
+/* ----- Directorio de músicos ----- */
+async function cargarComuMusicos() {
+  const host = $('#comu-lista');
+  if (!host) return;
+  host.innerHTML = '<p class="muted small">Cargando músicos…</p>';
+  try {
+    const q = new URLSearchParams();
+    if (comuBusqueda.trim()) q.set('q', comuBusqueda.trim());
+    if (comuSoloZona && yo && yo.localidad) q.set('zona', yo.localidad);
+    const r = await api('/api/comunidad/musicos?' + q.toString());
+    comuLista = r.musicos || [];
+    const nota = $('#comu-zona-nota');
+    if (nota) nota.textContent = (yo && yo.localidad) ? `Tu zona: ${yo.localidad}` : 'Cargá tu localidad en el Perfil';
+    renderComuLista();
+  } catch (e) { host.innerHTML = `<p class="muted">${esc(e.message)}</p>`; }
+}
+
+const comuTags = instrumentos => (instrumentos && instrumentos.length)
+  ? `<div class="comu-tags">${instrumentos.map(i => `<span class="comu-tag">${esc(i)}</span>`).join('')}</div>`
+  : '';
+
+const comuBotones = (m, conSeg) => `<div class="comu-acciones">
+    ${conSeg ? `<button type="button" class="btn btn-sm ${m.siguiendo ? 'btn-primary' : ''}" data-comu-seguir="${m.id}">${m.siguiendo ? 'Siguiendo ✓' : 'Seguir'}</button>` : ''}
+    <button type="button" class="btn btn-sm btn-primary" data-comu-msg="${m.id}">💬 Mensaje</button>
+  </div>`;
+
+function renderComuLista() {
+  const host = $('#comu-lista');
+  if (!comuLista.length) {
+    host.innerHTML = '<p class="muted">No se encontraron músicos con ese filtro.</p>';
+    return;
+  }
+  host.innerHTML = comuLista.map(m => `
+    <div class="comu-card" data-id="${m.id}">
+      ${comuAvatar(m)}
+      <div class="comu-info">
+        <strong>${esc(m.nombre)} <span class="comu-user">@${esc(m.usuario)}</span></strong>
+        <span class="muted small">📍 ${m.localidad ? esc(m.localidad) : 'Sin localidad'}</span>
+        ${comuTags(m.instrumentos)}
+        ${m.meSigue ? '<span class="comu-me-sigue">Te sigue</span>' : ''}
+        ${comuBotones(m, true)}
+      </div>
+    </div>`).join('');
+}
+
+/* ----- Seguir / dejar de seguir ----- */
+async function comuSeguir(id, btn) {
+  if (btn) btn.disabled = true;
+  try {
+    const r = await api('/api/comunidad/seguir', { method: 'POST', body: { userId: id } });
+    const item = comuLista.find(m => m.id === id);
+    if (item) item.siguiendo = r.siguiendo;
+    $$(`[data-comu-seguir="${id}"]`).forEach(b => {
+      b.disabled = false;
+      b.classList.toggle('btn-primary', r.siguiendo);
+      b.textContent = r.siguiendo ? 'Siguiendo ✓' : 'Seguir';
+    });
+    toast(r.siguiendo ? 'Ahora seguís a este músico' : 'Dejaste de seguir', 'ok');
+  } catch (e) { if (btn) btn.disabled = false; toast(e.message, 'error'); }
+}
+
+/* ----- Mensajes ----- */
+function actualizarComuBadge(n) {
+  const b = $('#comu-msg-badge');
+  if (!b) return;
+  b.hidden = !n;
+  b.textContent = n > 9 ? '9+' : String(n || 0);
+}
+
+async function cargarComuConversaciones(silent) {
+  const host = $('#comu-chats');
+  if (!host) return;
+  if (!silent) host.innerHTML = '<p class="muted small">Cargando…</p>';
+  try {
+    const r = await api('/api/comunidad/conversaciones');
+    actualizarComuBadge(r.sinLeer);
+    const firma = JSON.stringify(r.conversaciones);
+    if (silent && firma === comuConvFirma) return;
+    comuConvFirma = firma;
+    if (!r.conversaciones.length) { host.innerHTML = '<p class="muted">Todavía no tenés conversaciones. Entrá a «Músicos» y escribile a alguien.</p>'; return; }
+    host.innerHTML = r.conversaciones.map(c => `
+      <button type="button" class="comu-chat-item" data-comu-open="${c.id}">
+        ${comuAvatar(c)}
+        <span class="comu-chat-info">
+          <strong>${esc(c.nombre)} <span class="comu-user">@${esc(c.usuario)}</span></strong>
+          <span class="muted small">${c.ultimo ? (c.ultimo.mio ? 'Vos: ' : '') + esc(c.ultimo.texto) : 'Decile algo 👋'}</span>
+        </span>
+        ${c.sinLeer ? `<span class="comu-badge">${c.sinLeer}</span>` : ''}
+      </button>`).join('');
+  } catch (e) { if (!silent) host.innerHTML = `<p class="muted">${esc(e.message)}</p>`; }
+}
+
+function cerrarComuChat() {
+  comuChatCon = null;
+  comuHiloFirma = '';
+  const chat = $('#comu-chat'), chats = $('#comu-chats');
+  if (chat) { chat.hidden = true; chat.innerHTML = ''; }
+  if (chats) chats.hidden = false;
+}
+
+async function abrirComuChat(userId) {
+  if (!esMúsico()) return;
+  activarComuPane('mensajes');
+  comuChatCon = userId;
+  comuHiloFirma = '';
+  $('#comu-chats').hidden = true;
+  $('#comu-chat').hidden = false;
+  $('#comu-chat').innerHTML = '<p class="muted small">Cargando…</p>';
+  await cargarComuChat(userId, false);
+  iniciarComuPoll();
+}
+
+async function cargarComuChat(userId, silent) {
+  try {
+    const r = await api('/api/comunidad/mensajes?con=' + encodeURIComponent(userId));
+    if (comuChatCon !== userId) return;
+    const v = $('#view-comunidad');
+    if (!v || v.hidden) return;
+    if (silent) pintarComuHilo(r.mensajes);
+    else renderComuChat(r);
+  } catch (e) { /* en silencio durante el refresco automático */ }
+}
+
+function renderComuChat(r) {
+  const m = r.musico;
+  $('#comu-chat').innerHTML = `
+    <div class="comu-chat-head">
+      <button type="button" class="btn btn-sm btn-ghost" id="comu-chat-volver" title="Volver">←</button>
+      ${comuAvatar(m)}
+      <span class="comu-chat-nombre"><strong>${esc(m.nombre)}</strong><span class="comu-user">@${esc(m.usuario)}</span></span>
+      <button type="button" class="btn btn-sm ${r.siguiendo ? 'btn-primary' : ''}" data-comu-seguir="${m.id}">${r.siguiendo ? 'Siguiendo ✓' : 'Seguir'}</button>
+    </div>
+    <div class="comu-hilo" id="comu-hilo"></div>
+    <form class="comu-form" id="comu-form" autocomplete="off">
+      <input id="comu-input" type="text" maxlength="600" placeholder="Escribí un mensaje…" autocomplete="off">
+      <button class="btn btn-sm btn-primary" type="submit">Enviar</button>
+    </form>`;
+  comuHiloFirma = '';
+  pintarComuHilo(r.mensajes);
+  const input = $('#comu-input');
+  if (input) input.focus();
+}
+
+function pintarComuHilo(msgs) {
+  const host = $('#comu-hilo');
+  if (!host) return;
+  const firma = (msgs.length || 0) + ':' + (msgs.length ? msgs[msgs.length - 1].id : '');
+  if (firma === comuHiloFirma) return;
+  comuHiloFirma = firma;
+  host.innerHTML = msgs.length
+    ? msgs.map(m => `<div class="comu-burbuja ${m.mio ? 'mio' : 'otro'}">
+        <span class="comu-texto">${esc(m.texto)}</span>
+        <span class="comu-hora">${horaCorta(m.fecha)}</span>
+      </div>`).join('')
+    : '<p class="muted small">Escribile para arrancar la charla 👋</p>';
+  host.scrollTop = host.scrollHeight;
+}
+
+async function enviarComuMensaje(texto) {
+  if (!comuChatCon || !texto.trim()) return;
+  const input = $('#comu-input');
+  if (input) input.value = '';
+  try {
+    await api('/api/comunidad/mensajes', { method: 'POST', body: { para: comuChatCon, texto: texto.trim() } });
+    await cargarComuChat(comuChatCon, true);
+  } catch (e) { if (input) { input.value = texto; input.focus(); } toast(e.message, 'error'); }
+}
+
+/* ----- Siguiendo ----- */
+async function cargarComuSiguiendo(silent) {
+  const host = $('#comu-siguiendo');
+  if (!host) return;
+  if (!silent) host.innerHTML = '<p class="muted small">Cargando…</p>';
+  try {
+    const r = await api('/api/comunidad/siguiendo');
+    const bloque = (titulo, lista, vacio, conSeg) => `
+      <h3 class="comu-sub">${titulo}</h3>
+      ${lista.length ? lista.map(m => `
+        <div class="comu-card" data-id="${m.id}">
+          ${comuAvatar(m)}
+          <div class="comu-info">
+            <strong>${esc(m.nombre)} <span class="comu-user">@${esc(m.usuario)}</span></strong>
+            <span class="muted small">📍 ${m.localidad ? esc(m.localidad) : 'Sin localidad'}</span>
+            ${comuTags(m.instrumentos)}
+            ${comuBotones(m, conSeg)}
+          </div>
+        </div>`).join('') : `<p class="muted small">${vacio}</p>`}`;
+    host.innerHTML = bloque('⭐ A quiénes seguís', r.sigo.map(x => Object.assign({ siguiendo: true }, x)), 'Todavía no seguís a nadie.', true)
+      + bloque('👥 Quiénes te siguen', r.meSiguen, 'Nadie te sigue todavía.', false);
+  } catch (e) { if (!silent) host.innerHTML = `<p class="muted">${esc(e.message)}</p>`; }
+}
+
 function renderMine() {
   /* El Perfil abre con la tarjeta de perfil (banda o sala); debajo, los datos y favoritas */
   renderPerfilMine();
@@ -1996,10 +2914,64 @@ let datosDuenio = null;  /* paso 1 del registro de sala (se conserva al pasar al
 
 /* ---------- Mostrar / ocultar pantallas ---------- */
 function mostrarApp() {
+  if (!yo) { pantallaAuth('inicio'); return; }
+  document.body.classList.add('app-activa');
   $('#view-auth').hidden = true;
   $('#app-header').hidden = false;
   $('#dock-container').hidden = false;
+  $('#view-public').hidden = false;
   actualizarBarraSesion();
+  pintarInstagram();
+}
+
+/* Re-verificar sesión (usado al inicio y tras login) */
+async function verificarSesion() {
+  if (!token) return false;
+  try {
+    const data = await api('/api/auth/me');
+    if (data && data.user) {
+      yo = data.user;
+      miSala = data.room || null;
+      adminMode = esSuper();
+      return true;
+    }
+  } catch (e) { guardarToken(''); yo = null; }
+  return false;
+}
+
+/* Arrancar la app con sesión activa */
+function arrancarApp() {
+  document.body.classList.add('app-activa');
+  setNav('inicio');
+  mostrarApp();
+  renderCalendar();
+  renderRooms();
+  goStep(1);
+  renderMapa();
+  cargarNotificaciones().then(() => { pintarBadgeNotif(); });
+}
+
+/* Mostrar pantalla de login */
+function mostrarLogin() {
+  document.body.classList.remove('app-activa');
+  $('#view-auth').hidden = false;
+  $('#app-header').hidden = true;
+  $('#dock-container').hidden = true;
+  pantallaAuth('inicio');
+  if (typeof wireAuth === 'function') wireAuth();
+}
+
+/* Botón de Instagram de la cabecera: enlace a la cuenta para ver contenido (se muestra solo si está cargada) */
+function pintarInstagram() {
+  const el = $('#btn-ig');
+  if (!el) return;
+  const ig = limpiarIdentRed((state && state.settings && state.settings.contacto && state.settings.contacto.instagram) || '');
+  if (ig) {
+    el.href = 'https://www.instagram.com/' + ig;
+    el.hidden = false;
+  } else {
+    el.hidden = true;
+  }
 }
 
 function mostrarAcceso() {
@@ -2011,7 +2983,8 @@ function mostrarAcceso() {
 
 /* Cierra todas las vistas menos la que se vaya a mostrar */
 function ocultarVistas() {
-  ['view-public', 'view-mine', 'view-lugar', 'view-panel', 'view-admin', 'view-mapa', 'view-auth']
+  pararComuPoll();
+  ['view-public', 'view-mine', 'view-lugar', 'view-panel', 'view-admin', 'view-mapa', 'view-comunidad', 'view-auth']
     .forEach(v => { const el = $('#' + v); if (el) el.hidden = true; });
 }
 
@@ -2020,6 +2993,11 @@ function actualizarBarraSesion() {
   document.body.classList.toggle('modo-control', esCuentaControl());
   const naAdmin = $('#nav-admin');
   if (naAdmin) naAdmin.hidden = !esSuper();
+  const naPanel = $('#nav-panel');
+  if (naPanel) naPanel.hidden = !esDueño();
+  const naComunidad = $('#nav-comunidad');
+  if (naComunidad) naComunidad.hidden = !esMúsico();
+  /* Si es admin o dueño, el botón de Comunidad se oculta (ya venía hidden) */
   if (!yo) {
     $('#btn-panel').hidden = true;
     $('#btn-notif').hidden = true;
@@ -2046,6 +3024,152 @@ function pintarBadgeNotif() {
   if (btn) btn.classList.toggle('tiene-nuevas', sinLeer > 0);
 }
 
+/* ---------- Validación de los formularios de acceso ---------- */
+/* Cada regla recibe el valor del campo y (si hace falta) todos los campos del
+   formulario. Devuelve '' si está bien, o el mensaje de error. */
+const REGLA_TEXTO = {
+  usuario: v => /^[a-z0-9._-]{3,24}$/.test(v.trim().toLowerCase()) ? '' : 'Usá de 3 a 24 caracteres: letras, números, punto, guion o guion bajo',
+  email: v => /^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(v.trim()) ? '' : 'Ese email no parece válido',
+  nombre: v => v.trim().length >= 2 ? '' : 'Escribí tu nombre y apellido',
+  password: v => v.length >= 6 ? '' : 'Usá al menos 6 caracteres',
+  pass2: (v, todos) => v === todos.password ? '' : 'Las contraseñas no coinciden',
+  telefono: v => /^[\d\s()+.-]{6,30}$/.test(v.trim()) ? '' : 'Ese teléfono no parece válido',
+};
+
+const campoEl = id => document.querySelector(`[data-campo="${id}"]`);
+
+function campoEstado(id, estado, msg) {
+  const w = campoEl(id);
+  if (!w) return;
+  w.classList.remove('ok', 'error', 'checking');
+  if (estado) w.classList.add(estado);
+  const m = w.querySelector('.campo-msg');
+  if (m) m.textContent = msg || '';
+}
+const campoError = (id, msg) => campoEstado(id, 'error', msg);
+const campoOk = id => campoEstado(id, 'ok', '');
+const campoLimpiar = id => campoEstado(id, null, '');
+
+/* Valida un campo y pinta su estado. Devuelve true si está correcto. */
+function validarInput(input) {
+  const id = input.id;
+  const obligatorio = input.hasAttribute('data-obligatorio');
+  const valor = input.value;
+  if (!valor.trim()) {
+    if (obligatorio) { campoError(id, 'Completá este dato'); return false; }
+    campoLimpiar(id);
+    return true;
+  }
+  const regla = REGLA_TEXTO[input.dataset.valida];
+  if (regla) {
+    const todos = {};
+    const form = input.closest('form');
+    if (form) $$('[data-valida]', form).forEach(i => { todos[i.dataset.valida] = i.value; });
+    const err = regla(valor, todos);
+    if (err) { campoError(id, err); return false; }
+  }
+  campoOk(id);
+  return true;
+}
+
+/* Valida todos los campos de un formulario y enfoca el primero con error. */
+function validarFormulario(form) {
+  let ok = true, primero = null;
+  $$('[data-valida]', form).forEach(c => {
+    if (!validarInput(c)) { ok = false; if (!primero) primero = c; }
+  });
+  if (primero) primero.focus();
+  return ok;
+}
+
+/* Medidor de fuerza de la contraseña */
+function pintarFuerza(input) {
+  const w = input.closest('.campo');
+  const bar = w && w.querySelector('.fuerza');
+  if (!bar) return;
+  const p = input.value;
+  let n = 0;
+  if (p.length >= 6) n++;
+  if (p.length >= 10) n++;
+  if (/[a-z]/.test(p) && /[A-Z]/.test(p)) n++;
+  if (/\d/.test(p)) n++;
+  if (/[^A-Za-z0-9]/.test(p)) n++;
+  n = Math.min(n, 4);
+  bar.dataset.n = p ? n : 0;
+  const txt = bar.querySelector('.fuerza-txt');
+  if (txt) txt.textContent = p && n > 0 ? ['Débil', 'Aceptable', 'Buena', 'Excelente'][n - 1] : '';
+}
+
+/* Consulta al servidor si el usuario/email ya existen (mensaje en vivo) */
+async function chequearDisponible(input) {
+  const tipo = input.dataset.valida;
+  if (tipo !== 'usuario' && tipo !== 'email') return;
+  if (!validarInput(input)) return;
+  const w = campoEl(input.id);
+  if (!w) return;
+  w.classList.remove('ok');
+  w.classList.add('checking');
+  const m = w.querySelector('.campo-msg');
+  if (m) m.textContent = 'Verificando…';
+  try {
+    const q = new URLSearchParams();
+    q.set(tipo, input.value.trim());
+    const r = await api('/api/auth/disponible?' + q.toString());
+    if (!document.body.contains(input)) return;
+    const libre = tipo === 'usuario' ? r.usuarioLibre : r.emailLibre;
+    if (libre === false) campoError(input.id, tipo === 'usuario' ? 'Ese nombre de usuario ya está en uso' : 'Ya existe una cuenta con ese email');
+    else if (libre === true) campoOk(input.id);
+    else campoLimpiar(input.id);
+  } catch (e) {
+    if (!document.body.contains(input)) return;
+    campoLimpiar(input.id);   /* sin endpoint disponible: el servidor valida al enviar */
+  }
+}
+
+/* Ubica un error del servidor en el campo correspondiente. Devuelve true si lo logró. */
+function mapearErrorServidor(msg) {
+  const m = String(msg || '').toLowerCase();
+  const idUsr = $('#mu-usuario') ? 'mu-usuario' : ($('#sg-usuario') ? 'sg-usuario' : '');
+  const idMail = $('#mu-email') ? 'mu-email' : ($('#sg-email') ? 'sg-email' : '');
+  const idPass = $('#mu-pass') ? 'mu-pass' : ($('#sg-pass') ? 'sg-pass' : '');
+  if (/usuario ya est/.test(m) && idUsr) { campoError(idUsr, msg); return true; }
+  if (/email/.test(m) && idMail) { campoError(idMail, msg); return true; }
+  if (/contrase/.test(m) && idPass) { campoError(idPass, msg); return true; }
+  return false;
+}
+
+/* ---------- Render de campos con validación ---------- */
+function campoAuth(id, etiqueta, opts = {}) {
+  const { type = 'text', ph = '', req = false, max = 60, val = '', ac = '', valida = '', extra = '' } = opts;
+  return `<label class="campo" data-campo="${id}">
+    <span class="campo-lbl">${etiqueta}${req ? ' <span class="req">*</span>' : ''}</span>
+    <input id="${id}" type="${type}" maxlength="${max}"${ph ? ` placeholder="${ph}"` : ''}${ac ? ` autocomplete="${ac}"` : ''}${val ? ` value="${val}"` : ''}${valida ? ` data-valida="${valida}"` : ''}${req ? ' data-obligatorio' : ''}${extra}>
+    <span class="campo-msg"></span>
+  </label>`;
+}
+
+function campoPassword(id, etiqueta, opts = {}) {
+  const { ph = '', valida = 'password', fuerza = false, ac = 'new-password' } = opts;
+  return `<label class="campo" data-campo="${id}">
+    <span class="campo-lbl">${etiqueta} <span class="req">*</span></span>
+    <span class="pass-wrap">
+      <input id="${id}" type="password" autocomplete="${ac}" data-valida="${valida}" data-obligatorio${ph ? ` placeholder="${ph}"` : ''}>
+      <button type="button" class="pass-eye" data-ver="${id}" aria-label="Mostrar u ocultar contraseña" tabindex="-1"><svg class="pass-eye-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+    </span>
+    ${fuerza ? '<span class="fuerza" data-n="0"><i></i><i></i><i></i><i></i><span class="fuerza-txt"></span></span>' : ''}
+    <span class="campo-msg"></span>
+  </label>`;
+}
+
+function campoArea(id, etiqueta, opts = {}) {
+  const { ph = '', rows = 2, max = 600 } = opts;
+  return `<label class="campo" data-campo="${id}">
+    <span class="campo-lbl">${etiqueta}</span>
+    <textarea id="${id}" rows="${rows}" maxlength="${max}"${ph ? ` placeholder="${ph}"` : ''}></textarea>
+    <span class="campo-msg"></span>
+  </label>`;
+}
+
 /* ---------- Pantalla de acceso ---------- */
 function pantallaAuth(vista = 'inicio') {
   mostrarAcceso();
@@ -2053,90 +3177,148 @@ function pantallaAuth(vista = 'inicio') {
   const vol = '<button class="btn btn-sm btn-ghost auth-volver" data-vista="inicio">← Volver</button>';
 
   if (vista === 'inicio') {
+    const cIni = (state && state.settings && state.settings.contacto) || {};
+    const igIni = cIni.instagram ? limpiarIdentRed(cIni.instagram) : '';
     b.innerHTML = `
-      <div class="auth-titulo">
-        <h1 class="auth-title">¿Cómo querés usar <span class="verde">Más Música</span>?</h1>
-        <p class="auth-sub">Elegí tu perfil para empezar.</p>
-      </div>
-      <div class="auth-roles">
-        <button class="auth-rol auth-rol-fijo" data-vista="musico">
-          <svg class="auth-svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#0F1A2B"
-               stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M9 18V5l12-2v13"></path>
-            <circle cx="6" cy="18" r="3"></circle>
-            <circle cx="18" cy="16" r="3"></circle>
-          </svg>
-          <span class="auth-rol-txt">
-            <strong>Soy músico</strong>
-            <span>Creá tu cuenta para buscar y reservar salas de ensayo.</span>
-          </span>
-        </button>
-        <button class="auth-rol auth-rol-lar" data-vista="duenio">
-          <svg class="auth-svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#00A038"
-               stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <line x1="5" y1="3" x2="5" y2="21"></line>
-            <line x1="12" y1="3" x2="12" y2="21"></line>
-            <line x1="19" y1="3" x2="19" y2="21"></line>
-            <circle cx="5" cy="15" r="2.2" fill="#16263D"></circle>
-            <circle cx="12" cy="8" r="2.2" fill="#16263D"></circle>
-            <circle cx="19" cy="13" r="2.2" fill="#16263D"></circle>
-          </svg>
-          <span class="auth-rol-txt">
-            <strong>Tengo una sala de ensayo</strong>
-            <span>Registrá tu sala para sumarla a Más Música.</span>
-          </span>
-        </button>
-      </div>
-      <p class="auth-cuenta">¿Ya tenés cuenta?
-        <button type="button" class="auth-link" data-vista="login">Iniciar sesión</button>
-      </p>
-      <p class="muted small center auth-nota">La cuenta de administración general no se registra acá.</p>`;
+      <div class="auth-card">
+        <div class="auth-titulo">
+          <h1 class="auth-title">¿Cómo querés usar <span class="verde">Más Música</span>?</h1>
+          <p class="auth-sub">Elegí tu perfil para empezar.</p>
+        </div>
+        <div class="auth-roles">
+          <button class="auth-rol auth-rol-fijo" data-vista="musico">
+            <span class="auth-rol-ic">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#0F1A2B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M9 18V5l12-2v13"></path>
+                <circle cx="6" cy="18" r="3"></circle>
+                <circle cx="18" cy="16" r="3"></circle>
+              </svg>
+            </span>
+            <span class="auth-rol-txt">
+              <strong>Soy músico</strong>
+              <span>Creá tu cuenta para buscar y reservar salas de ensayo.</span>
+            </span>
+            <span class="auth-rol-go" aria-hidden="true">›</span>
+          </button>
+          <button class="auth-rol auth-rol-lar" data-vista="duenio">
+            <span class="auth-rol-ic">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#00A038" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <line x1="5" y1="3" x2="5" y2="21"></line>
+                <line x1="12" y1="3" x2="12" y2="21"></line>
+                <line x1="19" y1="3" x2="19" y2="21"></line>
+                <circle cx="5" cy="15" r="2.2" fill="#16263D"></circle>
+                <circle cx="12" cy="8" r="2.2" fill="#16263D"></circle>
+                <circle cx="19" cy="13" r="2.2" fill="#16263D"></circle>
+              </svg>
+            </span>
+            <span class="auth-rol-txt">
+              <strong>Tengo una sala de ensayo</strong>
+              <span>Registrá tu sala para sumarla a Más Música.</span>
+            </span>
+            <span class="auth-rol-go" aria-hidden="true">›</span>
+          </button>
+        </div>
+        <p class="auth-cuenta">¿Ya tenés cuenta?
+          <button type="button" class="auth-link" data-vista="login">Iniciar sesión</button>
+        </p>
+        ${igIni ? `<p class="auth-redes"><a class="auth-link" target="_blank" rel="noopener" href="https://www.instagram.com/${esc(igIni)}">📸 Seguinos en Instagram ${esc('@' + igIni)}</a></p>` : ''}
+      </div>`;
     return;
   }
 
   if (vista === 'login') {
     b.innerHTML = `
       ${vol}
-      <h1 class="auth-title">Ingresá a tu cuenta</h1>
-      <form id="f-login" class="auth-form">
-        <label>Usuario o email<input id="lg-user" autocomplete="username" required></label>
-        <label>Contraseña<input type="password" id="lg-pass" autocomplete="current-password" required></label>
-        <button class="btn btn-primary btn-block" type="submit">Ingresar</button>
-        <button type="button" class="btn btn-sm btn-block btn-ghost" data-vista="pin">¿Sos de la administración? Entrá con el PIN</button>
-      </form>`;
+      <div class="auth-card">
+        <h1 class="auth-title">Ingresá a tu cuenta</h1>
+        <p class="auth-sub">Tu usuario o email, y tu contraseña.</p>
+        <form id="f-login" class="auth-form" novalidate>
+          ${campoAuth('lg-user', 'Usuario o email', { req: true, valida: 'obligatorio', ac: 'username', ph: 'Ej.: marcelo o marcelo@mail.com', max: 80 })}
+          ${campoPassword('lg-pass', 'Contraseña', { valida: 'obligatorio', ac: 'current-password' })}
+          <button class="btn btn-primary btn-block btn-lg" type="submit">Ingresar</button>
+          <button type="button" class="btn btn-sm btn-block btn-ghost" data-vista="pin">¿Sos de la administración? Entrá con el PIN</button>
+        </form>
+        <p class="auth-cuenta">¿Olvidaste tu contraseña o tu cuenta está bloqueada?
+          <button type="button" class="auth-link" data-vista="ayuda">Pedí ayuda</button>
+        </p>
+      </div>`;
+    return;
+  }
+
+  if (vista === 'ayuda') {
+    const c = (state.settings && state.settings.contacto) || {};
+    const botones = [];
+    const wa = String(c.whatsapp || '').replace(/[^\d+]/g, '');
+    if (wa) botones.push(`<a class="btn btn-sm" target="_blank" rel="noopener" href="https://wa.me/${esc(wa)}">💬 WhatsApp</a>`);
+    if (c.facebook) botones.push(`<a class="btn btn-sm" target="_blank" rel="noopener" href="https://www.facebook.com/${esc(limpiarIdentRed(c.facebook))}">👍 Facebook</a>`);
+    if (c.tiktok) botones.push(`<a class="btn btn-sm" target="_blank" rel="noopener" href="https://www.tiktok.com/@${esc(limpiarIdentRed(c.tiktok))}">🎵 TikTok</a>`);
+    if (c.email) botones.push(`<a class="btn btn-sm" href="mailto:${esc(c.email)}">✉️ Email</a>`);
+    b.innerHTML = `
+      ${vol}
+      <div class="auth-card">
+        <h1 class="auth-title">¿Problemas para entrar?</h1>
+        <p class="auth-sub">Contanos qué pasó: la administración recibe tu pedido y te ayuda a recuperar tu cuenta.</p>
+        <form id="f-ayuda" class="auth-form" novalidate>
+          <label class="campo" data-campo="ay-motivo">
+            <span class="campo-lbl">¿Qué pasó? <span class="req">*</span></span>
+            <select id="ay-motivo" data-obligatorio>
+              <option value="olvide" selected>Olvidé mi contraseña</option>
+              <option value="bloqueada">Mi cuenta está bloqueada o desactivada</option>
+              <option value="otro">Otro problema</option>
+            </select>
+            <span class="campo-msg"></span>
+          </label>
+          ${campoAuth('ay-ident', 'Tu usuario o email', { req: true, valida: 'obligatorio', ac: 'username', ph: 'Ej.: marcelo o marcelo@mail.com', max: 120 })}
+          ${campoArea('ay-msj', 'Contanos qué pasó (opcional)', { ph: 'Ej.: no puedo entrar desde ayer', max: 500 })}
+          <button class="btn btn-primary btn-block btn-lg" type="submit">Enviar pedido</button>
+        </form>
+        ${botones.length ? `
+          <p class="auth-sub" style="margin-top:18px">O escribinos directo por:</p>
+          <div class="row wrap auth-ayuda-contacto">${botones.join('')}</div>` : ''}
+        <p class="muted small" style="margin-top:12px">Tu pedido llega directo a la administración de Más Música. Te respondemos por el mismo canal.</p>
+      </div>`;
     return;
   }
 
   if (vista === 'pin') {
     b.innerHTML = `
       ${vol}
-      <h1 class="auth-title">Acceso de administración</h1>
-      <form id="f-pin" class="auth-form">
-        <label>PIN de administrador<input type="password" id="pn-pin" inputmode="numeric" required></label>
-        <button class="btn btn-primary btn-block" type="submit">Entrar al panel</button>
-      </form>`;
+      <div class="auth-card">
+        <h1 class="auth-title">Acceso de administración</h1>
+        <p class="auth-sub">Ingresá el PIN para entrar al panel.</p>
+        <form id="f-pin" class="auth-form" novalidate>
+          ${campoAuth('pn-pin', 'PIN de administrador', { type: 'password', req: true, valida: 'obligatorio', extra: ' inputmode="numeric"' })}
+          <button class="btn btn-primary btn-block btn-lg" type="submit">Entrar al panel</button>
+        </form>
+      </div>`;
     return;
   }
 
   if (vista === 'musico') {
     b.innerHTML = `
       ${vol}
-      <h1 class="auth-title">Crear cuenta de músico</h1>
-      <p class="muted small">Para buscar y reservar salas de ensayo.</p>
-      <form id="f-musico" class="auth-form">
-        <label>Nombre y apellido *<input id="mu-nombre" maxlength="60" required></label>
-        <label>Nombre de usuario *<input id="mu-usuario" maxlength="24" placeholder="Ej.: marcelo" required></label>
-        <label>Email *<input type="email" id="mu-email" maxlength="80" required></label>
-        <label>Teléfono<input id="mu-tel" maxlength="30" placeholder="Ej.: 15854455"></label>
-        <label>Contraseña *<input type="password" id="mu-pass" minlength="6" required></label>
-        <label>Localidad o zona<input id="mu-loc" maxlength="80"></label>
-        <label>¿Qué instrumento tocás?<input id="mu-inst" maxlength="200" placeholder="Ej.: Bajo, Guitarra (separados por coma)"></label>
-        <div class="auth-foto">
-          <div class="sala-foto-edit" id="mu-preview">${fotoTemporal ? `<img src="${fotoTemporal}" alt="previsualización">` : '<span class="sala-chip-foto" style="width:60px;height:60px;font-size:1.6rem">🎸</span>'}</div>
-          <label class="btn btn-sm">📷 Foto de perfil<input type="file" id="mu-foto" accept="image/*" hidden></label>
-        </div>
-        <button class="btn btn-primary btn-block" type="submit">Crear mi cuenta</button>
-      </form>`;
+      <div class="auth-card">
+        <h1 class="auth-title">Crear cuenta de músico</h1>
+        <p class="auth-sub">Para buscar y reservar salas de ensayo.</p>
+        <form id="f-musico" class="auth-form" novalidate>
+          <div class="auth-foto">
+            <div class="sala-foto-edit" id="mu-preview">${fotoTemporal ? `<img src="${fotoTemporal}" alt="previsualización">` : '<span class="sala-chip-foto" style="width:60px;height:60px;font-size:1.6rem">🎸</span>'}</div>
+            <div class="auth-foto-txt">
+              <label class="btn btn-sm">📷 Foto de perfil<input type="file" id="mu-foto" accept="image/*" hidden></label>
+              <span class="muted small">Opcional</span>
+            </div>
+          </div>
+          ${campoAuth('mu-nombre', 'Nombre y apellido', { req: true, valida: 'nombre', ac: 'name', ph: 'Ej.: Marcelo Gómez' })}
+          ${campoAuth('mu-usuario', 'Nombre de usuario', { req: true, valida: 'usuario', ac: 'username', ph: 'Ej.: marcelo', max: 24 })}
+          ${campoAuth('mu-email', 'Email', { type: 'email', req: true, valida: 'email', ac: 'email', ph: 'tucorreo@mail.com', max: 80 })}
+          ${campoAuth('mu-tel', 'Teléfono', { valida: 'telefono', ac: 'tel', ph: 'Ej.: 15854455', max: 30 })}
+          ${campoPassword('mu-pass', 'Contraseña', { fuerza: true, ph: 'Mínimo 6 caracteres' })}
+          ${campoPassword('mu-pass2', 'Repetí la contraseña', { valida: 'pass2', ph: 'Igual que arriba' })}
+          ${campoAuth('mu-loc', 'Localidad o zona', { ph: 'Ej.: Villa Carlos Paz', max: 80 })}
+          ${campoAuth('mu-inst', '¿Qué instrumento tocás?', { ph: 'Ej.: Bajo, Guitarra (separados por coma)', max: 200 })}
+          <button class="btn btn-primary btn-block btn-lg" type="submit">Crear mi cuenta</button>
+        </form>
+      </div>`;
     return;
   }
 
@@ -2145,69 +3327,78 @@ function pantallaAuth(vista = 'inicio') {
     const paso1 = vista === 'duenio';
     b.innerHTML = `
       ${vol}
-      <h1 class="auth-title">Registrar mi sala de ensayo</h1>
-      ${paso1 ? `
-        <p class="muted small">Paso 1 de 2 · Tus datos. La sala queda pendiente de aprobación.</p>
-        <form id="f-duenio" class="auth-form">
-          <label>Nombre y apellido *<input id="sg-nombre" maxlength="60" required></label>
-          <label>Nombre de usuario *<input id="sg-usuario" maxlength="24" placeholder="Ej.: salanueva" required></label>
-          <label>Email *<input type="email" id="sg-email" maxlength="80" required></label>
-          <label>Teléfono *<input id="sg-tel" maxlength="30" required></label>
-          <label>Contraseña *<input type="password" id="sg-pass" minlength="6" required></label>
-          <label class="check"><input type="checkbox" id="sg-soy"> Soy responsable de esta sala</label>
-          <button class="btn btn-primary btn-block" type="submit">Continuar →</button>
-        </form>` : `
-        <p class="muted small">Paso 2 de 2 · Los datos de la sala. La administración de Más Música la revisa antes de publicarla.</p>
-        <form id="f-sala" class="auth-form">
-          <label>Nombre de la sala *<input id="sa-name" maxlength="60" required></label>
-          <label>Dirección *<input id="sa-direccion" maxlength="160" required></label>
-          <div class="row2">
-            <label>Localidad / zona<input id="sa-loc" maxlength="80"></label>
-            <label>Teléfono de la sala<input id="sa-tel" maxlength="30"></label>
-          </div>
-          <label>Descripción<textarea id="sa-desc" rows="2" maxlength="600" placeholder="Ej.: Sala con buena acústica para bandas de 4 a 6 personas"></textarea></label>
-          <div class="row2">
-            <label>Precio por hora *<input type="number" id="sa-price" min="1" step="1" value="10000" required></label>
-            <label>Capacidad<input type="number" id="sa-cap" min="1" step="1" value="4"></label>
-          </div>
-          <label>Ubicación en el mapa<input id="sa-mapa" maxlength="300" placeholder="Enlace de Google Maps"></label>
-          <div class="row2">
-            <label>Latitud<input id="sa-lat" inputmode="decimal" placeholder="-31.4201"></label>
-            <label>Longitud<input id="sa-lng" inputmode="decimal" placeholder="-64.1888"></label>
-          </div>
-          <div class="row wrap">
-            <button type="button" class="btn btn-sm" data-accion-ubicacion="ubicar">🗺 Ubicar en el mapa</button>
-            <button type="button" class="btn btn-sm" data-accion-ubicacion="buscar">🔎 Buscar por dirección</button>
-          </div>
-          <p class="muted small">Es lo primero que ven los músicos: con la ubicación, tu sala aparece en el mapa de Más Música.</p>
-          <h3 class="sub">Horario de atención</h3>
-          <div class="dias-sel" id="sa-dias">
-            <label class="check"><input type="checkbox" value="1" checked> Lun</label>
-            <label class="check"><input type="checkbox" value="2" checked> Mar</label>
-            <label class="check"><input type="checkbox" value="3" checked> Mié</label>
-            <label class="check"><input type="checkbox" value="4" checked> Jue</label>
-            <label class="check"><input type="checkbox" value="5" checked> Vie</label>
-            <label class="check"><input type="checkbox" value="6"> Sáb</label>
-            <label class="check"><input type="checkbox" value="0"> Dom</label>
-          </div>
-          <div class="row2">
-            <label>Abre<input type="time" id="sa-open" value="10:00"></label>
-            <label>Cierra<input type="time" id="sa-close" value="22:00"></label>
-          </div>
-          <h3 class="sub">Equipamiento disponible</h3>
-          <label>Instrumentos<input id="sa-eq-instrumentos" maxlength="300" placeholder="Ej.: Guitarra, Bajo, Batería"></label>
-          <label>Batería<input id="sa-eq-bateria" maxlength="300"></label>
-          <label>Amplificadores<input id="sa-eq-amp" maxlength="300"></label>
-          <label>Micrófonos<input id="sa-eq-micro" maxlength="300"></label>
-          <label>Consola / sonido<input id="sa-eq-consola" maxlength="300"></label>
-          <label>Otros<input id="sa-eq-otros" maxlength="300"></label>
-          <div class="auth-foto">
-            <div class="sala-foto-edit" id="sa-preview">${fotoTemporal ? `<img src="${fotoTemporal}" alt="previsualización">` : '<span class="sala-chip-foto" style="width:60px;height:60px;font-size:1.6rem">🎛️</span>'}</div>
-            <label class="btn btn-sm">🏷️ Logo de la sala<input type="file" id="sa-logo" accept="image/*" hidden></label>
-          </div>
-          <label>Fotografías<input type="file" id="sa-fotos" accept="image/*" multiple></label>
-          <button class="btn btn-primary btn-block" type="submit">Enviar solicitud de publicación</button>
-        </form>`}`;
+      <div class="auth-card">
+        <h1 class="auth-title">Registrar mi sala de ensayo</h1>
+        ${paso1 ? `
+          <p class="auth-sub">Paso 1 de 2 · Tus datos. La sala queda pendiente de aprobación.</p>
+          <form id="f-duenio" class="auth-form" novalidate>
+            ${campoAuth('sg-nombre', 'Nombre y apellido', { req: true, valida: 'nombre', ac: 'name', ph: 'Ej.: Ana Pérez' })}
+            ${campoAuth('sg-usuario', 'Nombre de usuario', { req: true, valida: 'usuario', ac: 'username', ph: 'Ej.: salanueva', max: 24 })}
+            ${campoAuth('sg-email', 'Email', { type: 'email', req: true, valida: 'email', ac: 'email', ph: 'tucorreo@mail.com', max: 80 })}
+            ${campoAuth('sg-tel', 'Teléfono', { req: true, valida: 'telefono', ac: 'tel', ph: 'Ej.: 15854455', max: 30 })}
+            ${campoPassword('sg-pass', 'Contraseña', { fuerza: true, ph: 'Mínimo 6 caracteres' })}
+            <label class="check"><input type="checkbox" id="sg-soy"> Soy responsable de esta sala</label>
+            <button class="btn btn-primary btn-block btn-lg" type="submit">Continuar →</button>
+          </form>` : `
+          <p class="auth-sub">Paso 2 de 2 · Los datos de la sala. La administración de Más Música la revisa antes de publicarla.</p>
+          <form id="f-sala" class="auth-form" novalidate>
+            ${campoAuth('sa-name', 'Nombre de la sala', { req: true, valida: 'obligatorio', ph: 'Ej.: Estudio Sur' })}
+            ${campoAuth('sa-direccion', 'Dirección', { req: true, valida: 'obligatorio', ph: 'Calle y número', max: 160 })}
+            <div class="row2">
+              ${campoAuth('sa-loc', 'Localidad / zona', { max: 80 })}
+              ${campoAuth('sa-tel', 'Teléfono de la sala', { valida: 'telefono', max: 30 })}
+            </div>
+            ${campoArea('sa-desc', 'Descripción', { ph: 'Ej.: Sala con buena acústica para bandas de 4 a 6 personas' })}
+            <div class="row2">
+              ${campoAuth('sa-price', 'Precio por hora', { type: 'number', req: true, valida: 'obligatorio', val: '10000', extra: ' min="1" step="1"' })}
+              ${campoAuth('sa-cap', 'Capacidad', { type: 'number', val: '4', extra: ' min="1" step="1"' })}
+            </div>
+            ${campoAuth('sa-mapa', 'Ubicación en el mapa', { ph: 'Enlace de Google Maps', max: 300 })}
+            <div class="row2">
+              ${campoAuth('sa-lat', 'Latitud', { ph: '-31.4201', extra: ' inputmode="decimal"' })}
+              ${campoAuth('sa-lng', 'Longitud', { ph: '-64.1888', extra: ' inputmode="decimal"' })}
+            </div>
+            <div class="row wrap">
+              <button type="button" class="btn btn-sm" data-accion-ubicacion="ubicar">🗺 Ubicar en el mapa</button>
+              <button type="button" class="btn btn-sm" data-accion-ubicacion="buscar">🔎 Buscar por dirección</button>
+            </div>
+            <p class="muted small">Es lo primero que ven los músicos: con la ubicación, tu sala aparece en el mapa de Más Música.</p>
+            <h3 class="sub">Horario de atención</h3>
+            <div class="dias-sel" id="sa-dias">
+              <label class="check"><input type="checkbox" value="1" checked> Lun</label>
+              <label class="check"><input type="checkbox" value="2" checked> Mar</label>
+              <label class="check"><input type="checkbox" value="3" checked> Mié</label>
+              <label class="check"><input type="checkbox" value="4" checked> Jue</label>
+              <label class="check"><input type="checkbox" value="5" checked> Vie</label>
+              <label class="check"><input type="checkbox" value="6"> Sáb</label>
+              <label class="check"><input type="checkbox" value="0"> Dom</label>
+            </div>
+            <div class="row2">
+              ${campoAuth('sa-open', 'Abre', { type: 'time', val: '10:00' })}
+              ${campoAuth('sa-close', 'Cierra', { type: 'time', val: '22:00' })}
+            </div>
+            <h3 class="sub">Equipamiento disponible</h3>
+            ${campoAuth('sa-eq-instrumentos', 'Instrumentos', { ph: 'Ej.: Guitarra, Bajo, Batería', max: 300 })}
+            ${campoAuth('sa-eq-bateria', 'Batería', { max: 300 })}
+            ${campoAuth('sa-eq-amp', 'Amplificadores', { max: 300 })}
+            ${campoAuth('sa-eq-micro', 'Micrófonos', { max: 300 })}
+            ${campoAuth('sa-eq-consola', 'Consola / sonido', { max: 300 })}
+            ${campoAuth('sa-eq-otros', 'Otros', { max: 300 })}
+            <div class="auth-foto">
+              <div class="sala-foto-edit" id="sa-preview">${fotoTemporal ? `<img src="${fotoTemporal}" alt="previsualización">` : '<span class="sala-chip-foto" style="width:60px;height:60px;font-size:1.6rem">🎛️</span>'}</div>
+              <div class="auth-foto-txt">
+                <label class="btn btn-sm">🏷️ Logo de la sala<input type="file" id="sa-logo" accept="image/*" hidden></label>
+                <span class="muted small">Opcional</span>
+              </div>
+            </div>
+            <label class="campo" data-campo="sa-fotos">
+              <span class="campo-lbl">Fotografías</span>
+              <input type="file" id="sa-fotos" accept="image/*" multiple>
+              <span class="campo-msg"></span>
+            </label>
+            <button class="btn btn-primary btn-block btn-lg" type="submit">Enviar solicitud de publicación</button>
+          </form>`}
+      </div>`;
   }
 }
 
@@ -2216,6 +3407,20 @@ function wireAuth() {
   const b = $('#auth-body');
 
   b.onclick = e => {
+    /* Mostrar / ocultar contraseña */
+    const eye = e.target.closest('[data-ver]');
+    if (eye) {
+      const inp = document.getElementById(eye.dataset.ver);
+      if (inp) {
+        const ver = inp.type === 'password';
+        inp.type = ver ? 'text' : 'password';
+        eye.innerHTML = ver
+          ? '<svg class="pass-eye-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>'
+          : '<svg class="pass-eye-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+        inp.focus();
+      }
+      return;
+    }
     const v = e.target.closest('[data-vista]');
     if (v) {
       pantallaAuth(v.dataset.vista);
@@ -2237,6 +3442,29 @@ function wireAuth() {
         .catch(err => toast(err.message || 'No se pudo leer la imagen', 'error'));
     }
   });
+
+  /* Validación en vivo: al escribir */
+  b.addEventListener('input', e => {
+    const i = e.target;
+    if (!(i && i.matches && i.matches('[data-valida]'))) return;
+    if (i.dataset.valida === 'usuario') i.value = i.value.toLowerCase();
+    if (i.dataset.valida === 'password') {
+      pintarFuerza(i);
+      const p2 = document.getElementById('mu-pass2');
+      if (p2 && p2.value) validarInput(p2);
+    }
+    /* Si el campo ya estaba en error, se revisa mientras se corrige */
+    const w = i.closest('.campo');
+    if (w && w.classList.contains('error')) validarInput(i);
+  });
+
+  /* Validación al salir del campo + chequeo de disponibilidad */
+  b.addEventListener('blur', e => {
+    const i = e.target;
+    if (!(i && i.matches && i.matches('[data-valida]'))) return;
+    validarInput(i);
+    if (i.dataset.valida === 'usuario' || i.dataset.valida === 'email') chequearDisponible(i);
+  }, true);
 
   /* Ubicación de la sala: tocar el mapa o buscar la dirección */
   b.addEventListener('click', e => {
@@ -2263,12 +3491,20 @@ function wireAuth() {
   b.onsubmit = async e => {
     const f = e.target;
     e.preventDefault();
+
+    /* Primero valida todo el formulario */
+    if (!validarFormulario(f)) {
+      toast('Revisá los datos marcados', 'warn');
+      return;
+    }
+
     const btn = f.querySelector('button[type=submit]');
     const texto = btn ? btn.textContent : '';
     if (btn) { btn.disabled = true; btn.textContent = 'Guardando…'; }
     try {
       if (f.id === 'f-login') await iniciarSesion($('#lg-user').value.trim(), $('#lg-pass').value);
       else if (f.id === 'f-pin') await loginConPinAuth($('#pn-pin').value);
+      else if (f.id === 'f-ayuda') await enviarPedidoAyuda();
       else if (f.id === 'f-musico') await registrarMusico(f);
       else if (f.id === 'f-duenio') {
         if (!$('#sg-soy').checked) { toast('Confirmá que sos responsable de la sala', 'warn'); return; }
@@ -2282,7 +3518,8 @@ function wireAuth() {
         pantallaAuth('duenio-sala');
       } else if (f.id === 'f-sala') await registrarSala();
     } catch (err) {
-      toast(err.message || 'No se pudo completar la operación', 'error');
+      /* Si el error es de un dato puntual (usuario/email en uso, etc.), se marca el campo */
+      if (!mapearErrorServidor(err.message)) toast(err.message || 'No se pudo completar la operación', 'error');
     } finally {
       if (btn) { btn.disabled = false; btn.textContent = texto; }
     }
@@ -2360,6 +3597,19 @@ async function registrarSala() {
   mostrarPanel();
 }
 
+async function enviarPedidoAyuda() {
+  const data = await api('/api/auth/ayuda', {
+    method: 'POST',
+    body: {
+      motivo: $('#ay-motivo').value,
+      usuario: $('#ay-ident').value.trim(),
+      mensaje: $('#ay-msj').value.trim(),
+    },
+  });
+  toast(data.mensaje || 'Pedido enviado ✓', 'ok');
+  pantallaAuth('inicio');
+}
+
 async function iniciarSesion(user, pass) {
   const data = await api('/api/auth/login', { method: 'POST', body: { usuario: user, password: pass } });
   await iniciarSesionConToken(data);
@@ -2383,17 +3633,19 @@ async function iniciarSesionConToken(data) {
   miSala = data.room || null;
   state = await api('/api/state');
   adminMode = esSuper();
-  await cargarNotificaciones();
-  mostrarApp();
-  renderCalendar();
-  renderRooms();
-  goStep(1);
-  renderMineRapido();
-  renderMapa();
-  renderMine();   /* el perfil se repinta siempre: nada queda de la cuenta anterior */
+  arrancarApp();
+  renderMine();
 }
 
 async function cerrarSesion() {
+  const okSalir = await confirmarAccion(
+    '¿Cerrar sesión?',
+    'Cerrar sesión',
+    'Sí, salir',
+    'No, quedarme',
+    'peligro'
+  );
+  if (!okSalir) return;
   try { await api('/api/auth/logout', { method: 'POST' }); } catch (e) { /* sin conexión */ }
   guardarToken('');
   yo = null; miSala = null; notificaciones = []; sinLeer = 0;
@@ -2402,8 +3654,7 @@ async function cerrarSesion() {
   cerrarPanelAjustes();
   cerrarPanelNotif();
   closeModal();
-  /* Al salir se vuelve al inicio de todo: registrarse o iniciar sesión (sin modo espectador) */
-  pantallaAuth('inicio');
+  mostrarLogin();
   toast('Sesión cerrada', 'ok');
 }
 
@@ -2426,8 +3677,11 @@ async function abrirPanelNotif() {
   if (!drop) return;
   await cargarNotificaciones();
   renderPanelNotif();
+  prepararSwipeNotif();
   drop.classList.add('open');
   drop.setAttribute('aria-hidden', 'false');
+  /* Marcar la bienvenida como vista (solo aparece una vez) */
+  localStorage.setItem('mm-bienvenida-vista', '1');
 }
 
 function cerrarPanelNotif() {
@@ -2437,31 +3691,83 @@ function cerrarPanelNotif() {
   drop.setAttribute('aria-hidden', 'true');
 }
 
+/* ---------- Notificaciones (panel) ---------- */
+let notifFiltro = 'todas'; /* 'todas' | 'sin-leer' */
+
 function renderPanelNotif() {
   const bod = $('#notif-sheet-body');
   const sub = $('#notif-sheet-sub');
   if (!bod) return;
+
+  /* Subtítulo */
   sub.textContent = notificaciones.length
     ? (sinLeer ? `${sinLeer} sin leer · ${notificaciones.length} en total` : `${notificaciones.length} aviso(s)`)
     : 'Nada por acá todavía';
+
+  /* Tabs */
+  const tabs = document.querySelectorAll('#notif-tabs .notif-tab');
+  tabs.forEach(t => {
+    t.classList.toggle('active', t.dataset.notifTab === notifFiltro);
+    t.setAttribute('aria-selected', t.dataset.notifTab === notifFiltro ? 'true' : 'false');
+  });
+
+  /* Botones de acción */
   $('#notif-panel-leer').hidden = !sinLeer;
+  $('#notif-panel-borrar-todas').hidden = !notificaciones.length;
 
-  const confirmadas = notificaciones.filter(ES_CONFIRMADA);
-  const canceladas = notificaciones.filter(ES_CANCELADA);
-  const otros = notificaciones.filter(n => !ES_CONFIRMADA(n) && !ES_CANCELADA(n));
-  const grupo = (ico, titulo, lista) => lista.length
-    ? `<div class="notif-sec"><h4>${ico} ${titulo} <span class="n">${lista.length}</span></h4>${lista.map(itemNotif).join('')}</div>`
-    : '';
+  /* Filtrar */
+  const lista = notificaciones.filter(n => notifFiltro !== 'sin-leer' || !n.leida);
 
-  const promosHtml = promosActivas().length
-    ? `<div class="notif-sec"><h4>🎉 Promociones y novedades <span class="n">${promosActivas().length}</span></h4>${promosActivas().map(itemPromo).join('')}</div>`
-    : '';
+  /* Promos (solo la primera vez) */
+  const bienvenidaVista = localStorage.getItem('mm-bienvenida-vista') === '1';
+  const promos = promosActivas().filter(p => {
+    if (/bienvenido/i.test(p.titulo || '') && bienvenidaVista) return false;
+    return true;
+  });
+  const promosHtml = promos.length ? promos.map(itemPromo).join('') : '';
 
-  bod.innerHTML = promosHtml + (notificaciones.length
-    ? grupo('✅', 'Reservas confirmadas', confirmadas) +
-      grupo('🚫', 'Reservas canceladas', canceladas) +
-      grupo('📬', 'Otros avisos', otros)
-    : `<div class="notif-vacio"><b>No tenés notificaciones</b>Te avisamos cuando confirmes, modifiquen o cancelen una reserva tuya.</div>`);
+  /* Renderizar */
+  bod.innerHTML = promosHtml + (lista.length
+    ? lista.map(itemNotif).join('')
+    : `<div class="notif-vacio"><div class="notif-vacio-icon">🔔</div><h3>Todo al día</h3><p>Aquí aparecerán tus nuevas reservas y avisos.</p></div>`);
+}
+
+function itemNotif(n) {
+  const icono = n.tipo === 'ok' ? '✓' : n.tipo === 'warn' ? '⚠' : '📬';
+  const cls = n.leida ? '' : 'unread';
+  return `
+  <article class="notif-card ${cls}" data-notif-id="${n.id}" role="button" tabindex="0">
+    <div class="notif-icon" aria-hidden="true">${icono}</div>
+    <div class="notif-content">
+      <div class="notif-row-top">
+        <h4 class="notif-title">${esc(n.titulo)}</h4>
+        <span class="notif-time">${fechaNotif(n.fecha)}</span>
+      </div>
+      <p class="notif-detail">${esc(n.texto)}</p>
+      <div class="notif-card-actions">
+        ${n.leida ? '' : `<button class="notif-link" data-leer-notif="${n.id}">Marcar como leída</button>`}
+      </div>
+    </div>
+    <button class="notif-dismiss" aria-label="Borrar aviso" data-borrar-notif="${n.id}">✕</button>
+  </article>`;
+}
+
+function itemPromo(p) {
+  const rango = [p.desde, p.hasta].filter(Boolean)
+    .map(ts => new Date(ts).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' }))
+    .join(' → ');
+  return `
+  <article class="notif-card" data-promo-id="${p.id}" role="button" tabindex="0" title="Ver promoción">
+    <div class="notif-icon promo" aria-hidden="true">🎉</div>
+    <div class="notif-content">
+      <div class="notif-row-top">
+        <h4 class="notif-title">${esc(p.titulo)}</h4>
+      </div>
+      <p class="notif-detail">${esc(p.texto)}</p>
+      <span class="notif-chip">${rango ? 'Vigencia ' + rango : 'Promoción de las salas'}</span>
+    </div>
+    <button class="notif-dismiss" aria-label="Descartar promoción" onclick="this.closest('.notif-card').remove()">✕</button>
+  </article>`;
 }
 
 /* Promociones y novedades de la administración → también viven en la campana */
@@ -2471,24 +3777,20 @@ function promosActivas() {
     && (!p.desde || p.desde <= ahora) && (!p.hasta || p.hasta >= ahora));
 }
 
-function itemPromo(p) {
-  const rango = [p.desde, p.hasta].filter(Boolean)
-    .map(ts => new Date(ts).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' }))
-    .join(' → ');
-  return `<div class="notif-item promo-item" data-promo-id="${p.id}" role="button" tabindex="0" title="Ver promoción">
-    <span class="notif-chip info">🎉</span>
-    <div class="notif-txt">
-      <strong>${esc(p.titulo)}</strong>
-      <span>${esc(p.texto)}</span>
-      <small class="muted">${rango ? 'Vigencia ' + rango : 'Promoción de las salas'}</small>
-    </div>
-    <svg class="notif-flecha" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg>
-  </div>`;
-}
-
 function abrirPromo(id) {
   const p = (state.promociones || []).find(x => x.id === id);
   if (!p) return;
+  /* Promos de registro → panel de administración (super admin) */
+  if (/registro|registr/i.test(p.titulo || '') && esSuper()) {
+    cerrarPanelNotif();
+    showAdmin();
+    return;
+  }
+  /* Promos de bienvenida → solo cerrar, no navegar */
+  if (/bienvenido/i.test(p.titulo || '')) {
+    cerrarPanelNotif();
+    return;
+  }
   openModal(`<h3>${esc(p.titulo)}</h3>
     ${p.flyer ? `<img class="promo-flyer-img" src="${esc(p.flyer)}" alt="Flyer de ${esc(p.titulo)}">` : ''}
     ${p.texto ? `<p>${esc(p.texto)}</p>` : ''}
@@ -2507,6 +3809,7 @@ function itemNotif(n) {
       <span>${esc(n.texto)}</span>
       <small class="${n.leida ? 'muted' : ''}">${fechaNotif(n.fecha)}</small>
     </div>
+    <button class="notif-borrar" data-borrar-notif="${n.id}" title="Borrar aviso" aria-label="Borrar aviso">✕</button>
     <svg class="notif-flecha" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg>
   </div>`;
 }
@@ -2525,6 +3828,131 @@ async function marcarLeidasPanel() {
     await cargarNotificaciones();
     renderPanelNotif();   /* el panel sigue abierto, se repinta */
   } catch (e) { toast(e.message, 'error'); }
+}
+
+/* Marcar una notificación como leída */
+async function marcarUnaNotif(id) {
+  const n = notificaciones.find(x => x.id === id);
+  if (!n || n.leida) return;
+  n.leida = true;
+  sinLeer = notificaciones.filter(x => !x.leida).length;
+  renderPanelNotif();
+  pintarBadgeNotif();
+}
+
+/* Borrar una notificación individual (con animación de cierre) */
+async function borrarNotificacion(id, itemEl) {
+  const okBorrar = await confirmarAccion(
+    '¿Borrar este aviso?',
+    '¿Borrar aviso?',
+    'Sí, borrar',
+    'No',
+    'peligro'
+  );
+  if (!okBorrar) return;
+  try {
+    await api('/api/notificaciones/' + id, { method: 'DELETE' });
+    notificaciones = notificaciones.filter(n => n.id !== id);
+    /* Animar: colapsar la tarjeta para que las demás suban */
+    if (itemEl) {
+      itemEl.style.transition = 'height .3s ease, margin .3s ease, padding .3s ease, opacity .25s ease, transform .25s ease';
+      itemEl.style.height = itemEl.offsetHeight + 'px';
+      itemEl.style.overflow = 'hidden';
+      requestAnimationFrame(() => {
+        itemEl.style.height = '0px';
+        itemEl.style.margin = '0px';
+        itemEl.style.padding = '0px';
+        itemEl.style.opacity = '0';
+        itemEl.style.transform = 'scale(.95)';
+      });
+      setTimeout(() => { renderPanelNotif(); pintarBadgeNotif(); }, 320);
+    } else {
+      renderPanelNotif();
+      pintarBadgeNotif();
+    }
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+/* Borrar todas las notificaciones */
+async function borrarTodasNotificaciones() {
+  if (!notificaciones.length) return;
+  const okBorrarTodas = await confirmarAccion(
+    '¿Borrar todos los avisos?',
+    '¿Borrar todo?',
+    'Sí, borrar todo',
+    'No',
+    'peligro'
+  );
+  if (!okBorrarTodas) return;
+  try {
+    await api('/api/notificaciones', { method: 'DELETE' });
+    notificaciones = [];
+    renderPanelNotif();
+    pintarBadgeNotif();
+    toast('Avisos borrados', 'ok');
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+/* Deslizar una notificación para borrarla (swipe a izquierda o derecha)
+   y deslizar hacia arriba para cerrar el panel */
+function prepararSwipeNotif() {
+  const cont = $('#notif-sheet-body');
+  const sheet = $('#notif-sheet');
+  if (!cont || cont._swipeOk) return;
+  cont._swipeOk = true;
+  let activo = null, x0 = 0, y0 = 0, dx = 0, dy = 0;
+
+  cont.addEventListener('touchstart', e => {
+    const item = e.target.closest('.notif-item');
+    if (!item || e.target.closest('.notif-borrar')) return;
+    activo = item;
+    x0 = e.touches[0].clientX;
+    y0 = e.touches[0].clientY;
+    dx = 0; dy = 0;
+    item.style.transition = 'none';
+  }, { passive: true });
+
+  cont.addEventListener('touchmove', e => {
+    if (!activo) return;
+    dx = e.touches[0].clientX - x0;
+    dy = e.touches[0].clientY - y0;
+    /* Swipe horizontal → borrar */
+    if (Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy)) {
+      activo.style.transform = `translateX(${Math.max(-90, Math.min(90, dx))}px)`;
+      activo.classList.add('swipe-borrando');
+    }
+  }, { passive: true });
+
+  cont.addEventListener('touchend', () => {
+    if (!activo) return;
+    const item = activo;
+    activo = null;
+    if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy)) {
+      borrarNotificacion(item.dataset.notifId, item);
+    } else {
+      item.style.transition = 'transform .25s ease';
+      item.style.transform = '';
+      item.classList.remove('swipe-borrando');
+    }
+  });
+
+  /* Swipe hacia arriba en el panel → cerrar */
+  if (sheet && !sheet._swipeUpOk) {
+    sheet._swipeUpOk = true;
+    let yStart = 0, yEnd = 0;
+    sheet.addEventListener('touchstart', e => {
+      if (e.target.closest('.notif-item')) return;   /* las notificaciones manejan su propio swipe */
+      yStart = e.touches[0].clientY;
+      yEnd = yStart;
+    }, { passive: true });
+    sheet.addEventListener('touchmove', e => {
+      yEnd = e.touches[0].clientY;
+    }, { passive: true });
+    sheet.addEventListener('touchend', () => {
+      if (yStart - yEnd > 80) cerrarPanelNotif();   /* subió más de 80px */
+      yStart = 0; yEnd = 0;
+    });
+  }
 }
 
 /* ---------- Navegación desde una notificación ---------- */
@@ -2552,8 +3980,30 @@ async function irANotificacion(id) {
   }
 
   /* Avisos de reservas propias → "Mis reservas" filtradas (próximas / historial) */
-  irReservasFiltradas(/cancelada/i.test(n.titulo || '') ? 'historial' : 'proximas');
-  if (r) setTimeout(() => resaltarReserva(r.id, '#home-mine-body'), 180);
+  if (r) {
+    irReservasFiltradas(/cancelada/i.test(n.titulo || '') ? 'historial' : 'proximas');
+    setTimeout(() => resaltarReserva(r.id, '#home-mine-body'), 180);
+    return;
+  }
+
+  /* Avisos de nuevo registro → panel de administración */
+  if (/registro|registr/i.test(n.titulo || '') && esSuper()) {
+    showAdmin();
+    return;
+  }
+
+  /* Avisos de cuenta / perfil / bienvenida → solo mostrar, no navegar, se borran solos */
+  if (/bienvenido/i.test(n.titulo || '')) {
+    const itemEl = document.querySelector(`[data-notif-id="${n.id}"]`);
+    borrarNotificacion(n.id, itemEl);
+    cerrarPanelNotif();
+    return;
+  }
+
+  /* Otros avisos sin reserva → Inicio */
+  cerrarPanelNotif();
+  const navInicio = document.getElementById('nav-inicio');
+  if (navInicio) navInicio.click();
 }
 
 /* Marca visualmente la tarjeta de una reserva y la trae al centro */
@@ -2698,6 +4148,9 @@ function renderPerfilCuenta() {
 
   box.hidden = false;
   const instrumentos = (yo.instrumentos || []).join(', ');
+  const nReservas = misReservas().length;
+  const nFavoritas = (yo.favoritos || []).length;
+  const nBandas = (state.bandas || []).filter(b => b.integrantes && b.integrantes.some(i => i.nombre && i.nombre.toLowerCase().includes((yo.nombre || '').toLowerCase()))).length || 0;
   box.innerHTML = `
     <div class="panel-head"><h2>Mis datos</h2></div>
     <div class="aj-cuenta">
@@ -2709,11 +4162,17 @@ function renderPerfilCuenta() {
           <span class="badge">${esDueño() ? '🎛️ Dueño de sala' : esSuper() ? '👑 Administración general' : '🎸 Músico'}</span>
           ${miSala ? `<span class="badge ${miSala.estado === 'aprobada' ? '' : 'badge-next'}">Sala: ${esc(miSala.name)} · ${miSala.estado}</span>` : ''}
         </span>
-        <div class="row wrap" style="gap:12px;margin-top:8px">
-          <button class="aj-editar" id="btn-editar-perfil">✏️ Editar perfil</button>
-          <button class="aj-editar" id="btn-cambiar-pass">🔑 Cambiar contraseña</button>
-        </div>
       </div>
+    </div>
+
+    <div class="perfil-stats">
+      <div class="perfil-stat"><strong>${nReservas}</strong><span>Reservas</span></div>
+      <div class="perfil-stat"><strong>${nFavoritas}</strong><span>Favoritas</span></div>
+      <div class="perfil-stat"><strong>${nBandas}</strong><span>Bandas</span></div>
+    </div>
+
+    <div class="row wrap" style="gap:12px;margin-bottom:14px">
+      <button class="aj-editar" id="btn-editar-perfil">✏️ Editar perfil</button>
     </div>
 
     <p class="aj-lbl">Datos</p>
@@ -2731,7 +4190,7 @@ function renderPerfilCuenta() {
         <span class="aj-txt">Instrumentos<small>${instrumentos || 'No agregaste ninguno'}</small></span>
       </div>
       <div class="aj-row aj-dato">${svgAj(ICO_AJ.cal)}
-        <span class="aj-txt">Cuenta creada<small>${yo.createdAt ? fechaCorta(yo.createdAt) : '—'}</small></span>
+        <span class="aj-txt">Cuenta creada<small>${yo.creado ? fechaCorta(yo.creado) : '—'}</small></span>
       </div>
     </div>`;
 
@@ -3483,7 +4942,14 @@ function wirePanel() {
     if (ed) return editarReservaPanel(ed.dataset.editarRes);
     const cx = e.target.closest('[data-cancelar-res]');
     if (!cx) return;
-    if (!confirm('¿Cancelar esta reserva? Se le avisa al músico.')) return;
+    const okCancel = await confirmarAccion(
+      '¿Cancelar esta reserva? Se le avisa al músico.',
+      '¿Cancelar reserva?',
+      'Sí, cancelar',
+      'No, mantener',
+      'peligro'
+    );
+    if (!okCancel) return;
     try {
       const data = await api(`/api/panel/reserva/${cx.dataset.cancelarRes}?roomId=${encodeURIComponent(panelDatos.room.id)}`, { method: 'DELETE' });
       state = data.state;
@@ -3550,69 +5016,33 @@ function renderLugarTab(tab) {
   else renderFotosLugar();
 }
 
-
 function fotoInstrumento(i) {
   return i.foto
-    ? `<img src="${esc(i.foto)}" alt="${esc(i.nombre)}" data-foto="${esc(i.foto)}" data-foto-alt="${esc(i.nombre)}" class="cursor-zoom" title="Toca para ver la foto en grande" onerror="this.parentElement.innerHTML='<span class=inst-emoji>🎸</span>'">`
+    ? `<img src="${esc(i.foto)}" alt="${esc(i.nombre)}" onerror="this.parentElement.innerHTML='<span class=inst-emoji>🎸</span>'">`
     : '<span class="inst-emoji">🎸</span>';
-}
-
-function verDetalleInstrumento(id) {
-  const i = (state.instruments || []).find(x => x.id === id);
-  if (!i) return;
-  const telLugar = (state.settings && state.settings.phone) || '';
-  const waLugar = String(telLugar).replace(/[^0-9]/g, '');
-  const textoWa = encodeURIComponent(`¡Hola! Quisiera consultar sobre el instrumento "${i.nombre}" en Más Música.`);
-  const linkWa = waLugar ? `https://wa.me/${waLugar}?text=${textoWa}` : '';
-  openModal(`
-    <div class="inst-modal-detalle">
-      ${i.foto
-        ? `<div class="inst-modal-foto-wrap"><img src="${esc(i.foto)}" alt="${esc(i.nombre)}" data-foto="${esc(i.foto)}" data-foto-alt="${esc(i.nombre)}" class="inst-modal-foto" title="Toca para ampliar en pantalla completa"></div>`
-        : '<div class="inst-modal-foto-empty">🎸</div>'}
-      <h3>${esc(i.nombre)}</h3>
-      ${i.descripcion ? `<p class="inst-modal-desc">${esc(i.descripcion)}</p>` : ''}
-      <div class="inst-modal-chips">
-        <span class="chip chip-alt">🎸 Equipamiento de ensayo</span>
-        ${i.alquiler
-          ? `<span class="tag tag-alquiler">🎒 Alquiler disponible: ${fmtMoney(i.precioAlquiler)} / hora</span>`
-          : '<span class="chip">Disponible para ensayos</span>'}
-      </div>
-      <div class="row" style="margin-top: 14px;">
-        ${linkWa ? `<a class="btn btn-primary" href="${linkWa}" target="_blank" rel="noopener">💬 Consultar por WhatsApp</a>` : ''}
-        <button class="btn ${linkWa ? '' : 'btn-primary'}" id="modal-inst-salas">Ver salas para ensayar</button>
-        <button class="btn" id="modal-inst-cerrar">Cerrar</button>
-      </div>
-    </div>`);
-  $('#modal-inst-cerrar').onclick = closeModal;
-  $('#modal-inst-salas').onclick = () => { closeModal(); irSalas(); };
 }
 
 function renderInstrumentos() {
   const list = (state.instruments || []).filter(i => i.activo !== false);
   $('#instruments-grid').innerHTML = list.length ? list.map(i => `
-    <article class="inst-card" data-inst="${i.id}">
+    <article class="inst-card">
       <div class="inst-photo">${fotoInstrumento(i)}</div>
       <h3>${esc(i.nombre)}</h3>
       ${i.descripcion ? `<p class="muted">${esc(i.descripcion)}</p>` : ''}
       ${i.alquiler ? `<span class="tag tag-alquiler">🎒 Alquiler ${fmtMoney(i.precioAlquiler)}/hora</span>` : ''}
-      <div class="inst-actions">
-        <button class="btn btn-sm" data-ver-inst="${i.id}">🔍 Ver detalle</button>
-      </div>
     </article>`).join('')
     : '<p class="muted">No hay instrumentos para mostrar.</p>';
 }
 
+/* Instrumentos que se pueden alquilar */
 function renderAlquiler() {
   const list = (state.instruments || []).filter(i => i.activo !== false && i.alquiler);
   $('#alquiler-grid').innerHTML = list.length ? list.map(i => `
-    <article class="inst-card alquiler-card" data-inst="${i.id}">
+    <article class="inst-card alquiler-card">
       <div class="inst-photo">${fotoInstrumento(i)}</div>
       <h3>${esc(i.nombre)}</h3>
       ${i.descripcion ? `<p class="muted">${esc(i.descripcion)}</p>` : ''}
       <div class="alquiler-precio">${fmtMoney(i.precioAlquiler)}<span> / hora</span></div>
-      <div class="inst-actions">
-        <button class="btn btn-sm btn-primary" data-ver-inst="${i.id}">🎒 Consultar alquiler</button>
-      </div>
     </article>`).join('')
     : '<p class="muted">Por ahora no hay instrumentos en alquiler.</p>';
 }
@@ -3719,13 +5149,6 @@ function wirePublic() {
   document.addEventListener('click', e => {
     const f = e.target.closest('[data-foto]');
     if (f) { verFoto(f.dataset.foto, f.dataset.fotoAlt || ''); return; }
-    const vi = e.target.closest('[data-ver-inst]');
-    if (vi) { verDetalleInstrumento(vi.dataset.verInst); return; }
-    const ic = e.target.closest('.inst-card');
-    if (ic && ic.dataset.inst && !e.target.closest('button, a')) {
-      verDetalleInstrumento(ic.dataset.inst);
-      return;
-    }
     const b = e.target.closest('[data-band]');
     if (b) verPerfilBanda(b.dataset.band);
   });
@@ -3737,13 +5160,44 @@ function wirePublic() {
     inicio: irInicio,
     salas: irSalas,
     mapa: irMapa,
+    comunidad: () => irComunidad(),
     instrumentos: irInstrumentos,
     perfil: irMisReservas,
     admin: () => (esSuper() ? showAdmin() : enterAdmin()),
+    panel: () => { mostrarPanel(); setNav('panel'); },
   };
   $$('#dock-container [data-nav]').forEach(b => {
     b.onclick = () => ACCIONES_NAV[b.dataset.nav]();
   });
+  /* Comunidad (solo músicos) */
+  if ($('#view-comunidad')) {
+    $$('#view-comunidad .comu-tab').forEach(b => { b.onclick = () => cambiarComuTab(b.dataset.comuTab); });
+    const comuBuscar = $('#comu-buscar');
+    if (comuBuscar) comuBuscar.oninput = e => {
+      comuBusqueda = e.target.value;
+      clearTimeout(comuBuscarTimer);
+      comuBuscarTimer = setTimeout(cargarComuMusicos, 300);
+    };
+    const comuZona = $('#comu-zona');
+    if (comuZona) comuZona.onclick = () => {
+      if (!yo || !yo.localidad) { toast('Cargá tu localidad en el Perfil para filtrar por zona', 'warn'); return; }
+      comuSoloZona = !comuSoloZona;
+      comuZona.classList.toggle('btn-primary', comuSoloZona);
+      cargarComuMusicos();
+    };
+    $('#view-comunidad').onclick = e => {
+      const sg = e.target.closest('[data-comu-seguir]');
+      if (sg) return comuSeguir(sg.dataset.comuSeguir, sg);
+      const msg = e.target.closest('[data-comu-msg]');
+      if (msg) return abrirComuChat(msg.dataset.comuMsg);
+      const op = e.target.closest('[data-comu-open]');
+      if (op) return abrirComuChat(op.dataset.comuOpen);
+      if (e.target.closest('#comu-chat-volver')) return cambiarComuTab('mensajes');
+    };
+    $('#view-comunidad').addEventListener('submit', e => {
+      if (e.target.id === 'comu-form') { e.preventDefault(); enviarComuMensaje($('#comu-input').value); }
+    });
+  }
   $('#home-search').oninput = e => { busquedaMine = e.target.value; renderMineRapido(); };
   /* Perfil / Ajustes: filas, apariencia, avisos y accesos */
   $('#mine-user').onclick = e => {
@@ -3791,19 +5245,39 @@ function wirePublic() {
   $('#notif-panel-cerrar').onclick = cerrarPanelNotif;
   $('#notif-backdrop').onclick = cerrarPanelNotif;
   $('#notif-panel-leer').onclick = marcarLeidasPanel;
+  $('#notif-panel-borrar-todas').onclick = borrarTodasNotificaciones;
   /* Tocar una notificación lleva a la reserva correspondiente */
   $('#notif-sheet-body').onclick = e => {
+    const borrar = e.target.closest('[data-borrar-notif]');
+    if (borrar) {
+      e.stopPropagation();
+      const card = borrar.closest('.notif-card');
+      return borrarNotificacion(borrar.dataset.borrarNotif, card);
+    }
+    const leer = e.target.closest('[data-leer-notif]');
+    if (leer) {
+      e.stopPropagation();
+      return marcarUnaNotif(leer.dataset.leerNotif);
+    }
     const pr = e.target.closest('[data-promo-id]');
     if (pr) return abrirPromo(pr.dataset.promoId);
-    const it = e.target.closest('.notif-item');
+    const it = e.target.closest('.notif-card[data-notif-id]');
     if (it) irANotificacion(it.dataset.notifId);
   };
   $('#notif-sheet-body').onkeydown = e => {
     if (e.key !== 'Enter' && e.key !== ' ') return;
     const pr = e.target.closest('[data-promo-id]');
     if (pr) { e.preventDefault(); return abrirPromo(pr.dataset.promoId); }
-    const it = e.target.closest('.notif-item');
+    const it = e.target.closest('.notif-card[data-notif-id]');
     if (it) { e.preventDefault(); irANotificacion(it.dataset.notifId); }
+  };
+  /* Tabs de notificaciones (Todas / Sin leer) */
+  $('#notif-tabs').onclick = e => {
+    const tab = e.target.closest('.notif-tab');
+    if (!tab) return;
+    notifFiltro = tab.dataset.notifTab;
+    renderPanelNotif();
+    prepararSwipeNotif();
   };
   document.addEventListener('keydown', e => {
     if (e.key !== 'Escape') return;
@@ -3851,7 +5325,14 @@ function wirePublic() {
     if (!b) return;
     const r = state.reservations.find(x => x.id === b.dataset.mineCancel);
     if (!r) return;
-    if (!confirm(`¿Cancelar tu reserva del ${fmtDate(r.date)} ${r.start} – ${r.end}?\nEl horario quedará libre.`)) return;
+    const okRes = await confirmarAccion(
+      `¿Cancelar tu reserva del ${fmtDate(r.date)} ${r.start} – ${r.end}? El horario quedará libre.`,
+      '¿Cancelar reserva?',
+      'Sí, cancelar',
+      'No, mantener',
+      'peligro'
+    );
+    if (!okRes) return;
     try {
       const data = await api(`/api/reservations/${r.id}/cancel`, {
         method: 'POST',
@@ -3936,6 +5417,7 @@ function showAdmin() {
   ocultarVistas();
   $('#view-admin').hidden = false;
   $('#btn-exit-admin').hidden = false;
+  document.body.classList.add('admin-abierto');
   setNav('admin');
   /* Arranca en las solicitudes pendientes si hay alguna */
   currentAdminTab = 'inicio';
@@ -3952,6 +5434,7 @@ function actualizarAdminHead() {
 function salirAdmin() {
   adminMode = false;
   adminPin = '';
+  document.body.classList.remove('admin-abierto');
   ocultarVistas();
   $('#view-public').hidden = false;
   $('#btn-exit-admin').hidden = true;
@@ -3962,7 +5445,7 @@ function salirAdmin() {
   goStep(1);
 }
 
-const TABS_ADMIN = ['inicio', 'solicitudes', 'usuarios', 'reservas', 'historial', 'salas', 'horarios', 'bloqueos', 'estadisticas', 'ajustes', 'lugar', 'bandas', 'promociones'];
+const TABS_ADMIN = ['inicio', 'solicitudes', 'usuarios', 'ayuda', 'reservas', 'historial', 'salas', 'horarios', 'bloqueos', 'estadisticas', 'promociones', 'pagos', 'ajustes', 'lugar', 'bandas'];
 
 function renderAdminTab(tab) {
   currentAdminTab = tab;
@@ -3972,20 +5455,49 @@ function renderAdminTab(tab) {
     inicio: renderInicioAdmin,
     solicitudes: renderSolicitudes,
     usuarios: renderUsuarios,
+    ayuda: renderAyuda,
     reservas: renderReservasAdmin,
     historial: renderHistorial,
     salas: renderSalasAdmin,
     horarios: renderHorariosAdmin,
     bloqueos: renderBloqueosAdmin,
     estadisticas: renderStats,
+    promociones: renderPromocionesAdmin,
+    pagos: renderPagosAdmin,
     ajustes: renderAjustes,
     lugar: renderLugarAdmin,
     bandas: renderBandasAdmin,
-    promociones: renderPromocionesAdmin,
   }[tab])();
   const pend = (state.rooms || []).filter(r => r.estado === 'pendiente').length;
   const pill = $('#pill-solicitudes');
   if (pill) { pill.hidden = !pend; pill.textContent = pend; }
+  const pendAyuda = (window.__ayuda || []).filter(a => a.estado === 'pendiente').length;
+  const pillAy = $('#pill-ayuda');
+  if (pillAy) { pillAy.hidden = !pendAyuda; pillAy.textContent = pendAyuda; }
+  actualizarIndicadorAdmin(tab);
+}
+
+/* Indicador deslizante bajo las pestañas del admin */
+function actualizarIndicadorAdmin(tab) {
+  const cont = document.querySelector('.admin-tabs');
+  if (!cont) return;
+  let indicator = cont.querySelector('.admin-tab-indicator');
+  if (!indicator) {
+    indicator = document.createElement('div');
+    indicator.className = 'admin-tab-indicator';
+    cont.style.position = 'relative';
+    cont.appendChild(indicator);
+  }
+  const btn = [...cont.querySelectorAll('.admin-tab')].find(t => t.dataset.tab === tab);
+  if (!btn) return;
+  const r = btn.getBoundingClientRect();
+  const rc = cont.getBoundingClientRect();
+  indicator.style.width = r.width + 'px';
+  indicator.style.transform = `translateX(${r.left - rc.left + cont.scrollLeft}px)`;
+
+  /* Centrar la pestaña activa en la barra (auto-scroll) */
+  const scrollObjetivo = btn.offsetLeft - (cont.clientWidth - btn.offsetWidth) / 2;
+  cont.scrollTo({ left: Math.max(0, scrollObjetivo), behavior: 'smooth' });
 }
 
 /* ---------- Solicitudes de salas (aprobación) ---------- */
@@ -4002,35 +5514,51 @@ function renderSolicitudes() {
       .catch(e => { cont.innerHTML = `<p class="muted">${esc(e.message)}</p>`; });
     return;
   }
+
+  /* Estadísticas */
+  const nPend = listaSolicitudes.filter(r => r.estado === 'pendiente').length;
+  const nAprob = listaSolicitudes.filter(r => r.estado === 'aprobada').length;
+  const nRech = listaSolicitudes.filter(r => r.estado === 'rechazada' || r.estado === 'suspendida').length;
+  const elP = $('#sol-stat-pend'); if (elP) elP.textContent = nPend;
+  const elA = $('#sol-stat-aprob'); if (elA) elA.textContent = nAprob;
+  const elR = $('#sol-stat-rech'); if (elR) elR.textContent = nRech;
+  const elT = $('#sol-c-todas'); if (elT) elT.textContent = listaSolicitudes.length;
+  const elCP = $('#sol-c-pend'); if (elCP) elCP.textContent = nPend;
+  const elCA = $('#sol-c-aprob'); if (elCA) elCA.textContent = nAprob;
+  const elCR = $('#sol-c-rech'); if (elCR) elCR.textContent = nRech;
+
   const lista = listaSolicitudes.filter(r => filtroSolicitudes === 'todas' || r.estado === filtroSolicitudes);
   const orden = { pendiente: 0, rechazada: 1, suspendida: 2, aprobada: 3 };
   lista.sort((a, b) => (orden[a.estado] - orden[b.estado]) || ((b.solicitud && b.solicitud.fecha) - (a.solicitud && a.solicitud.fecha)));
-  const ETIQUETA = { pendiente: '🕒 Pendiente', aprobada: '🟢 Aprobada', rechazada: '⛔ Rechazada', suspendida: '⏸ Suspendida' };
+
+  /* Contador */
+  const elCont = $('#sol-contador');
+  if (elCont) elCont.textContent = `${lista.length} de ${listaSolicitudes.length}`;
+
+  /* Estado vacío */
+  const elVacio = $('#sol-vacio');
+  if (elVacio) elVacio.hidden = lista.length > 0;
+
+  const CLASE_ESTADO = { pendiente: 'sol-pendiente', aprobada: 'sol-aprobada', rechazada: 'sol-rechazada', suspendida: 'sol-rechazada' };
+  const PILL_ESTADO = { pendiente: 'Pendiente', aprobada: 'Aprobada', rechazada: 'Rechazada', suspendida: 'Suspendida' };
+
   cont.innerHTML = lista.length ? lista.map(r => `
-    <div class="sol-card ${r.estado}">
-      <div class="sol-top">
-        ${r.foto ? `<img class="sol-logo" src="${esc(r.foto)}" alt="">` : '<span class="sol-logo sin-foto">🎸</span>'}
-        <div class="sol-info">
-          <strong>${esc(r.name)}</strong>
-          <span class="muted small">${esc([r.localidad, r.direccion].filter(Boolean).join(' · '))}</span>
-          <span class="muted small">👤 ${r.duenio ? esc(r.duenio.nombre + ' (@' + r.duenio.usuario + ')') : 'Sin dueño asignado'}${r.duenio && r.duenio.telefono ? ' · 📞 ' + esc(r.duenio.telefono) : ''}</span>
-          <span class="muted small">${fmtMoney(r.price)}/h · 👥 ${r.capacity} · enviada ${r.solicitud && r.solicitud.fecha ? fechaCorta(r.solicitud.fecha) : '—'}</span>
+    <article class="sol-req ${CLASE_ESTADO[r.estado] || ''}">
+      <div class="sol-req-top">
+        <div>
+          <h3>${esc(r.name)}</h3>
+          <p class="sol-req-meta">${esc([r.localidad, r.direccion].filter(Boolean).join(' · '))} · 👥 ${r.capacity}</p>
+          <p class="sol-req-meta">Enviada por ${r.duenio ? '@' + esc(r.duenio.usuario) : '—'}${r.solicitud && r.solicitud.fecha ? ' · ' + fechaCorta(r.solicitud.fecha) : ''}</p>
+          ${r.descripcion ? `<p class="sol-req-desc">${esc(r.descripcion)}</p>` : ''}
         </div>
-        <span class="badge ${r.estado === 'aprobada' ? '' : 'badge-next'}">${ETIQUETA[r.estado]}</span>
+        <span class="sol-pill">${PILL_ESTADO[r.estado] || r.estado}</span>
       </div>
-      ${r.descripcion ? `<p class="sol-desc">${esc(r.descripcion)}</p>` : ''}
-      ${Object.values(r.equipos || {}).filter(Boolean).length ? `<div class="ficha-chips">${Object.entries(r.equipos).filter(([, v]) => v).map(([, v]) => `<span class="chip">${esc(v.slice(0, 28))}</span>`).join('')}</div>` : ''}
-      ${r.solicitud && r.solicitud.motivo ? `<p class="muted small">📝 ${esc(r.solicitud.motivo)}</p>` : ''}
-      <div class="row wrap">
-        ${r.estado === 'pendiente' ? `
-          <button class="btn btn-primary btn-sm" data-sol-ok="${r.id}">✅ Aprobar</button>
-          <button class="btn btn-sm" data-sol-corr="${r.id}">✏️ Pedir correcciones</button>
-          <button class="btn btn-sm btn-danger" data-sol-no="${r.id}">⛔ Rechazar</button>` : `
-          <button class="btn btn-sm" data-sol-ok="${r.id}">🟢 Activar / aprobar</button>
-          <button class="btn btn-sm btn-danger" data-sol-no="${r.id}">${r.estado === 'suspendida' ? '⛔ Rechazar' : '⏸ Suspender'}</button>`}
-        <button class="btn btn-sm" data-sol-editar="${r.id}">✏️ Editar datos</button>
-      </div>
-    </div>`).join('') : '<p class="muted">No hay salas con ese estado.</p>';
+      ${r.estado === 'pendiente' ? `
+      <div class="sol-req-actions">
+        <button class="btn ghost" data-sol-no="${r.id}">Rechazar</button>
+        <button class="btn ok" data-sol-ok="${r.id}">Aprobar</button>
+      </div>` : ''}
+    </article>`).join('') : '';
 }
 
 async function accionSolicitud(id, accion, motivo) {
@@ -4051,28 +5579,79 @@ async function accionSolicitud(id, accion, motivo) {
 
 /* ---------- Cuentas registradas ---------- */
 let filtroUsuarios = '';
+
 function renderUsuarios() {
   const cont = $('#usuarios-list');
   if (!cont) return;
   if (!window.__usuarios) { cont.innerHTML = '<p class="muted">Cargando cuentas…</p>'; cargarUsuarios(); return; }
-  const q = filtroUsuarios.trim().toLowerCase();
-  const lista = window.__usuarios.filter(u => !q ||
-    (u.nombre + ' ' + u.usuario + ' ' + u.email).toLowerCase().includes(q));
-  const ROL = { USER: '🎸 Músico', ROOM_ADMIN: '🎛️ Dueño de sala', SUPER_ADMIN: '👑 Administración general' };
-  cont.innerHTML = lista.length ? `<table class="tabla">
-    <thead><tr><th>Cuenta</th><th>Rol</th><th>Salas</th><th>Reservas</th><th>Estado</th><th></th></tr></thead>
-    <tbody>${lista.map(u => `<tr>
-      <td><strong>${esc(u.nombre)}</strong><br><span class="muted small">@${esc(u.usuario)} · ${esc(u.email)}${u.telefono ? ' · 📞 ' + esc(u.telefono) : ''}</span></td>
-      <td>${ROL[u.rol] || esc(u.rol)}${u.localidad ? `<br><span class="muted small">📍 ${esc(u.localidad)}</span>` : ''}</td>
-      <td>${(u.salas || []).map(s => `<span class="chip ${s.estado === 'aprobada' ? '' : 'chip-alt'}">${esc(s.name)}</span>`).join(' ') || '<span class="muted small">—</span>'}</td>
-      <td>${u.reservas || 0}</td>
-      <td>${u.bloqueado ? '<span class="badge badge-past">🚫 Bloqueada</span>' : u.activo === false ? '<span class="badge badge-past">⏸ Desactivada</span>' : '<span class="badge">🟢 Activa</span>'}</td>
-      <td class="acciones-td">
-        <button class="btn btn-sm" data-user-bloquear="${u.id}">${u.bloqueado ? 'Desbloquear' : 'Bloquear'}</button>
-        <button class="btn btn-sm" data-user-rol="${u.id}">Cambiar rol</button>
-        <button class="btn btn-sm btn-danger" data-user-borrar="${u.id}">Eliminar</button>
-      </td>
-    </tr>`).join('')}</tbody></table>` : '<p class="muted">No hay cuentas con ese criterio.</p>';
+
+  const ROL = { USER: { label: 'Músico', emoji: '🎸', cls: 'musico' }, ROOM_ADMIN: { label: 'Dueño de sala', emoji: '🎛️', cls: 'sala' }, SUPER_ADMIN: { label: 'Admin', emoji: '👑', cls: 'admin' } };
+
+  /* Contadores por rol */
+  const counts = { '': window.__usuarios.length };
+  window.__usuarios.forEach(u => { counts[u.rol] = (counts[u.rol] || 0) + 1; });
+
+  /* Chips de filtro */
+  const chips = $('#usuarios-chips');
+  if (chips) {
+    const items = [['', 'Todos'], ['USER', 'Músicos'], ['ROOM_ADMIN', 'Dueños'], ['SUPER_ADMIN', 'Admin']];
+    chips.innerHTML = items.map(([k, label]) =>
+      `<button class="cuentas-chip${filtroUsuarios === k ? ' active' : ''}" data-filtro-usuarios="${k}">${label} ${counts[k] || 0}</button>`
+    ).join('');
+  }
+
+  /* Filtrar y buscar */
+  const q = ($('#usuarios-buscar') || {}).value || '';
+  const qNorm = q.trim().toLowerCase();
+  const lista = window.__usuarios.filter(u =>
+    (!filtroUsuarios || u.rol === filtroUsuarios) &&
+    (!qNorm || (u.nombre + ' ' + u.usuario + ' ' + u.email).toLowerCase().includes(qNorm))
+  );
+
+  /* Contador */
+  const elCont = $('#usuarios-contador');
+  if (elCont) elCont.textContent = `${lista.length} de ${window.__usuarios.length}`;
+
+  /* Vacío */
+  const elVacio = $('#usuarios-vacio');
+  if (elVacio) elVacio.hidden = lista.length > 0;
+
+  /* Renderizar tarjetas */
+  cont.innerHTML = lista.length ? lista.map(u => {
+    const r = ROL[u.rol] || { label: u.rol, emoji: '🎸', cls: '' };
+    const isAdmin = u.rol === 'SUPER_ADMIN';
+    const blocked = u.bloqueado;
+    const off = u.activo === false;
+    const statusPill = blocked ? '<span class="cuentas-pill off">Bloqueada</span>'
+      : off ? '<span class="cuentas-pill off">Desactivada</span>'
+      : `<span class="cuentas-pill ${r.cls}">${r.emoji} ${r.label}</span>`;
+    const meta = [
+      u.email && `<span>📧 ${esc(u.email)}</span>`,
+      u.telefono && `<span>📞 ${esc(u.telefono)}</span>`,
+      u.localidad && `<span>📍 ${esc(u.localidad)}</span>`,
+    ].filter(Boolean).join(' ');
+
+    return `
+      <article class="cuentas-card" data-id="${u.id}">
+        <div class="cuentas-card-top">
+          <div class="cuentas-avatar ${r.cls}">${esc((u.nombre||'?')[0].toUpperCase())}</div>
+          <div class="cuentas-who">
+            <h3>${esc(u.nombre)}</h3>
+            <p>@${esc(u.usuario)}</p>
+          </div>
+          ${statusPill}
+        </div>
+        ${meta ? `<div class="cuentas-meta">${meta}</div>` : ''}
+        <div class="cuentas-actions">
+          <select class="cuentas-rol" aria-label="Cambiar rol de ${esc(u.nombre)}" data-user-rol="${u.id}" ${isAdmin ? 'disabled' : ''}>
+            ${Object.entries(ROL).filter(([k]) => k !== 'SUPER_ADMIN').map(([k, v]) =>
+              `<option value="${k}" ${u.rol === k ? 'selected' : ''}>${v.label}</option>`).join('')}
+          </select>
+          <button class="btn btn-sm" data-user-bloquear="${u.id}" ${isAdmin ? 'disabled' : ''}>${blocked ? 'Desbloquear' : 'Bloquear'}</button>
+          <button class="btn btn-sm btn-danger" data-user-borrar="${u.id}" ${isAdmin ? 'disabled' : ''}>Eliminar</button>
+        </div>
+      </article>`;
+  }).join('') : '';
 }
 
 async function cargarUsuarios() {
@@ -4085,28 +5664,95 @@ async function cargarUsuarios() {
   }
 }
 
-async function accionUsuario(id, accion) {
+async function accionUsuario(id, accion, nuevoRol) {
   const u = (window.__usuarios || []).find(x => x.id === id);
   if (!u) return;
   try {
     if (accion === 'borrar') {
-      if (!confirm(`¿Eliminar la cuenta de ${u.nombre}? Se borra su historial de reservas.`)) return;
+      const okEliminar = await confirmarAccion(
+        `¿Eliminar la cuenta de ${u.nombre}? Se borra su historial de reservas.`,
+        '¿Eliminar cuenta?',
+        'Sí, eliminar',
+        'No, mantener',
+        'peligro'
+      );
+      if (!okEliminar) return;
       const data = await api(`/api/admin/usuarios/${id}`, { method: 'DELETE', admin: true });
       state = data.state;
     } else if (accion === 'bloquear') {
       const data = await api(`/api/admin/usuarios/${id}`, { method: 'PUT', admin: true, body: { bloqueado: !u.bloqueado } });
       state = data.state;
     } else if (accion === 'rol') {
-      const nuevo = prompt(
-        `Rol de ${u.nombre}:\n1) USER — músico\n2) ROOM_ADMIN — dueño de sala\n3) SUPER_ADMIN — administración general`,
-        u.rol === 'USER' ? '1' : u.rol === 'ROOM_ADMIN' ? '2' : '3');
-      if (nuevo === null) return;
-      const rol = { 1: 'USER', 2: 'ROOM_ADMIN', 3: 'SUPER_ADMIN' }[nuevo.trim()] || u.rol;
+      const rol = nuevoRol || u.rol;
+      if (rol === u.rol) return;
       const data = await api(`/api/admin/usuarios/${id}`, { method: 'PUT', admin: true, body: { rol } });
       state = data.state;
     }
     await cargarUsuarios();
     toast('Cuenta actualizada', 'ok');
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+/* ---------- Pedidos de ayuda (usuarios que no pueden entrar) ---------- */
+function renderAyuda() {
+  const cont = $('#ayuda-list');
+  if (!cont) return;
+  if (!window.__ayuda) { cont.innerHTML = '<p class="muted">Cargando pedidos…</p>'; cargarAyuda(); return; }
+  const lista = window.__ayuda;
+  const MOTIVOS = { olvide: '🔑 Olvidé mi contraseña', bloqueada: '🚫 Cuenta bloqueada/desactivada', otro: '❓ Otro problema' };
+  const fechaCorta = t => new Date(t).toLocaleString('es-AR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  const pendientes = lista.filter(a => a.estado === 'pendiente');
+  const resueltos = lista.filter(a => a.estado === 'resuelta');
+  if (!lista.length) {
+    cont.innerHTML = '<p class="muted">Todavía no hay pedidos de ayuda. Cuando alguien no pueda entrar, aparece acá (y te avisa el timbre 🔔).</p>';
+    return;
+  }
+  const tarjeta = a => `<div class="panel ayuda-item ${a.estado === 'resuelta' ? 'ayuda-resuelta' : ''}">
+    <div class="ayuda-head">
+      <strong>${MOTIVOS[a.motivo] || '❓ Otro problema'}</strong>
+      <span class="muted small">${fechaCorta(a.fecha)}</span>
+    </div>
+    <p>👤 <strong>${esc(a.ident)}</strong>
+      ${a.cuenta ? ` — <span class="muted small">cuenta encontrada: @${esc(a.cuenta.usuario)} (${esc(a.cuenta.nombre)})${a.cuenta.email ? ' · ' + esc(a.cuenta.email) : ''}${a.cuenta.bloqueado ? ' · <span class="badge badge-past">bloqueada</span>' : a.cuenta.activo === false ? ' · <span class="badge badge-past">desactivada</span>' : ''}</span>` : '<span class="muted small">(cuenta no encontrada con ese dato)</span>'}
+    </p>
+    ${a.mensaje ? `<p class="ayuda-msj">“${esc(a.mensaje)}”</p>` : ''}
+    <div class="row wrap">
+      ${a.estado === 'pendiente' && a.cuenta && (a.cuenta.bloqueado || a.cuenta.activo === false) && a.cuenta.rol !== 'SUPER_ADMIN'
+        ? `<button class="btn btn-sm" data-ayuda-desbloquear="${a.id}">🔓 Desbloquear cuenta</button>` : ''}
+      ${a.estado === 'pendiente' ? `<button class="btn btn-sm btn-ghost" data-ayuda-resolver="${a.id}">✓ Marcar resuelto</button>` : ''}
+      ${a.estado === 'resuelta' ? '<span class="muted small">✓ Resuelto' + (a.resuelta ? ' el ' + fechaCorta(a.resuelta) : '') + '</span>' : ''}
+    </div>
+  </div>`;
+  cont.innerHTML = `
+    ${pendientes.length ? `<h3 class="sub">Pendientes (${pendientes.length})</h3>${pendientes.map(tarjeta).join('')}` : ''}
+    ${resueltos.length ? `<h3 class="sub">Resueltos (${resueltos.length})</h3>${resueltos.slice(0, 20).map(tarjeta).join('')}` : ''}
+  `;
+}
+
+async function cargarAyuda() {
+  try {
+    const data = await api('/api/admin/ayuda', { admin: true });
+    window.__ayuda = data.ayuda || [];
+  } catch (e) {
+    window.__ayuda = [];
+    const cont = $('#ayuda-list');
+    if (cont) cont.innerHTML = `<p class="muted">${esc(e.message)}</p>`;
+  }
+  renderAyuda();
+  const pend = (window.__ayuda || []).filter(a => a.estado === 'pendiente').length;
+  const pill = $('#pill-ayuda');
+  if (pill) { pill.hidden = !pend; pill.textContent = pend; }
+}
+
+async function resolverAyuda(id, desbloquear) {
+  try {
+    const data = await api('/api/admin/ayuda', { method: 'POST', admin: true, body: { id, desbloquear: !!desbloquear } });
+    if (desbloquear) {
+      toast('Cuenta desbloqueada y pedido resuelto ✓', 'ok');
+    } else {
+      toast('Pedido marcado como resuelto ✓', 'ok');
+    }
+    await cargarAyuda();
   } catch (e) { toast(e.message, 'error'); }
 }
 
@@ -4311,7 +5957,14 @@ function editarReserva(id, backTab = 'reservas') {
 async function cancelarReserva(id, backTab = 'reservas') {
   const r = state.reservations.find(x => x.id === id);
   if (!r) return;
-  if (!confirm(`¿Cancelar la reserva de "${r.name}" (${fmtDate(r.date)} ${r.start} – ${r.end})?\nEl horario quedará libre.`)) return;
+  const okCancelAdmin = await confirmarAccion(
+    `¿Cancelar la reserva de "${r.name}" (${fmtDate(r.date)} ${r.start} – ${r.end})? El horario quedará libre.`,
+    '¿Cancelar reserva?',
+    'Sí, cancelar',
+    'No, mantener',
+    'peligro'
+  );
+  if (!okCancelAdmin) return;
   try {
     const data = await api(`/api/reservations/${id}`, { method: 'DELETE', admin: true });
     state = data.state;
@@ -4364,27 +6017,87 @@ function renderHistorial() {
 /* ---------- Salas ---------- */
 const ESTADO_SALA_TXT = { pendiente: 'Pendiente de aprobación', aprobada: 'Aprobada', rechazada: 'Rechazada', suspendida: 'Suspendida' };
 
+/* ---------- Salas del admin ---------- */
+let filtroSalasAdmin = '';
+let querySalasAdmin = '';
+
 function renderSalasAdmin() {
-  const grid = $('#salas-grid-admin');
-  grid.innerHTML = state.rooms.length ? state.rooms.map(r => `
-    <article class="room-card ${r.activo === false ? 'inactive' : ''}">
-      ${r.foto ? `<div class="room-foto"><img src="${esc(r.foto)}" alt="${esc(r.name)}"></div>` : ''}
-      <h3>${esc(r.name)} ${r.activo === false ? '<small class="muted">(inactiva)</small>' : ''}</h3>
-      <div class="row wrap">
-        <span class="badge ${r.estado === 'aprobada' ? '' : 'badge-next'}">${esc(ESTADO_SALA_TXT[r.estado] || r.estado)}</span>
-        ${r.ownerId ? '<span class="badge">👤 Con dueño</span>' : '<span class="badge badge-past">Sin dueño</span>'}
+  /* Chips de filtro */
+  const chips = $('#salas-chips');
+  if (chips) {
+    const nTodas = state.rooms.length;
+    const nAprob = state.rooms.filter(r => r.estado === 'aprobada').length;
+    const nPend = state.rooms.filter(r => r.estado === 'pendiente').length;
+    const nSinDueno = state.rooms.filter(r => !r.ownerId).length;
+    const filtros = [
+      ['', 'Todas', nTodas],
+      ['aprobada', 'Aprobadas', nAprob],
+      ['pendiente', 'Pendientes', nPend],
+      ['sin-dueno', 'Sin dueño', nSinDueno],
+    ];
+    chips.innerHTML = filtros.map(([k, label, count]) =>
+      `<button class="salas-chip${filtroSalasAdmin === k ? ' active' : ''}" data-filtro-salas-admin="${k}">${label} <span class="count">${count}</span></button>`
+    ).join('');
+  }
+
+  /* Filtrar y buscar */
+  const q = querySalasAdmin.trim().toLowerCase();
+  const lista = state.rooms.filter(r => {
+    if (filtroSalasAdmin === 'aprobada' && r.estado !== 'aprobada') return false;
+    if (filtroSalasAdmin === 'pendiente' && r.estado !== 'pendiente') return false;
+    if (filtroSalasAdmin === 'sin-dueno' && r.ownerId) return false;
+    if (q && !r.name.toLowerCase().includes(q)) return false;
+    return true;
+  });
+
+  /* Vacío */
+  const elVacio = $('#salas-vacio');
+  if (elVacio) elVacio.hidden = lista.length > 0;
+
+  /* Renderizar tarjetas */
+  const cont = $('#salas-grid-admin');
+  const ESTADO = { aprobada: { label: 'Aprobada', cls: 'ok' }, pendiente: { label: 'Pendiente', cls: 'wait' }, rechazada: { label: 'Rechazada', cls: 'off' } };
+
+  cont.innerHTML = lista.length ? lista.map(r => {
+    const st = ESTADO[r.estado] || { label: r.estado, cls: 'off' };
+    const owner = r.ownerId ? (state.users || []).find(u => u.id === r.ownerId) : null;
+    const dueño = owner ? esc(owner.nombre) : 'Sin dueño';
+    const dueñoNone = !owner;
+    const horas = r.horario ? Object.values(r.horario).filter(Boolean).map(h => h.open + ' – ' + h.close) : [];
+    const horasUniq = [...new Set(horas)];
+    const horasTxt = horasUniq.length ? horasUniq.join(', ') : 'Sin horario';
+
+    return `
+    <article class="sala-card">
+      <div class="sala-card-top">
+        ${r.foto
+          ? `<div class="sala-thumb"><img src="${esc(r.foto)}" alt="${esc(r.name)}"></div>`
+          : `<div class="sala-thumb sin-foto" style="background:${r.color || '#1e3350'}">${esc((r.name||'?')[0].toUpperCase())}</div>`}
+        <div class="sala-card-title">
+          <h3>${esc(r.name)}</h3>
+          <span class="sala-status st-${st.cls}">● ${st.label}</span>
+        </div>
       </div>
-      ${r.localidad || r.direccion ? `<div class="room-ubic">📍 ${esc([r.localidad, r.direccion].filter(Boolean).join(' · '))}</div>` : ''}
-      <div class="price">${fmtMoney(r.price)}<span> /hora</span></div>
-      <div class="cap">👥 Hasta ${r.capacity} ${r.capacity === 1 ? 'persona' : 'personas'}</div>
-      <ul class="feats">${r.features.length ? r.features.map(f => `<li>${esc(f)}</li>`).join('') : '<li>Sin características</li>'}</ul>
-      <div class="row wrap">
-        <button class="btn btn-sm" data-edit-room="${r.id}">Editar</button>
-        <button class="btn btn-sm" data-toggle-room="${r.id}">${r.activo === false ? 'Activar' : 'Desactivar'}</button>
-        <button class="btn btn-sm btn-danger" data-del-room="${r.id}">Eliminar</button>
+
+      <div class="sala-price"><strong>${fmtMoney(r.price)}</strong><span>/hora</span></div>
+
+      <div class="sala-grid">
+        <div class="sala-field"><small>Dueño</small><b class="${dueñoNone ? 'none' : ''}">${dueño}</b></div>
+        <div class="sala-field"><small>Capacidad</small><b>${r.capacity} persona${r.capacity === 1 ? '' : 's'}</b></div>
+        <div class="sala-field" style="grid-column: span 2"><small>Horario</small><b>${esc(horasTxt)}</b></div>
       </div>
-    </article>`).join('')
-    : '<p class="muted">Aún no hay salas. Crea la primera con el botón "Nueva sala".</p>';
+
+      <div class="sala-actions">
+        ${r.estado === 'pendiente'
+          ? `<button class="btn btn-sm ok" data-approve-room="${r.id}">Aprobar</button>`
+          : `<button class="btn btn-sm" data-edit-room="${r.id}">Editar</button>`}
+        ${owner
+          ? `<button class="btn btn-sm" data-change-owner="${r.id}">Cambiar dueño</button>`
+          : `<button class="btn btn-sm warn" data-assign-owner="${r.id}">Asignar dueño</button>`}
+        <button class="btn btn-sm" data-more-room="${r.id}" aria-label="Más opciones">⋮</button>
+      </div>
+    </article>`;
+  }).join('') : '';
 }
 
 function formularioSala(id) {
@@ -4551,7 +6264,14 @@ async function eliminarSala(id) {
   const r = state.rooms.find(x => x.id === id);
   if (!r) return;
   const n = state.reservations.filter(x => x.roomId === id).length;
-  if (!confirm(`¿Eliminar "${r.name}"?\nSe borrarán también ${n} reserva(s) y sus bloqueos.`)) return;
+  const okEliminarSala = await confirmarAccion(
+    `¿Eliminar "${r.name}"? Se borrarán también ${n} reserva(s) y sus bloqueos.`,
+    '¿Eliminar sala?',
+    'Sí, eliminar',
+    'No, mantener',
+    'peligro'
+  );
+  if (!okEliminarSala) return;
   try {
     const data = await api(`/api/rooms/${id}`, { method: 'DELETE', admin: true });
     state = data.state;
@@ -4563,15 +6283,14 @@ async function eliminarSala(id) {
 }
 
 /* ---------- Instrumentos y fotos del lugar (admin) ---------- */
-
 function renderLugarAdmin() {
   $('#instruments-admin').innerHTML = (state.instruments || []).length ? (state.instruments || []).map(i => `
-    <div class="res-item" style="display: flex; align-items: center; gap: 10px;">
-      ${i.foto ? `<img src="${esc(i.foto)}" alt="" style="width: 44px; height: 44px; border-radius: 8px; object-fit: cover; flex-shrink: 0; cursor: pointer; border: 1px solid var(--line);" data-foto="${esc(i.foto)}" data-foto-alt="${esc(i.nombre)}" title="Toca para ampliar">` : '<div style="width: 44px; height: 44px; border-radius: 8px; background: var(--panel2); border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0;">🎸</div>'}
-      <div class="res-info" style="flex: 1;">
+    <div class="res-item">
+      <div class="res-info">
         <strong>${esc(i.nombre)}</strong>
         <div>${esc(i.descripcion || '—')}</div>
         ${i.alquiler ? `<div class="muted small">🎒 Alquiler ${fmtMoney(i.precioAlquiler)}/hora</div>` : ''}
+        ${i.foto ? `<div class="muted small">📷 ${esc(i.foto)}</div>` : ''}
       </div>
       <div class="res-actions">
         <button class="btn btn-sm" data-edit-inst="${i.id}">Editar</button>
@@ -4582,10 +6301,10 @@ function renderLugarAdmin() {
     : '<p class="muted">Aún no hay instrumentos.</p>';
 
   $('#place-photos-admin').innerHTML = (state.placePhotos || []).length ? (state.placePhotos || []).map(p => `
-    <div class="res-item" style="display: flex; align-items: center; gap: 10px;">
-      ${p.foto ? `<img src="${esc(p.foto)}" alt="" style="width: 44px; height: 44px; border-radius: 8px; object-fit: cover; flex-shrink: 0; cursor: pointer; border: 1px solid var(--line);" data-foto="${esc(p.foto)}" data-foto-alt="${esc(p.titulo || 'Foto')}" title="Toca para ampliar">` : '<div style="width: 44px; height: 44px; border-radius: 8px; background: var(--panel2); border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0;">📷</div>'}
-      <div class="res-info" style="flex: 1;">
+    <div class="res-item">
+      <div class="res-info">
         <strong>${esc(p.titulo || 'Foto')}</strong>
+        <div class="muted small">${esc(p.foto)}</div>
       </div>
       <div class="res-actions">
         <button class="btn btn-sm" data-edit-photo="${p.id}">Editar</button>
@@ -4598,83 +6317,26 @@ function renderLugarAdmin() {
 function formularioInstrumento(id) {
   const i = id ? (state.instruments || []).find(x => x.id === id) : { nombre: '', descripcion: '', foto: '', activo: true };
   if (id && !i) return;
-  let fotoActual = i.foto || '';
-
   openModal(`
     <h3>${id ? 'Editar instrumento' : 'Nuevo instrumento'}</h3>
     <label>Nombre *<input id="fi-name" maxlength="50" value="${esc(i.nombre)}" placeholder="Ej.: Batería completa"></label>
     <label>Descripción<input id="fi-desc" maxlength="200" value="${esc(i.descripcion)}" placeholder="Ej.: Pearl Export 5 piezas + platillos"></label>
-    
-    <label>Foto del instrumento</label>
-    <div class="fi-foto-box" style="display: flex; gap: 12px; align-items: center; margin-bottom: 8px;">
-      <div id="fi-preview-wrap" style="width: 70px; height: 70px; border-radius: 8px; border: 1px dashed var(--line); display: grid; place-items: center; overflow: hidden; background: var(--panel2); flex-shrink: 0;">
-        ${fotoActual ? `<img id="fi-preview-img" src="${esc(fotoActual)}" style="width: 100%; height: 100%; object-fit: cover;">` : '<span style="font-size: 26px;">🎸</span>'}
-      </div>
-      <div style="flex: 1;">
-        <label class="btn btn-sm" style="display: inline-block; cursor: pointer; margin-bottom: 6px;">
-          📁 Elegir foto...
-          <input type="file" id="fi-file" accept="image/*" style="display: none;">
-        </label>
-        <button type="button" class="btn btn-sm" id="fi-foto-del" ${fotoActual ? '' : 'style="display:none;"'}>Quitar foto</button>
-        <div class="muted small">Sube una foto desde tu dispositivo o ingresa una URL abajo.</div>
-      </div>
-    </div>
-    <label class="muted small">O escribe la URL / ruta de la foto:
-      <input id="fi-foto" maxlength="300" value="${esc(i.foto)}" placeholder="https://... o assets/instrumentos/..." style="font-size: 0.82rem; margin-top: 2px;">
-    </label>
-
-    <label class="check" style="margin-top: 10px;"><input type="checkbox" id="fi-alquiler" ${i.alquiler ? 'checked' : ''}> 🎒 Se puede alquilar a los músicos</label>
+    <label>Foto (ruta o URL)<input id="fi-foto" maxlength="300" value="${esc(i.foto)}" placeholder="assets/instrumentos/bateria.png o https://..."></label>
+    <p class="muted small">Sin foto se muestra un ícono. Guarda las fotos en <code>public/assets/</code> del servidor o usa un enlace.</p>
+    <label class="check"><input type="checkbox" id="fi-alquiler" ${i.alquiler ? 'checked' : ''}> 🎒 Se puede alquilar a los músicos</label>
     <label>Precio del alquiler por hora<input type="number" id="fi-precio-alq" min="0" step="1" value="${i.precioAlquiler || 0}"></label>
     <label class="check"><input type="checkbox" id="fi-active" ${i.activo !== false ? 'checked' : ''}> Visible para los visitantes</label>
-    <div class="row" style="margin-top: 14px;">
+    <div class="row">
       <button class="btn btn-primary" id="fi-save">Guardar</button>
       <button class="btn" id="fi-cancel">Cancelar</button>
     </div>`);
-
-  const previewWrap = $('#fi-preview-wrap');
-  const btnDel = $('#fi-foto-del');
-  const inputUrl = $('#fi-foto');
-
-  $('#fi-file').onchange = async (e) => {
-    const f = e.target.files && e.target.files[0];
-    if (!f) return;
-    try {
-      toast('Procesando imagen...', 'info');
-      fotoActual = await comprimirImagen(f, 800);
-      previewWrap.innerHTML = `<img id="fi-preview-img" src="${fotoActual}" style="width: 100%; height: 100%; object-fit: cover;">`;
-      btnDel.style.display = 'inline-block';
-      inputUrl.value = '';
-      toast('Foto cargada ✓', 'ok');
-    } catch (err) {
-      toast('No se pudo cargar la imagen', 'error');
-    }
-  };
-
-  inputUrl.oninput = () => {
-    const url = inputUrl.value.trim();
-    if (url) {
-      fotoActual = url;
-      previewWrap.innerHTML = `<img id="fi-preview-img" src="${esc(url)}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.parentElement.innerHTML='<span style=\\'font-size: 26px;\\'>🎸</span>'">`;
-      btnDel.style.display = 'inline-block';
-    }
-  };
-
-  btnDel.onclick = () => {
-    fotoActual = '';
-    $('#fi-file').value = '';
-    inputUrl.value = '';
-    previewWrap.innerHTML = '<span style="font-size: 26px;">🎸</span>';
-    btnDel.style.display = 'none';
-  };
-
   $('#fi-save').onclick = async () => {
     const nombre = $('#fi-name').value.trim();
     if (!nombre) { toast('El nombre es obligatorio', 'warn'); return; }
-    const fotoFinal = fotoActual || inputUrl.value.trim();
     const body = {
       nombre,
       descripcion: $('#fi-desc').value.trim(),
-      foto: fotoFinal,
+      foto: $('#fi-foto').value.trim(),
       alquiler: $('#fi-alquiler').checked,
       precioAlquiler: $('#fi-precio-alq').value,
       activo: $('#fi-active').checked,
@@ -4694,78 +6356,43 @@ function formularioInstrumento(id) {
   $('#fi-cancel').onclick = closeModal;
 }
 
+async function eliminarInstrumento(id) {
+  const i = (state.instruments || []).find(x => x.id === id);
+  if (!i) return;
+  const okEliminarInst = await confirmarAccion(
+    `¿Eliminar "${i.nombre}"?`,
+    '¿Eliminar instrumento?',
+    'Sí, eliminar',
+    'No, mantener',
+    'peligro'
+  );
+  if (!okEliminarInst) return;
+  try {
+    const data = await api(`/api/instruments/${id}`, { method: 'DELETE', admin: true });
+    state = data.state;
+    renderLugarAdmin();
+    toast('Instrumento eliminado', 'ok');
+  } catch (e) {
+    toast(e.message, 'error');
+  }
+}
+
 function formularioFotoLugar(id) {
   const p = id ? (state.placePhotos || []).find(x => x.id === id) : { titulo: '', foto: '' };
   if (id && !p) return;
-  let fotoActual = p.foto || '';
-
   openModal(`
     <h3>${id ? 'Editar foto' : 'Nueva foto del lugar'}</h3>
     <label>Título<input id="fp-title" maxlength="60" value="${esc(p.titulo)}" placeholder="Ej.: Sala 1"></label>
-    
-    <label>Foto</label>
-    <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 8px;">
-      <div id="fp-preview-wrap" style="width: 70px; height: 70px; border-radius: 8px; border: 1px dashed var(--line); display: grid; place-items: center; overflow: hidden; background: var(--panel2); flex-shrink: 0;">
-        ${fotoActual ? `<img src="${esc(fotoActual)}" style="width: 100%; height: 100%; object-fit: cover;">` : '<span style="font-size: 26px;">📷</span>'}
-      </div>
-      <div style="flex: 1;">
-        <label class="btn btn-sm" style="display: inline-block; cursor: pointer; margin-bottom: 6px;">
-          📁 Elegir foto...
-          <input type="file" id="fp-file" accept="image/*" style="display: none;">
-        </label>
-        <button type="button" class="btn btn-sm" id="fp-foto-del" ${fotoActual ? '' : 'style="display:none;"'}>Quitar foto</button>
-        <div class="muted small">Sube una foto o ingresa una URL abajo.</div>
-      </div>
-    </div>
-    <label class="muted small">O escribe la URL / ruta de la foto:
-      <input id="fp-foto" maxlength="300" value="${esc(p.foto)}" placeholder="https://... o assets/lugar/..." style="font-size: 0.82rem; margin-top: 2px;">
-    </label>
-
-    <div class="row" style="margin-top: 14px;">
+    <label>Foto (ruta o URL) *<input id="fp-foto" maxlength="300" value="${esc(p.foto)}" placeholder="assets/lugar/sala-1.png o https://..."></label>
+    <p class="muted small">Guarda las fotos en <code>public/assets/</code> del servidor o usa un enlace https://.</p>
+    <div class="row">
       <button class="btn btn-primary" id="fp-save">Guardar</button>
       <button class="btn" id="fp-cancel">Cancelar</button>
     </div>`);
-
-  const previewWrap = $('#fp-preview-wrap');
-  const btnDel = $('#fp-foto-del');
-  const inputUrl = $('#fp-foto');
-
-  $('#fp-file').onchange = async (e) => {
-    const f = e.target.files && e.target.files[0];
-    if (!f) return;
-    try {
-      toast('Procesando imagen...', 'info');
-      fotoActual = await comprimirImagen(f, 1000);
-      previewWrap.innerHTML = `<img src="${fotoActual}" style="width: 100%; height: 100%; object-fit: cover;">`;
-      btnDel.style.display = 'inline-block';
-      inputUrl.value = '';
-      toast('Foto cargada ✓', 'ok');
-    } catch (err) {
-      toast('No se pudo cargar la imagen', 'error');
-    }
-  };
-
-  inputUrl.oninput = () => {
-    const url = inputUrl.value.trim();
-    if (url) {
-      fotoActual = url;
-      previewWrap.innerHTML = `<img src="${esc(url)}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.parentElement.innerHTML='<span style=\\'font-size: 26px;\\'>📷</span>'">`;
-      btnDel.style.display = 'inline-block';
-    }
-  };
-
-  btnDel.onclick = () => {
-    fotoActual = '';
-    $('#fp-file').value = '';
-    inputUrl.value = '';
-    previewWrap.innerHTML = '<span style="font-size: 26px;">📷</span>';
-    btnDel.style.display = 'none';
-  };
-
   $('#fp-save').onclick = async () => {
-    const fotoFinal = fotoActual || inputUrl.value.trim();
-    if (!fotoFinal) { toast('La foto es obligatoria', 'warn'); return; }
-    const body = { titulo: $('#fp-title').value.trim(), foto: fotoFinal };
+    const foto = $('#fp-foto').value.trim();
+    if (!foto) { toast('La foto es obligatoria', 'warn'); return; }
+    const body = { titulo: $('#fp-title').value.trim(), foto };
     try {
       const data = id
         ? await api(`/api/place-photos/${id}`, { method: 'PUT', admin: true, body })
@@ -4783,7 +6410,15 @@ function formularioFotoLugar(id) {
 
 async function eliminarFotoLugar(id) {
   const p = (state.placePhotos || []).find(x => x.id === id);
-  if (!p || !confirm("¿Eliminar esta foto?")) return;
+  if (!p) return;
+  const okEliminarFoto = await confirmarAccion(
+    `¿Eliminar la foto "${p.titulo || 'sin título'}"?`,
+    '¿Eliminar foto?',
+    'Sí, eliminar',
+    'No, mantener',
+    'peligro'
+  );
+  if (!okEliminarFoto) return;
   try {
     const data = await api(`/api/place-photos/${id}`, { method: 'DELETE', admin: true });
     state = data.state;
@@ -4820,7 +6455,14 @@ async function eliminarBanda(id) {
   if (!b) return;
   const n = state.reservations.filter(r =>
     String(r.name).trim().toLowerCase() === b.nombre.trim().toLowerCase()).length;
-  if (!confirm(`¿Eliminar la banda "${b.nombre}"?\nLas ${n} reserva(s) con ese nombre se conservan.`)) return;
+  const okEliminarBanda = await confirmarAccion(
+    `¿Eliminar la banda "${b.nombre}"? Las ${n} reserva(s) con ese nombre se conservan.`,
+    '¿Eliminar banda?',
+    'Sí, eliminar',
+    'No, mantener',
+    'peligro'
+  );
+  if (!okEliminarBanda) return;
   try {
     const data = await api(`/api/bands/${id}`, { method: 'DELETE', admin: true });
     state = data.state;
@@ -4988,24 +6630,77 @@ function formularioPromocion(id) {
 const DIAS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 
 function renderHorariosAdmin() {
+  const DIAS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
   $('#hours-container').innerHTML = DIAS.map((d, i) => {
     const h = state.settings.hours[String(i)];
+    const abierto = !!h;
     return `
-      <div class="hour-row">
-        <strong>${d}</strong>
-        <label class="check"><input type="checkbox" data-closed="${i}" ${h ? '' : 'checked'}> Cerrado</label>
-        <input type="time" data-open="${i}" value="${h ? h.open : '10:00'}" ${h ? '' : 'disabled'}>
-        <span class="muted">a</span>
-        <input type="time" data-close="${i}" value="${h ? h.close : '22:00'}" ${h ? '' : 'disabled'}>
+      <div class="hour-day ${abierto ? '' : 'hour-closed'}" data-dia="${i}">
+        <div class="hour-day-head">
+          <div>
+            <div class="hour-day-name">${d}</div>
+            <span class="hour-status ${abierto ? 'open' : 'closed'}">${abierto ? 'Abierto' : 'Cerrado'}</span>
+          </div>
+          <label class="hour-switch" aria-label="Abierto los ${d.toLowerCase()}">
+            <input type="checkbox" data-closed="${i}" ${abierto ? 'checked' : ''}>
+            <span class="hour-slider"></span>
+          </label>
+        </div>
+        <div class="hour-times" ${abierto ? '' : 'style="opacity:.4;pointer-events:none"'}>
+          <div class="hour-field">
+            <label>Apertura</label>
+            <input type="time" data-open="${i}" value="${h ? h.open : '10:00'}" ${abierto ? '' : 'disabled'}>
+          </div>
+          <span class="hour-sep">a</span>
+          <div class="hour-field">
+            <label>Cierre</label>
+            <input type="time" data-close="${i}" value="${h ? h.close : '22:00'}" ${abierto ? '' : 'disabled'}>
+          </div>
+        </div>
       </div>`;
   }).join('');
+
+  /* Wiring de toggles */
   $$('#hours-container [data-closed]').forEach(cb => {
     cb.onchange = () => {
       const i = cb.dataset.closed;
-      $(`[data-open="${i}"]`).disabled = cb.checked;
-      $(`[data-close="${i}"]`).disabled = cb.checked;
+      const row = $(`[data-dia="${i}"]`);
+      const times = row ? row.querySelector('.hour-times') : null;
+      if (row) row.classList.toggle('hour-closed', !cb.checked);
+      if (times) {
+        times.style.opacity = cb.checked ? '' : '.4';
+        times.style.pointerEvents = cb.checked ? '' : 'none';
+      }
+      $(`[data-open="${i}"]`).disabled = !cb.checked;
+      $(`[data-close="${i}"]`).disabled = !cb.checked;
     };
   });
+
+  /* Chips de acciones rápidas */
+  const copyMon = $('#hours-copy-mon');
+  if (copyMon) copyMon.onclick = () => {
+    const base = state.settings.hours['1'];
+    for (let i = 2; i <= 6; i++) {
+      state.settings.hours[String(i)] = base ? { ...base } : null;
+    }
+    renderHorariosAdmin();
+    toast('Lunes copiado a todos los días', 'ok');
+  };
+  const openAll = $('#hours-open-all');
+  if (openAll) openAll.onclick = () => {
+    for (let i = 0; i < 7; i++) {
+      state.settings.hours[String(i)] = state.settings.hours[String(i)] || { open: '10:00', close: '22:00' };
+    }
+    renderHorariosAdmin();
+    toast('Todos los días abiertos', 'ok');
+  };
+  const closeWeekend = $('#hours-close-weekend');
+  if (closeWeekend) closeWeekend.onclick = () => {
+    state.settings.hours['0'] = null;
+    state.settings.hours['6'] = null;
+    renderHorariosAdmin();
+    toast('Sábado y domingo cerrados', 'ok');
+  };
 }
 
 async function guardarHorarios() {
@@ -5141,12 +6836,244 @@ function renderStats() {
     </table>`;
 }
 
+/* ---------- Pagos y Liquidaciones ---------- */
+let cachePagos = null;
+
+async function renderPagosAdmin() {
+  const cards = $('#pagos-cards');
+  const badge = $('#pagos-modo-badge');
+  const tablaSalas = $('#pagos-tabla-salas');
+  const tablaRes = $('#pagos-tabla-reservas');
+  if (!cards || !tablaSalas || !tablaRes) return;
+
+  // Cargar inputs de reglas desde state.settings.reglas
+  const r = (state.settings && state.settings.reglas) || {};
+  const inSena = $('#pagos-set-sena');
+  const inCom = $('#pagos-set-comision');
+  const inMin = $('#pagos-set-minutos');
+  if (inSena && document.activeElement !== inSena) inSena.value = r.senaPorcentaje != null ? r.senaPorcentaje : 30;
+  if (inCom && document.activeElement !== inCom) inCom.value = r.comisionPorcentaje != null ? r.comisionPorcentaje : 8;
+  if (inMin && document.activeElement !== inMin) inMin.value = r.minutosPago != null ? r.minutosPago : 15;
+
+  cards.innerHTML = '<p class="muted">Cargando estado de pagos y señas...</p>';
+
+  try {
+    const data = await api('/api/admin/pagos', { admin: true });
+    cachePagos = data;
+
+    // Badge del modo de pagos
+    const modo = data.modo || 'apagado';
+    let modoHtml = '';
+    if (modo === 'mp') {
+      modoHtml = '<span class="pill" style="background: rgba(46,204,113,.15); color: #2ecc71; font-weight: 600;">🟢 Mercado Pago (Producción)</span>';
+    } else if (modo === 'simulado') {
+      modoHtml = '<span class="pill" style="background: rgba(241,196,15,.15); color: #f39c12; font-weight: 600;">🟡 Simulado (Pruebas)</span>';
+    } else {
+      modoHtml = '<span class="pill" style="background: rgba(149,165,166,.15); color: #7f8c8d; font-weight: 600;">⚪ Pagos desactivados (Reserva directa)</span>';
+    }
+    if (badge) badge.innerHTML = modoHtml;
+
+    // Métricas
+    let totalCobrado = 0, totalComision = 0, totalParaSala = 0, totalLiquidado = 0, totalPorLiquidar = 0;
+    (data.salas || []).forEach(s => {
+      totalCobrado += (Number(s.cobrado) || 0);
+      totalComision += (Number(s.comision) || 0);
+      totalParaSala += (Number(s.paraSala) || 0);
+      totalLiquidado += (Number(s.liquidado) || 0);
+      totalPorLiquidar += (Number(s.porLiquidar) || 0);
+    });
+
+    cards.innerHTML = `
+      <div class="stat"><span>💳 Señas cobradas</span><strong>${fmtMoney(totalCobrado)}</strong></div>
+      <div class="stat"><span>💰 Comisión +Música</span><strong>${fmtMoney(totalComision)}</strong></div>
+      <div class="stat"><span>🏢 Asignado a salas</span><strong>${fmtMoney(totalParaSala)}</strong></div>
+      <div class="stat" style="${totalPorLiquidar > 0 ? 'border: 1px solid var(--warn, #e67e22);' : ''}">
+        <span>⏳ Por liquidar</span><strong style="${totalPorLiquidar > 0 ? 'color: var(--warn, #e67e22);' : ''}">${fmtMoney(totalPorLiquidar)}</strong>
+      </div>
+      <div class="stat"><span>✅ Ya transferido</span><strong>${fmtMoney(totalLiquidado)}</strong></div>
+    `;
+
+    // Tabla de liquidación por sala
+    if (!data.salas || data.salas.length === 0) {
+      tablaSalas.innerHTML = '<p class="muted small">Aún no hay señas registradas para liquidar a las salas.</p>';
+    } else {
+      tablaSalas.innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>Sala</th>
+              <th>Cobrado en señas</th>
+              <th>Comisión app</th>
+              <th>Para la sala</th>
+              <th>Ya transferido</th>
+              <th>Por liquidar</th>
+              <th>Acción</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${data.salas.map(s => {
+              const pendiente = Number(s.porLiquidar) || 0;
+              return `
+              <tr>
+                <td><strong>${esc(s.sala)}</strong></td>
+                <td>${fmtMoney(s.cobrado)}</td>
+                <td>${fmtMoney(s.comision)}</td>
+                <td><strong>${fmtMoney(s.paraSala)}</strong></td>
+                <td>${fmtMoney(s.liquidado)}</td>
+                <td>
+                  <span class="pill" style="${pendiente > 0 ? 'background: rgba(230,126,34,.15); color: #e67e22; font-weight: 600;' : ''}">
+                    ${fmtMoney(pendiente)}
+                  </span>
+                </td>
+                <td>
+                  ${pendiente > 0 ? `
+                    <button class="btn btn-primary btn-sm btn-liquidar-sala" data-room-id="${esc(s.roomId)}" data-room-name="${esc(s.sala)}" data-monto="${pendiente}">
+                      ✓ Marcar liquidado
+                    </button>
+                  ` : '<span class="muted small">Al día ✓</span>'}
+                </td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      `;
+
+      $$('.btn-liquidar-sala').forEach(btn => {
+        btn.onclick = async () => {
+          const rId = btn.dataset.roomId;
+          const rName = btn.dataset.roomName;
+          const rMonto = btn.dataset.monto;
+          const ok = await confirmarAccion(
+            `¿Confirmas que transferiste ${fmtMoney(rMonto)} a "${rName}"? Las señas correspondientes quedarán marcadas como liquidadas.`,
+            'Confirmar liquidación',
+            'Sí, marcar liquidado',
+            'Cancelar'
+          );
+          if (!ok) return;
+          try {
+            await api('/api/admin/pagos/liquidar', { method: 'POST', admin: true, body: { roomId: rId } });
+            toast(`Liquidación registrada para "${rName}" ✓`, 'ok');
+            renderPagosAdmin();
+          } catch (err) {
+            toast(err.message, 'error');
+          }
+        };
+      });
+    }
+
+    // Tabla de reservas con seña
+    if (!data.reservas || data.reservas.length === 0) {
+      tablaRes.innerHTML = '<p class="muted small">No hay reservas registradas en el historial de pagos.</p>';
+    } else {
+      tablaRes.innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>Fecha y hora</th>
+              <th>Sala</th>
+              <th>Banda / Cliente</th>
+              <th>Total reserva</th>
+              <th>Seña pagada</th>
+              <th>Saldo en sala</th>
+              <th>Estado pago</th>
+              <th>Liquidación</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${data.reservas.slice().reverse().map(res => {
+              const room = (state.rooms || []).find(x => x.id === res.roomId);
+              const salaNom = room ? room.name : res.roomId;
+              let pagoTag = `<span class="pill">${esc(res.pago || '—')}</span>`;
+              if (res.pago === 'aprobado') {
+                pagoTag = '<span class="pill" style="background: rgba(46,204,113,.15); color: #2ecc71; font-weight: 600;">✓ Aprobado</span>';
+              } else if (res.pago === 'pendiente') {
+                pagoTag = '<span class="pill" style="background: rgba(241,196,15,.15); color: #f39c12; font-weight: 600;">⏳ Pendiente</span>';
+              } else if (res.pago === 'reembolsado' || res.pago === 'reembolso_pendiente') {
+                pagoTag = '<span class="pill" style="background: rgba(231,76,60,.15); color: #e74c3c; font-weight: 600;">↩ Reembolso</span>';
+              }
+
+              let liqTag = '—';
+              if (res.pago === 'aprobado' && res.estado !== 'cancelada') {
+                if (res.liquidadoEn) {
+                  const d = new Date(res.liquidadoEn);
+                  liqTag = `<span class="muted small" title="${d.toLocaleString()}">✓ Transferido (${d.getDate()}/${d.getMonth()+1})</span>`;
+                } else {
+                  liqTag = '<span class="pill" style="background: rgba(230,126,34,.15); color: #e67e22; font-weight: 600;">Por transferir</span>';
+                }
+              }
+
+              return `
+                <tr>
+                  <td>${esc(res.date)} ${esc(res.start)} - ${esc(res.end)}</td>
+                  <td>${esc(salaNom)}</td>
+                  <td><strong>${esc(res.name || '—')}</strong></td>
+                  <td>${fmtMoney(res.total)}</td>
+                  <td><strong>${fmtMoney(res.sena)}</strong></td>
+                  <td>${fmtMoney(res.saldo)}</td>
+                  <td>${pagoTag}</td>
+                  <td>${liqTag}</td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+  } catch (err) {
+    cards.innerHTML = `<p class="muted" style="color: var(--danger, red);">Error al cargar pagos: ${esc(err.message)}</p>`;
+  }
+}
+
+async function guardarReglasPagos() {
+  const inSena = $('#pagos-set-sena');
+  const inCom = $('#pagos-set-comision');
+  const inMin = $('#pagos-set-minutos');
+  if (!inSena || !inCom || !inMin) return;
+
+  const sena = parseInt(inSena.value, 10);
+  const comision = parseInt(inCom.value, 10);
+  const minutos = parseInt(inMin.value, 10);
+
+  if (isNaN(sena) || sena < 1 || sena > 100) { toast('El porcentaje de seña debe ser entre 1 y 100', 'warn'); return; }
+  if (isNaN(comision) || comision < 0 || comision > 100) { toast('El porcentaje de comisión debe ser entre 0 y 100', 'warn'); return; }
+  if (isNaN(minutos) || minutos < 5 || minutos > 60) { toast('Los minutos de espera de pago deben ser entre 5 y 60', 'warn'); return; }
+
+  const reglas = Object.assign({}, (state.settings && state.settings.reglas) || {}, {
+    senaPorcentaje: sena,
+    comisionPorcentaje: comision,
+    minutosPago: minutos
+  });
+
+  try {
+    const res = await api('/api/settings', { method: 'PUT', admin: true, body: { reglas } });
+    state = res.state;
+    toast('Reglas de seña y pago guardadas ✓', 'ok');
+    renderPagosAdmin();
+  } catch (e) {
+    toast(e.message, 'error');
+  }
+}
+
 /* ---------- Ajustes ---------- */
 function renderAjustes() {
   $('#set-currency').value = state.settings.currency;
   $('#set-pin').value = '';
   const inGmaps = $('#set-gmaps');
   if (inGmaps) inGmaps.value = state.settings.gmapsKey || '';
+  /* Contacto: redes + email de avisos */
+  const c = (state.settings && state.settings.contacto) || {};
+  const val = id => { const el = $(id); if (el) el.value = c[id.replace(/^#?set-/, '')] || ''; };
+  val('#set-whatsapp'); val('#set-instagram'); val('#set-facebook'); val('#set-tiktok');
+  const mailEl = $('#set-contact-email');
+  if (mailEl) mailEl.value = c.email || '';
+  const estMail = $('#mail-estado');
+  if (estMail) {
+    estMail.innerHTML = state.settings.avisoMail
+      ? (c.email
+        ? '✅ <strong>Mail de avisos activo.</strong> Cada registro y pedido de ayuda llega a <strong>' + esc(c.email) + '</strong> además del timbre 🔔 de la app.'
+        : '⚠️ El mail de avisos está activo, pero falta cargar el <strong>email de contacto</strong> de arriba para saber a dónde enviarlo.')
+      : '⚪ Mail de avisos desactivado: los avisos llegan solo al timbre 🔔 de la app. Para activarlos agregá <code>RESEND_API_KEY</code> en <code>server.js</code> y reiniciá el servidor (resend.com).';
+  }
   const estadoG = $('#gmaps-estado');
   if (estadoG) {
     estadoG.innerHTML = state.settings.gmapsKey
@@ -5220,9 +7147,23 @@ async function guardarAjustes() {
   }
   const selCancel = $('#set-cancelacion');
   if (selCancel) body.reglas = Object.assign({}, state.settings.reglas, { cancelacionHoras: Number(selCancel.value) });
+  /* Contacto: redes + email de avisos */
+  const contacto = {
+    whatsapp: ($('#set-whatsapp') || {}).value,
+    instagram: ($('#set-instagram') || {}).value,
+    facebook: ($('#set-facebook') || {}).value,
+    tiktok: ($('#set-tiktok') || {}).value,
+    email: ($('#set-contact-email') || {}).value,
+  };
+  if (contacto.whatsapp !== undefined || contacto.instagram !== undefined || contacto.facebook !== undefined ||
+      contacto.tiktok !== undefined || contacto.email !== undefined) {
+    body.contacto = {};
+    Object.keys(contacto).forEach(k => { if (contacto[k] !== undefined) body.contacto[k] = String(contacto[k]).trim(); });
+  }
   try {
     const data = await api('/api/settings', { method: 'PUT', admin: true, body });
     state = data.state;
+    pintarInstagram();
     if (pin) adminPin = pin;
     const claveDespues = state.settings.gmapsKey || '';
     if (claveDespues !== claveAntes) {
@@ -5278,6 +7219,26 @@ function openModal(html) {
 }
 function closeModal() {
   $('#modal').classList.remove('open');
+}
+
+/* Modal de confirmación personalizado (reemplaza a confirm() nativo) */
+function confirmarAccion(mensaje, titulo = '¿Estás seguro?', textoAceptar = 'Aceptar', textoCancelar = 'Cancelar', tipo = 'peligro') {
+  return new Promise(resolve => {
+    const colorAceptar = tipo === 'peligro' ? 'btn-danger' : 'btn-primary';
+    openModal(`
+      <div class="confirmar-modal">
+        <div class="confirmar-icono">${tipo === 'peligro' ? '⚠️' : '❓'}</div>
+        <h3>${titulo}</h3>
+        <p class="confirmar-mensaje">${mensaje}</p>
+        <div class="confirmar-botones">
+          <button class="btn" id="confirmar-no">${textoCancelar}</button>
+          <button class="btn ${colorAceptar}" id="confirmar-si">${textoAceptar}</button>
+        </div>
+      </div>
+    `);
+    $('#confirmar-si').onclick = () => { closeModal(); resolve(true); };
+    $('#confirmar-no').onclick = () => { closeModal(); resolve(false); };
+  });
 }
 
 let toastTimer;
@@ -5365,13 +7326,18 @@ function wireAdmin() {
   $$('.admin-tab[data-tab]').forEach(b => {
     b.onclick = () => {
       window.__usuarios = null;      /* las cuentas se vuelven a pedir al abrir la pestaña */
+      window.__ayuda = null;         /* y también los pedidos de ayuda */
       if (b.dataset.tab === 'solicitudes') listaSolicitudes = null;
       renderAdminTab(b.dataset.tab);
     };
   });
   /* Solicitudes de salas: aprobar, rechazar o pedir correcciones */
   $$('[data-estado-sol]').forEach(b => {
-    b.onclick = () => { filtroSolicitudes = b.dataset.estadoSol; renderSolicitudes(); };
+    b.onclick = () => {
+      filtroSolicitudes = b.dataset.estadoSol;
+      $$('#tab-solicitudes .sol-chip').forEach(c => c.setAttribute('aria-selected', c === b ? 'true' : 'false'));
+      renderSolicitudes();
+    };
   });
   $('#solicitudes-list').onclick = e => {
     const ok = e.target.closest('[data-sol-ok]');
@@ -5398,10 +7364,25 @@ function wireAdmin() {
   $('#usuarios-list').onclick = e => {
     const b = e.target.closest('[data-user-bloquear]');
     if (b) return accionUsuario(b.dataset.userBloquear, 'bloquear');
-    const r = e.target.closest('[data-user-rol]');
-    if (r) return accionUsuario(r.dataset.userRol, 'rol');
     const d = e.target.closest('[data-user-borrar]');
     if (d) return accionUsuario(d.dataset.userBorrar, 'borrar');
+  };
+  $('#usuarios-list').onchange = e => {
+    const r = e.target.closest('[data-user-rol]');
+    if (r) return accionUsuario(r.dataset.userRol, 'rol', r.value);
+  };
+  $('#usuarios-chips').onclick = e => {
+    const chip = e.target.closest('[data-filtro-usuarios]');
+    if (!chip) return;
+    filtroUsuarios = chip.dataset.filtroUsuarios;
+    renderUsuarios();
+  };
+  /* Pedidos de ayuda */
+  $('#ayuda-list').onclick = e => {
+    const des = e.target.closest('[data-ayuda-desbloquear]');
+    if (des) return resolverAyuda(des.dataset.ayudaDesbloquear, true);
+    const res = e.target.closest('[data-ayuda-resolver]');
+    if (res) return resolverAyuda(res.dataset.ayudaResolver, false);
   };
   $('#res-prev').onclick = () => cambiarDiaAdmin(-1);
   $('#res-next').onclick = () => cambiarDiaAdmin(1);
@@ -5429,18 +7410,41 @@ function wireAdmin() {
     if (cx) return cancelarReserva(cx.dataset.cancel, 'historial');
   };
   $('#btn-new-room').onclick = () => formularioSala(null);
-  $('#salas-grid-admin').onclick = e => {
+  $('#salas-buscar').oninput = e => { querySalasAdmin = e.target.value; renderSalasAdmin(); };
+  $('#salas-chips').onclick = e => {
+    const chip = e.target.closest('[data-filtro-salas-admin]');
+    if (!chip) return;
+    filtroSalasAdmin = chip.dataset.filtroSalasAdmin;
+    renderSalasAdmin();
+  };
+  $('#salas-grid-admin').onclick = async e => {
     const ed = e.target.closest('[data-edit-room]');
     if (ed) return formularioSala(ed.dataset.editRoom);
-    const tg = e.target.closest('[data-toggle-room]');
-    if (tg) {
-      const r = state.rooms.find(x => x.id === tg.dataset.toggleRoom);
-      if (!r) return;
-      api(`/api/rooms/${r.id}`, {
-        method: 'PUT', admin: true,
-        body: { name: r.name, price: r.price, capacity: r.capacity, features: r.features, active: r.activo === false, estado: r.estado, turnoMin: r.turnoMin, foto: r.foto },
-      }).then(data => { state = data.state; renderAdminTab('salas'); })
-        .catch(err => toast(err.message, 'error'));
+    const ap = e.target.closest('[data-approve-room]');
+    if (ap) {
+      try {
+        const data = await api(`/api/admin/solicitudes/${ap.dataset.approveRoom}`, { method: 'PUT', admin: true, body: { accion: 'aprobar' } });
+        state = data.state; renderAdminTab('salas'); toast('Sala aprobada ✓', 'ok');
+      } catch (err) { toast(err.message, 'error'); }
+      return;
+    }
+    const own = e.target.closest('[data-assign-owner]');
+    if (own) {
+      const name = prompt('Nombre del dueño para esta sala:');
+      if (!name || !name.trim()) return;
+      toast('Asignar dueño: pendiente de implementar', 'warn');
+      return;
+    }
+    const chg = e.target.closest('[data-change-owner]');
+    if (chg) {
+      const name = prompt('Nuevo dueño para la sala:');
+      if (!name || !name.trim()) return;
+      toast('Cambiar dueño: pendiente de implementar', 'warn');
+      return;
+    }
+    const more = e.target.closest('[data-more-room]');
+    if (more) {
+      toast('Opciones: eliminar, desactivar, ver historial', 'ok');
       return;
     }
     const del = e.target.closest('[data-del-room]');
@@ -5467,7 +7471,14 @@ function wireAdmin() {
     if (ed) return formularioPromocion(ed.dataset.editPromo);
     const del = e.target.closest('[data-del-promo]');
     if (del) {
-      if (!confirm('¿Eliminar esta promoción?')) return;
+      const okEliminarPromo = await confirmarAccion(
+    '¿Eliminar esta promoción?',
+    '¿Eliminar promoción?',
+    'Sí, eliminar',
+    'No, mantener',
+    'peligro'
+  );
+  if (!okEliminarPromo) return;
       try {
         const data = await api(`/api/promociones/${del.dataset.delPromo}`, { method: 'DELETE', admin: true });
         state = data.state;
@@ -5488,6 +7499,10 @@ function wireAdmin() {
     } catch (err) { toast(err.message, 'error'); }
   };
   $('#btn-save-settings').onclick = guardarAjustes;
+  const btnSavePagos = $('#btn-save-pagos-reglas');
+  if (btnSavePagos) btnSavePagos.onclick = guardarReglasPagos;
+  const btnRefreshPagos = $('#btn-refresh-pagos');
+  if (btnRefreshPagos) btnRefreshPagos.onclick = renderPagosAdmin;
   $('#btn-save-cuenta').onclick = guardarCuentaMadre;
   $('#aj-apariencia-admin').onclick = e => {
     const t = e.target.closest('button[data-tema]');
@@ -5555,7 +7570,14 @@ function wireAdmin() {
     if (del) return eliminarBanda(del.dataset.delBand);
   };
   $('#btn-demo').onclick = async () => {
-    if (!confirm('¿Cargar datos de demostración? Se reemplazarán los datos actuales.')) return;
+    const okDatosDemo = await confirmarAccion(
+    '¿Cargar datos de demostración? Se reemplazarán los datos actuales.',
+    '¿Cargar datos demo?',
+    'Sí, cargar',
+    'No, cancelar',
+    'peligro'
+  );
+  if (!okDatosDemo) return;
     try {
       const data = await api('/api/demo', { method: 'POST', admin: true });
       state = data.state;
@@ -5566,7 +7588,14 @@ function wireAdmin() {
     }
   };
   $('#btn-reset').onclick = async () => {
-    if (!confirm('¿Borrar TODOS los datos (salas, reservas y bloqueos)?')) return;
+    const okBorrarTodo = await confirmarAccion(
+    '¿Borrar TODOS los datos (salas, reservas y bloqueos)?',
+    '¿Borrar todo?',
+    'Sí, borrar todo',
+    'No, cancelar',
+    'peligro'
+  );
+  if (!okBorrarTodo) return;
     try {
       const data = await api('/api/reset', { method: 'POST', admin: true });
       state = data.state;
@@ -5611,28 +7640,13 @@ async function init() {
   wireAuth();
   wirePanel();
   wireMapa();
-  setNav('inicio');
 
   /* Sesión guardada en este dispositivo */
-  if (token) {
-    try {
-      const data = await api('/api/auth/me');
-      yo = data.user;
-      miSala = data.room || null;
-      adminMode = esSuper();
-      if (!yo) guardarToken('');
-    } catch (e) { guardarToken(''); }
-  }
-  await cargarNotificaciones();
-  if (yo) {
-    mostrarApp();
-    renderCalendar();
-    renderRooms();
-    goStep(1);
-    renderMapa();
+  const haySesion = await verificarSesion();
+  if (haySesion) {
+    arrancarApp();
   } else {
-    /* Sin sesión: solo se puede registrarse o iniciar sesión (no hay modo espectador) */
-    pantallaAuth('inicio');
+    mostrarLogin();
   }          /* el mapa del Inicio */
 
   /* Acceso directo: .../#admin abre el pedido de acceso */
@@ -5643,6 +7657,16 @@ async function init() {
   startPolling();
   cerrarSplash();
 
+  /* Swipe para cambiar de página en celular */
+  prepararSwipeNavegacion();
+
+  /* Fallback: si no hay sesión y el auth-body está vacío, forzar pantalla de login */
+  if (!yo && !$('#auth-body').innerHTML.trim()) {
+    $('#view-auth').hidden = false;
+    pantallaAuth('inicio');
+    if (typeof wireAuth === 'function') wireAuth();
+  }
+
   /* Service worker (solo en contextos seguros: HTTPS o localhost) */
   if ('serviceWorker' in navigator &&
       (location.protocol === 'https:' || ['localhost', '127.0.0.1'].includes(location.hostname))) {
@@ -5651,10 +7675,21 @@ async function init() {
 
   /* Instalación como app (PWA) */
   let deferredPrompt = null;
+
+  /* ¿Ya está instalada como app (pantalla propia, sin la barra del navegador)? */
+  const esAppInstalada = () =>
+    (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
+    (navigator && navigator.standalone === true);
+
+  /* iPhone/iPad: no hay diálogo de instalar; se agrega con "Añadir a pantalla de inicio" */
+  const esIOS = () => /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
+  const mostrarBtnInstalar = () => { if (!esAppInstalada()) $('#btn-install').hidden = false; };
+
   window.addEventListener('beforeinstallprompt', e => {
     e.preventDefault();
     deferredPrompt = e;
-    $('#btn-install').hidden = false;
+    mostrarBtnInstalar();
   });
   window.addEventListener('appinstalled', () => {
     deferredPrompt = null;
@@ -5662,15 +7697,35 @@ async function init() {
     toast('App instalada ✓', 'ok');
   });
   $('#btn-install').onclick = async () => {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    try {
-      const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === 'accepted') toast('Instalando app…', 'ok');
-    } catch (e) { /* el usuario cerró el diálogo */ }
-    deferredPrompt = null;
-    $('#btn-install').hidden = true;
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      try {
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') toast('Instalando app…', 'ok');
+      } catch (e) { /* el usuario cerró el diálogo */ }
+      deferredPrompt = null;
+      $('#btn-install').hidden = true;
+      return;
+    }
+    if (esIOS()) {
+      openModal(
+        '<h3>📲 Instalar la app</h3>' +
+        '<p>En tu iPhone o iPad:</p>' +
+        '<ol style="padding-left:20px;margin:8px 0;line-height:1.7">' +
+        '<li>Tocá el botón <b>Compartir</b> ⬆️ en la barra del navegador.</li>' +
+        '<li>Elegí <b>Añadir a pantalla de inicio</b>.</li>' +
+        '<li>Tocá <b>Añadir</b> (arriba a la derecha).</li>' +
+        '</ol>' +
+        '<p>¡Listo! La app queda con su ícono en tu pantalla.</p>' +
+        '<div class="modal-acciones"><button class="btn btn-ghost" onclick="closeModal()">Entendido</button></div>'
+      );
+    }
   };
+  /* En iPhone se muestra el botón aunque no llegue el diálogo de instalación */
+  if (esIOS() && !esAppInstalada()) mostrarBtnInstalar();
+
+  /* Colchón de historial: el botón atrás del teléfono cierra capas en vez de salir */
+  if (window.__mantenerColchon) window.__mantenerColchon();
 }
 
 /* Al volver de Mercado Pago (?pago=ok | pendiente | error) */
@@ -5684,58 +7739,31 @@ async function init() {
     else toast('El pago no se completó. Podés intentarlo de nuevo antes de que venza el horario.', 'warn');
   }, 1500);
 })();
+
+/* ---------- Botón "atrás" del teléfono ---------- */
+/* La app es de una sola pantalla: el botón atrás cierra lo que está encima
+   (modal, hoja del mapa, pasos de la reserva) o vuelve a Inicio, antes de salir. */
+(function () {
+  function mantenerColchon() {
+    try { history.pushState({ mm: 1 }, ''); } catch (e) {}
+  }
+  function cerrarCapaAtras() {
+    const modal = $('#modal');
+    if (modal && modal.classList.contains('open')) { closeModal(); return true; }
+    const hoja = $('#mapa-hoja'), cuerpo = $('#mapa-hoja-cuerpo');
+    if (hoja && hoja.classList.contains('abierta')) {
+      hoja.classList.remove('abierta');
+      if (cuerpo) { cuerpo.style.transition = ''; cuerpo.style.maxHeight = '0px'; }
+      const b = $('#mapa-hoja-btn'); if (b) b.setAttribute('aria-expanded', 'false');
+      return true;
+    }
+    const enReserva = $('#view-public') && !$('#view-public').hidden;
+    if (enReserva && curStep > 1) { goStep(curStep - 1); return true; }
+    const enAuth = $('#view-auth') && !$('#view-auth').hidden;
+    if (!enAuth && navActual && navActual !== 'inicio') { irInicio(); return true; }
+    return false;
+  }
+  window.addEventListener('popstate', () => { if (cerrarCapaAtras()) mantenerColchon(); });
+  window.__mantenerColchon = mantenerColchon;
+})();
 document.addEventListener('DOMContentLoaded', init);
-
-function modalCorregirSala(id) {
-  const r = (state.rooms || []).find(x => x.id === id);
-  if (!r) return;
-  openModal(`
-    <h3>Rechazar / Pedir corrección</h3>
-    <p class="muted small">Explica qué datos o fotos debe corregir el dueño de <strong>${esc(r.name)}</strong>.</p>
-    <label>Motivo del rechazo o corrección *
-      <textarea id="motivo-rechazo" rows="4" style="width:100%; border-radius:8px; padding:8px; border:1px solid var(--line); background:var(--panel2); color:var(--text);" placeholder="Ej.: Por favor sube una foto de mejor calidad y verifica el número de teléfono."></textarea>
-    </label>
-    <div class="row">
-      <button class="btn btn-danger" id="btn-confirma-rechazo">Rechazar solicitud</button>
-      <button class="btn" onclick="closeModal()">Cancelar</button>
-    </div>
-  `);
-  $('#btn-confirma-rechazo').onclick = async () => {
-    const motivo = $('#motivo-rechazo').value.trim();
-    if (!motivo) { toast('Escribe el motivo', 'warn'); return; }
-    try {
-      const data = await api(`/api/rooms/${id}/rechazar`, { method: 'POST', admin: true, body: { motivo } });
-      state = data.state;
-      closeModal();
-      renderSolicitudes();
-      toast('Solicitud rechazada', 'ok');
-    } catch (e) { toast(e.message, 'error'); }
-  };
-}
-
-function modalSuspenderSala(id) {
-  const r = (state.rooms || []).find(x => x.id === id);
-  if (!r) return;
-  openModal(`
-    <h3>Suspender sala</h3>
-    <p class="muted small">La sala <strong>${esc(r.name)}</strong> dejará de estar visible para el público.</p>
-    <label>Motivo de la suspensión *
-      <textarea id="motivo-suspension" rows="3" style="width:100%; border-radius:8px; padding:8px; border:1px solid var(--line); background:var(--panel2); color:var(--text);" placeholder="Ej.: Mantenimiento o falta de pago."></textarea>
-    </label>
-    <div class="row">
-      <button class="btn btn-danger" id="btn-confirma-suspender">Suspender sala</button>
-      <button class="btn" onclick="closeModal()">Cancelar</button>
-    </div>
-  `);
-  $('#btn-confirma-suspender').onclick = async () => {
-    const motivo = $('#motivo-suspension').value.trim();
-    if (!motivo) { toast('Escribe el motivo', 'warn'); return; }
-    try {
-      const data = await api(`/api/rooms/${id}/suspender`, { method: 'POST', admin: true, body: { motivo } });
-      state = data.state;
-      closeModal();
-      renderSalasAdmin();
-      toast('Sala suspendida', 'ok');
-    } catch (e) { toast(e.message, 'error'); }
-  };
-}
