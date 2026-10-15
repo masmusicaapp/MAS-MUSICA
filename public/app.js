@@ -1382,29 +1382,16 @@ function promosInicioHTML() {
   </div>`;
 }
 
+/* El Inicio del músico ya no muestra el bloque "🛎 Resumen" (estadísticas).
+   El panel queda solo para las promociones y, si no hay sesión, el ingreso. */
 function renderResumenInicio() {
   const box = $('#inicio-resumen');
   if (!box || !state) return;
-  const hoy = todayStr();
-  const salas = salasPublicas();
-  const todas = state.reservations.filter(r => r.estado !== 'cancelada');
-  const hoyCount = todas.filter(r => r.date === hoy).length;
-  const semana = todas.filter(r => r.date > hoy && r.date <= addDaysStr(hoy, 7)).length;
-  const proximas = misReservas().filter(r => r.date >= hoy && r.estado !== 'cancelada').length;
-
-  box.innerHTML = `
-    <div class="panel-head"><h2>🛎 Resumen</h2></div>
-
-    <div class="stats-cards resumen-stats">
-      <div class="stat"><span>Salas publicadas</span><strong>${salas.length}</strong></div>
-      <div class="stat"><span>Reservas hoy</span><strong>${hoyCount}</strong></div>
-      <div class="stat"><span>Próximos 7 días</span><strong>${semana}</strong></div>
-      <div class="stat"><span>Mis reservas</span><strong>${proximas}</strong></div>
-    </div>
-
-    ${promosInicioHTML()}
-
-    ${!yo ? `<div class="row wrap"><button class="btn btn-sm" id="sum-login">👤 Iniciar sesión</button></div>` : ''}`;
+  const contenido = promosInicioHTML()
+    + (!yo ? `<div class="row wrap"><button class="btn btn-sm" id="sum-login">👤 Iniciar sesión</button></div>` : '');
+  /* Sin novedades ni botón, se oculta el panel para no dejar una tarjeta vacía */
+  box.hidden = !contenido.trim();
+  box.innerHTML = contenido;
 }
 
 /* Mi ubicación y vista general */
