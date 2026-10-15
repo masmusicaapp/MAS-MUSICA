@@ -4419,58 +4419,7 @@ body.modo-control label:has(> #pd-instrumentos) { display: none !important; }
   width: 100%;
 }
 
-.suscripcion-planes {
-  display: flex;
-  gap: 10px;
-  width: 100%;
-  max-width: 400px;
-}
-
-.suscripcion-plan {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  padding: 16px 10px;
-  background: var(--panel);
-  border: 2px solid var(--line);
-  border-radius: 16px;
-  cursor: pointer;
-  transition: all .2s;
-}
-
-.suscripcion-plan:hover {
-  border-color: var(--accent);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, .12);
-}
-
-.suscripcion-plan.seleccionado {
-  border-color: var(--accent);
-  background: rgba(0, 160, 56, .08);
-  box-shadow: 0 0 0 3px rgba(0, 160, 56, .18);
-}
-
-.suscripcion-plan-nombre {
-  font-size: .82rem;
-  font-weight: 700;
-  color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: .4px;
-}
-
-.suscripcion-plan-precio {
-  font-size: 1.4rem;
-  font-weight: 800;
-  color: var(--accent2);
-}
-
-.suscripcion-plan-precio small {
-  font-size: .72rem;
-  color: var(--muted);
-  font-weight: 400;
-}
+/* [bloque viejo .suscripcion-planes / .suscripcion-plan-nombre eliminado: no se usaba] */
 
 /* =====================================================================
    MEJORAS DE DISEÑO — Actualización visual de toda la app
@@ -4719,186 +4668,170 @@ button, a, .btn { transition: all .2s ease; }
   border-radius: 16px;
 }
 
-/* ========== SUSCRIPCION AL CHAT (diseno nuevo) ========== */
+/* ===================================================================
+   SUSCRIPCION AL CHAT  ·  diseno "mas-musica-suscripcion" (mobile)
+   =================================================================== */
 
-.suscripcion-wrap {
-  max-width: 420px;
+/* La pantalla va a sangre (como el mock): se quita la tarjeta del panel
+   solo mientras la suscripcion esta visible; el chat conserva su tarjeta. */
+main#view-comunidad:has(.suscripcion-wrap) {
+  background: radial-gradient(120% 60% at 50% 0%, rgba(34, 197, 94, .10), transparent 60%);
+}
+main#view-comunidad:has(.suscripcion-wrap) > .panel {
+  background: none;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  box-shadow: none;
+}
+
+/* Encabezado "Chat global" con burbuja (estilo mock) */
+.comu-head { flex-direction: column; align-items: flex-start; gap: 6px; }
+.comu-title {
+  display: flex; align-items: center; gap: 10px;
+  font-family: "Barlow Condensed", "Barlow", sans-serif;
+  font-style: italic; font-weight: 800;
+  text-transform: none; letter-spacing: 0;
+  font-size: 1.35rem; line-height: 1; color: var(--muted);
+}
+.comu-bubble {
+  flex: none;
+  width: 26px; height: 26px;
+  border-radius: 8px 8px 8px 2px;
+  background: var(--text);
+  display: flex; align-items: center; justify-content: center; gap: 3px;
+}
+.comu-bubble i { width: 4px; height: 4px; border-radius: 50%; background: var(--bg); display: block; }
+
+/* ---------- Contenido ----------
+   (selector con #comu-chats para no ser pisado por la regla responsive
+   global "main, section, article, div:not(...) { max-width: 100% }") */
+#comu-chats .suscripcion-wrap {
+  max-width: 430px;
   margin: 0 auto;
-  padding: 0 4px;
-}
-
-.suscripcion-hero {
-  text-align: center;
-  padding: 8px 0 24px;
-}
-
-.suscripcion-hero .suscripcion-icono {
-  width: 72px; height: 72px;
-  margin: 0 auto 14px;
-  border-radius: 22px;
-  background: #ffffff;
-  display: grid; place-items: center;
-  box-shadow: 0 10px 30px rgba(0, 161, 62, .35);
-}
-
-.suscripcion-hero h1 {
-  margin: 0;
-  font-size: 1.6rem;
-  font-weight: 800;
-  letter-spacing: -.2px;
-}
-
-.suscripcion-hero p {
-  color: var(--muted);
-  font-size: .95rem;
-  line-height: 1.5;
-  margin: 8px 0 0;
-}
-
-.suscripcion-perks {
-  background: var(--panel2);
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  padding: 16px 18px;
-  margin-bottom: 22px;
-}
-
-.suscripcion-perks ul { list-style: none; padding: 0; margin: 0; }
-
-.suscripcion-perks li {
-  display: flex; gap: 12px; align-items: center;
-  font-size: .95rem; padding: 7px 0;
-}
-
-.suscripcion-perks li .check {
-  flex: 0 0 22px; height: 22px; border-radius: 50%;
-  background: rgba(34, 197, 94, .12); color: var(--accent2);
-  display: grid; place-items: center; font-size: .8rem; font-weight: 700;
-}
-
-.suscripcion-section-title {
-  font-size: .82rem; font-weight: 700; letter-spacing: 1px;
-  text-transform: uppercase; color: var(--muted);
-  margin: 0 0 10px 4px;
-}
-
-.suscripcion-features {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  margin-bottom: 22px;
-}
-
-.suscripcion-feature {
-  background: var(--panel2);
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  padding: 16px 14px;
-}
-
-.suscripcion-feature .f-icon {
-  width: 40px; height: 40px; border-radius: 12px;
-  background: rgba(34, 197, 94, .12);
-  display: grid; place-items: center; font-size: 1.2rem;
-  margin-bottom: 10px;
-}
-
-.suscripcion-feature h3 { font-size: .95rem; font-weight: 700; margin: 0 0 4px; }
-.suscripcion-feature p { font-size: .82rem; color: var(--muted); line-height: 1.4; margin: 0; }
-
-.suscripcion-plans {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-bottom: 22px;
-}
-
-.suscripcion-plan {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  background: var(--panel2);
-  border: 1.5px solid var(--line);
-  border-radius: 18px;
-  padding: 16px 18px;
+  padding: 4px 4px 24px;
+  font-family: "Barlow", system-ui, -apple-system, "Segoe UI", sans-serif;
   color: var(--text);
-  font: inherit; text-align: left; cursor: pointer;
-  transition: border-color .15s, background .15s, transform .15s;
 }
 
-.suscripcion-plan:active { transform: scale(.99); }
-.suscripcion-plan .plan-name { font-size: .95rem; font-weight: 700; }
-.suscripcion-plan .plan-sub { font-size: .82rem; color: var(--muted); margin-top: 3px; }
-.suscripcion-plan .plan-price { font-size: 1.4rem; font-weight: 800; text-align: right; }
-.suscripcion-plan .plan-price small { display: block; font-size: .75rem; font-weight: 500; color: var(--muted); }
+/* Hero */
+.sus-hero { text-align: center; padding: 18px 0 12px; }
 
-.suscripcion-plan .plan-radio {
-  width: 20px; height: 20px; border-radius: 50%;
-  border: 2px solid var(--line); margin-right: 14px; flex: 0 0 20px;
+.sus-mark {
+  position: relative;
+  width: 104px; height: 104px;
+  margin: 0 auto 26px;
+  border-radius: 28px;
+  background: var(--text);
+  display: flex; align-items: flex-end; justify-content: center;
+  gap: 9px; padding-bottom: 22px;
+  box-shadow: 0 18px 50px -12px rgba(34, 197, 94, .45);
+}
+.sus-mark i {
+  display: block; width: 12px; border-radius: 6px;
+  background: #15803D;                 /* verde profundo del mock */
+  transform-origin: bottom;
+  animation: sus-eq 1.1s cubic-bezier(.3, .7, .4, 1) both;
+}
+.sus-mark i:nth-child(1) { height: 34px; animation-delay: .05s; }
+.sus-mark i:nth-child(2) { height: 56px; animation-delay: .15s; background: #22C55E; }
+.sus-mark i:nth-child(3) { height: 40px; animation-delay: .25s; }
+
+@keyframes sus-eq {
+  from { transform: scaleY(.2); opacity: 0; }
+  to   { transform: scaleY(1);  opacity: 1; }
 }
 
-.suscripcion-plan .plan-left { display: flex; align-items: center; }
+.sus-hero h1 {
+  margin: 0;
+  font-family: "Barlow Condensed", "Barlow", sans-serif;
+  font-style: italic; font-weight: 800;
+  font-size: clamp(2.4rem, 11vw, 3rem);
+  line-height: .95; letter-spacing: -.005em;
+  text-transform: uppercase;
+}
+.sus-lede {
+  margin: 14px auto 0; max-width: 30ch;
+  color: var(--muted); font-size: 1.06rem; line-height: 1.45;
+}
 
-.suscripcion-plan.selected {
-  border-color: var(--accent);
+/* Beneficios */
+.sus-benefits {
+  list-style: none; margin: 28px 0 0; padding: 0;
+  border-top: 1px solid var(--line);
+}
+.sus-benefits li {
+  display: flex; align-items: center; gap: 14px;
+  padding: 16px 2px; border-bottom: 1px solid var(--line);
+  font-size: 1.12rem; font-weight: 500;
+}
+.sus-tick {
+  flex: none; width: 28px; height: 28px; border-radius: 50%;
+  background: rgba(34, 197, 94, .14); color: var(--accent2);
+  display: grid; place-items: center;
+}
+.sus-tick svg { width: 14px; height: 14px; }
+
+/* Plan */
+.sus-plan {
+  margin-top: 28px;
   background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 20px;
+}
+.sus-plan-row {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+}
+.sus-plan-name { font-size: 1rem; color: var(--muted); font-weight: 500; }
+.sus-plan-price {
+  font-family: "Barlow Condensed", "Barlow", sans-serif;
+  font-weight: 800; font-size: 2.5rem; line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.sus-plan-price small {
+  font-family: "Barlow", sans-serif;
+  font-size: .88rem; font-weight: 500; color: var(--muted); margin-left: 4px;
 }
 
-.suscripcion-plan.selected .plan-radio {
-  border-color: var(--accent);
-  background: radial-gradient(circle, var(--accent) 45%, transparent 50%);
-}
-
-.suscripcion-plan.selected .plan-price { color: var(--accent2); }
-
-.plan-badge {
-  position: absolute; top: -10px; right: 14px;
-  background: var(--accent); color: #04210f;
-  font-size: .7rem; font-weight: 800; letter-spacing: .4px;
-  padding: 4px 10px; border-radius: 999px;
-}
-
-.suscripcion-cta-box {
-  position: sticky; bottom: 0;
-  background: linear-gradient(to top, var(--bg) 70%, transparent);
-  padding-top: 16px;
-}
-
-.suscripcion-summary {
-  display: flex;
-  justify-content: space-between;
-  font-size: .9rem;
-  color: var(--muted);
-  margin-bottom: 10px;
-  padding: 0 4px;
-}
-
-.suscripcion-summary strong { color: var(--text); }
-
-.suscripcion-cta {
-  width: 100%; border: 0; border-radius: 16px;
-  padding: 17px; font: inherit; font-size: 1.1rem; font-weight: 800;
-  color: #04210f;
-  background: linear-gradient(135deg, #34d869, #16a34a);
-  box-shadow: 0 10px 26px rgba(34, 197, 94, .35);
+.sus-btn {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  width: 100%; margin-top: 18px; padding: 18px 20px;
+  border: 0; border-radius: 14px;
+  background: var(--accent2); color: var(--on-accent);
+  font-family: "Barlow", sans-serif; font-weight: 700; font-size: 1.19rem;
   cursor: pointer;
-  transition: transform .15s, box-shadow .15s;
+  box-shadow: 0 10px 30px -10px rgba(34, 197, 94, .6);
+  transition: transform .15s ease, filter .2s ease;
+}
+.sus-btn:hover { filter: brightness(1.06); }
+.sus-btn:active { transform: scale(.98); }
+.sus-btn:disabled { cursor: progress; opacity: .8; }
+.sus-btn svg { width: 20px; height: 20px; }
+
+.sus-fine {
+  margin: 14px 0 0; text-align: center;
+  font-size: .88rem; line-height: 1.45; color: var(--muted);
 }
 
-.suscripcion-cta:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 14px 32px rgba(34, 197, 94, .45);
+/* Recuadro hacia salas */
+.sus-teaser {
+  margin-top: 28px;
+  display: flex; gap: 14px; align-items: center;
+  padding: 16px; border-radius: 18px;
+  border: 1px dashed rgba(34, 197, 94, .35);
 }
+.sus-teaser-icon {
+  flex: none; width: 44px; height: 44px; border-radius: 12px;
+  background: rgba(34, 197, 94, .14);
+  display: grid; place-items: center; color: var(--accent2);
+}
+.sus-teaser-icon svg { width: 22px; height: 22px; }
+.sus-teaser p { margin: 0; font-size: .94rem; line-height: 1.4; color: var(--muted); }
+.sus-teaser strong { color: var(--text); font-weight: 600; }
 
-.suscripcion-cta:active { transform: scale(.98); }
-
-.suscripcion-fine {
-  text-align: center;
-  font-size: .78rem;
-  color: var(--muted);
-  margin: 10px 0 0;
+@media (prefers-reduced-motion: reduce) {
+  .sus-mark i { animation: none; }
 }
 
 /* ========== HORARIOS DE ATENCION (diseno nuevo) ========== */

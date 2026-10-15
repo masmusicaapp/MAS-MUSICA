@@ -2495,95 +2495,66 @@ async function verificarAccesoChat() {
   }
 }
 
-/* Mostrar el modal de suscripción al chat global */
+/* Mostrar la pantalla de suscripción al chat global */
 function mostrarSuscripcionChat() {
   const host = $('#comu-chats');
   if (!host) return;
 
+  const tick = '<span class="sus-tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>';
+
   host.innerHTML = `
     <div class="suscripcion-wrap">
-      <section class="suscripcion-hero">
-        <div class="suscripcion-icono"><svg width="46" height="52" viewBox="280 210 510 580" xmlns="http://www.w3.org/2000/svg"><g stroke="#00A13E" stroke-width="96" stroke-linecap="round" fill="none"><line x1="424" y1="402" x2="349" y2="720"/><line x1="600" y1="278" x2="497" y2="720"/><line x1="720" y1="397" x2="647" y2="720"/></g></svg></div>
-        <h1>Más Músicos</h1>
-        <p>Charlá con músicos de todo el país que, como vos, usan Más Música.</p>
+      <section class="sus-hero">
+        <div class="sus-mark" aria-hidden="true"><i></i><i></i><i></i></div>
+        <h1>Más músicos</h1>
+        <p class="sus-lede">Charlá con músicos de todo el país que, como vos, usan Más Música.</p>
       </section>
 
-      <div class="suscripcion-perks">
-        <ul>
-          <li><span class="check">✓</span>Chat con otros músicos suscritos</li>
-          <li><span class="check">✓</span>Salas y consejos de la comunidad</li>
-          <li><span class="check">✓</span>Cancelá cuando quieras</li>
-        </ul>
-      </div>
+      <ul class="sus-benefits">
+        <li>${tick}Chat con otros músicos suscritos</li>
+        <li>${tick}Salas y consejos de la comunidad</li>
+        <li>${tick}Cancelá cuando quieras</li>
+      </ul>
 
-      <div class="suscripcion-section-title">Incluido en tu suscripción</div>
-      <div class="suscripcion-features">
-        <div class="suscripcion-feature">
-          <div class="f-icon">📍</div>
-          <h3>Músicos cerca</h3>
-          <p>Chateá con músicos de tu zona y armá tu banda.</p>
+      <section class="sus-plan" aria-labelledby="sus-plan-name">
+        <div class="sus-plan-row">
+          <span class="sus-plan-name" id="sus-plan-name">Plan mensual</span>
+          <span class="sus-plan-price">$2.000<small>/ mes</small></span>
         </div>
-        <div class="suscripcion-feature">
-          <div class="f-icon">🎶</div>
-          <h3>Encontrá integrantes</h3>
-          <p>Buscá bajista, baterista o cantante para tu banda.</p>
+        <button class="sus-btn" id="suscribirse-chat" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+          Suscribirme ahora
+        </button>
+        <p class="sus-fine">Pago seguro. Podés cancelar en cualquier momento desde tu perfil.</p>
+      </section>
+
+      <section class="sus-teaser">
+        <div class="sus-teaser-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
         </div>
-      </div>
-
-      <div class="suscripcion-section-title">Elegí tu plan</div>
-      <div class="suscripcion-plans" id="suscripcion-plans">
-        <button class="suscripcion-plan" data-plan="mensual">
-          <div class="plan-left"><span class="plan-radio"></span>
-            <div><div class="plan-name">Mensual</div><div class="plan-sub">Se renueva cada mes</div></div>
-          </div>
-          <div class="plan-price">$2.000<small>por mes</small></div>
-        </button>
-        <button class="suscripcion-plan selected" data-plan="trimestral">
-          <span class="plan-badge">AHORRÁS 17%</span>
-          <div class="plan-left"><span class="plan-radio"></span>
-            <div><div class="plan-name">Trimestral</div><div class="plan-sub">$1.667 por mes</div></div>
-          </div>
-          <div class="plan-price">$5.000<small>cada 3 meses</small></div>
-        </button>
-        <button class="suscripcion-plan" data-plan="anual">
-          <span class="plan-badge">MEJOR PRECIO</span>
-          <div class="plan-left"><span class="plan-radio"></span>
-            <div><div class="plan-name">Anual</div><div class="plan-sub">$1.250 por mes</div></div>
-          </div>
-          <div class="plan-price">$15.000<small>por año</small></div>
-        </button>
-      </div>
-
-      <div class="suscripcion-cta-box">
-        <div class="suscripcion-summary"><span id="plan-label">Trimestral</span><strong id="plan-price">$5.000</strong></div>
-        <button class="suscripcion-cta" id="suscribirse-chat">🎸 Suscribirme ahora</button>
-        <p class="suscripcion-fine">Pago seguro. Podés cancelar en cualquier momento desde tu perfil.</p>
-      </div>
+        <p><strong>Mirá las salas de tu zona</strong> y armá tu banda. Buscá bajista.</p>
+      </section>
     </div>`;
-
-  const planes = host.querySelectorAll('.suscripcion-plan');
-  const planLabel = host.querySelector('#plan-label');
-  const planPrice = host.querySelector('#plan-price');
-  let planSeleccionado = 'trimestral';
-
-  planes.forEach(p => {
-    p.onclick = () => {
-      planes.forEach(x => x.classList.remove('selected'));
-      p.classList.add('selected');
-      planSeleccionado = p.dataset.plan;
-      if (planLabel) planLabel.textContent = p.querySelector('.plan-name').textContent;
-      if (planPrice) planPrice.textContent = p.querySelector('.plan-price').childNodes[0].textContent.trim();
-    };
-  });
 
   const btnSuscribir = host.querySelector('#suscribirse-chat');
   if (btnSuscribir) {
     btnSuscribir.onclick = async () => {
+      if (btnSuscribir.disabled) return;
+      const htmlOriginal = btnSuscribir.innerHTML;
+      btnSuscribir.disabled = true;
+      btnSuscribir.textContent = '⏳ Procesando…';
       try {
-        await api('/api/comunidad/chat-suscribirse', { method: 'POST', body: { plan: planSeleccionado } });
+        await api('/api/comunidad/chat-suscribirse', { method: 'POST', body: { plan: 'mensual' } });
         toast('¡Suscripción activada! Ya podés chatear.', 'ok');
-        cargarChatGlobal();
-      } catch (e) { toast(e.message, 'error'); }
+        await cargarChatGlobal();
+      } catch (e) {
+        toast(e.message, 'error');
+      } finally {
+        if (btnSuscribir.isConnected && !host.querySelector('.chat-global')) {
+          btnSuscribir.disabled = false;
+          btnSuscribir.innerHTML = htmlOriginal;
+        }
+      }
     };
   }
 }
