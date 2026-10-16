@@ -1372,16 +1372,6 @@ function promosBloqueHTML(lista, vacio) {
     </article>`).join('')}</div>`;
 }
 
-/* Inicio público: promociones activas, visibles para todos (con o sin sesión) */
-function promosInicioHTML() {
-  const lista = promosActivas();
-  if (!lista.length) return '';
-  return `<div class="promos-publico">
-    <h3 class="promos-tit">🎉 Promociones y novedades</h3>
-    ${promosBloqueHTML(lista)}
-  </div>`;
-}
-
 /* El Inicio del músico ya no muestra el bloque "🛎 Resumen" (estadísticas)
    ni "🎉 Promociones y novedades". Solo queda el ingreso si no hay sesión. */
 function renderResumenInicio() {
@@ -3724,24 +3714,6 @@ function itemNotif(n) {
   </article>`;
 }
 
-function itemPromo(p) {
-  const rango = [p.desde, p.hasta].filter(Boolean)
-    .map(ts => new Date(ts).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' }))
-    .join(' → ');
-  return `
-  <article class="notif-card" data-promo-id="${p.id}" role="button" tabindex="0" title="Ver promoción">
-    <div class="notif-icon promo" aria-hidden="true">🎉</div>
-    <div class="notif-content">
-      <div class="notif-row-top">
-        <h4 class="notif-title">${esc(p.titulo)}</h4>
-      </div>
-      <p class="notif-detail">${esc(p.texto)}</p>
-      <span class="notif-chip">${rango ? 'Vigencia ' + rango : 'Promoción de las salas'}</span>
-    </div>
-    <button class="notif-dismiss" aria-label="Descartar promoción" onclick="this.closest('.notif-card').remove()">✕</button>
-  </article>`;
-}
-
 /* Promociones y novedades de la administración (se gestionan en sus paneles) */
 function promosActivas() {
   const ahora = Date.now();
@@ -5273,19 +5245,9 @@ function wirePublic() {
          : 'Avisos en pantalla desactivados (igual los encontrás en la campana)', 'ok');
   };
   $('#btn-panel').onclick = mostrarPanel;
-  /* Resumen del Inicio: accesos */
+  /* Resumen del Inicio: solo el acceso para iniciar sesión */
   $('#inicio-resumen').onclick = e => {
     if (e.target.closest('#sum-login')) return pantallaAuth('login');
-    if (e.target.closest('a')) return;
-    const pp = e.target.closest('[data-promo-id]');
-    if (pp) return abrirPromo(pp.dataset.promoId);
-    const promo = e.target.closest('[data-promo]');
-    if (promo) {
-      const p = (state.promociones || []).find(x => x.id === promo.dataset.promo);
-      if (!p) return;
-      return openModal(`<h3>${esc(p.titulo)}</h3><p>${esc(p.texto)}</p>
-        <div class="row"><button class="btn" onclick="closeModal()">Cerrar</button></div>`);
-    }
   };
   $('#home-mine-body').onclick = async e => {
     if (e.target.closest('#filtro-mine-clear')) {

@@ -3284,28 +3284,6 @@ main {
 
 /* ================= RESUMEN DEL INICIO ================= */
 #view-mapa { padding: 12px 14px 30px; }
-.resumen-stats { margin-bottom: 14px; }
-.resumen-stats .stat { text-align: center; }
-.promo-list { display: grid; gap: 8px; }
-.promo {
-  display: flex; flex-direction: column; gap: 3px;
-  background: linear-gradient(135deg, rgba(0, 160, 56, .16), var(--panel2));
-  border: 1px solid var(--accent);
-  border-radius: 12px; padding: 10px 12px; cursor: pointer;
-}
-.promo strong { font-size: .95rem; }
-.promo span { font-size: .84rem; color: var(--muted); }
-.alert-list { display: grid; gap: 8px; }
-.alert {
-  display: flex; flex-direction: column; gap: 2px;
-  padding: 9px 12px; border-radius: 10px;
-  background: var(--panel2); border: 1px solid var(--line);
-  border-left: 3px solid var(--line);
-}
-.alert.nueva { border-left-color: var(--accent); background: rgba(0, 160, 56, .1); }
-.alert strong { font-size: .9rem; }
-.alert span { font-size: .84rem; }
-.alert small { font-size: .72rem; }
 
 /* Selector mapa / lista */
 .seg {
@@ -3426,7 +3404,7 @@ main {
     align-items: start;
   }
   /* Feedback al pasar el mouse (en táctil no aplica) */
-  .room-card, .inst-card, .mine-card, .place-photo, .promo, .alert {
+  .room-card, .inst-card, .mine-card, .place-photo {
     transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
   }
   .room-card:hover, .inst-card:hover, .mine-card:hover {
@@ -3535,22 +3513,7 @@ main {
   #step-1 .cal-day .dot { font-size: clamp(.62rem, .2vw + .5rem, .85rem); top: 5px; right: 7px; }
   #step-1 .panel > .muted.small { margin: clamp(10px, 1.5vh, 18px) 0 0; font-size: clamp(.8rem, .2vw + .7rem, 1rem); }
 
-  /* Resumen: tarjetas grandes en 2 columnas que llenan la columna */
-  #inicio-resumen .resumen-stats {
-    flex: 1 1 auto; min-height: 0; margin: 0;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-auto-rows: minmax(110px, 1fr);
-    gap: clamp(12px, 1.2vw, 24px);
-  }
-  #inicio-resumen .stat {
-    display: flex; flex-direction: column; justify-content: center; align-items: center;
-    border-radius: clamp(14px, 1.1vw, 22px); padding: 18px;
-  }
-  #inicio-resumen .stat span { font-size: clamp(.9rem, .35vw + .7rem, 1.2rem); margin-bottom: 8px; }
-  #inicio-resumen .stat strong {
-    font-family: "Barlow Condensed", "Barlow", sans-serif; font-style: italic; font-weight: 900;
-    font-size: clamp(2.6rem, 2.4vw + 1.4rem, 5.5rem); line-height: 1; color: var(--accent2);
-  }
+  /* El panel de Inicio solo lleva el ingreso cuando no hay sesión */
   #inicio-resumen > .row { margin-top: clamp(12px, 1.6vh, 20px); }
 
   /* ---------- Resto de pantallas: grillas que aprovechan el ancho ---------- */
@@ -3567,7 +3530,6 @@ main {
   .brand-logo { width: 190px; }
   #step-1 { height: calc(100dvh - 140px); min-height: 480px; }
   #step-1 > .panel { padding: 16px 20px; }
-  #inicio-resumen .resumen-stats { grid-auto-rows: minmax(90px, 1fr); }
 }
 
 /* Monitores grandes / 4K: se limita el ancho para que nada quede estirado */
@@ -3725,9 +3687,7 @@ main {
 .promo-flyer-img { display: block; width: 100%; max-height: 300px; object-fit: contain; border-radius: 12px; margin: 8px 0; background: var(--panel2); }
 .promo-flyer-edit img { max-width: 220px; max-height: 220px; border-radius: 10px; display: block; margin: 6px 0; }
 
-/* Promociones en el Inicio: el flyer es lo principal */
-.promos-publico { margin: 0 0 16px; }
-.promos-tit { margin: 0 0 10px; font-size: 1.05rem; }
+/* Promociones: el flyer es lo principal */
 .promo-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
 .promo-grid > :only-child { max-width: 420px; }
 .promo-hero {
@@ -4509,29 +4469,6 @@ h3 { font-size: 1.1rem; }
 /* Transiciones más suaves */
 button, a, .btn { transition: all .2s ease; }
 
-/* ---------- STATS DEL INICIO ---------- */
-
-.resumen-stats .stat {
-  background: linear-gradient(135deg, var(--panel2), var(--panel));
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  padding: 14px 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, .12);
-  transition: transform .2s, box-shadow .2s;
-}
-.resumen-stats .stat:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, .18);
-}
-.resumen-stats .stat span { font-size: .75rem; color: var(--muted); }
-.resumen-stats .stat strong {
-  font-size: 1.5rem;
-  background: linear-gradient(135deg, var(--accent), var(--accent2));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
 /* ---------- CARDS DE SALAS ---------- */
 
 .room-card {
@@ -4697,7 +4634,7 @@ button, a, .btn { transition: all .2s ease; }
 }
 
 /* Animar elementos al aparecer */
-.room-card, .stat, .notif-item, .promo {
+.room-card, .stat, .notif-item {
   animation: fade-in .3s ease both;
 }
 .room-card:nth-child(2) { animation-delay: .05s; }
@@ -5459,7 +5396,6 @@ main#view-comunidad:has(.suscripcion-wrap) > .panel > .comu-head { display: none
   display: flex; align-items: center; justify-content: center;
   font-size: 1.1rem; font-weight: 700;
 }
-.notif-icon.promo { background: rgba(34,197,94,.12); color: var(--accent2); }
 
 .notif-content { flex: 1; min-width: 0; }
 
@@ -5496,9 +5432,6 @@ main#view-comunidad:has(.suscripcion-wrap) > .panel > .comu-head { display: none
 .notif-vacio-icon { font-size: 2.5rem; margin-bottom: 8px; }
 .notif-vacio h3 { font-size: 1.15rem; font-weight: 700; margin: 0; color: var(--text); }
 .notif-vacio p { font-size: .92rem; margin: 4px 0 0; }
-
-/* Promo items */
-.notif-card.promo-item { cursor: pointer; }
 
 /* ========== TITULOS DE ADMINISTRACION CENTRAL ========== */
 
