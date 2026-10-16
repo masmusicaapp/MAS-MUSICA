@@ -111,6 +111,12 @@ const esSuper = () => !!yo && yo.rol === 'SUPER_ADMIN';
 /* Cuentas de control (administrador y dueño de sala): solo control, sin integrantes, instrumentos ni favoritas */
 const esCuentaControl = () => esDueño() || esSuper();
 
+/* Días para adelante que se puede reservar: los músicos y las bandas, solo una semana;
+   las cuentas de control (dueño de sala y administración) mantienen los 60 días */
+const DIAS_RESERVA_MUSICO = 7;
+const DIAS_RESERVA_CONTROL = 60;
+const maxFechaReserva = () => addDaysStr(todayStr(), esCuentaControl() ? DIAS_RESERVA_CONTROL : DIAS_RESERVA_MUSICO);
+
 function guardarToken(t) {
   token = t || '';
   try { t ? localStorage.setItem(TOKEN_KEY, t) : localStorage.removeItem(TOKEN_KEY); } catch (e) { /* modo privado */ }
@@ -420,14 +426,26 @@ function renderIntegrantesBanda() {
 function renderCalendar() {
   const [y, m] = calCursor.split('-').map(Number);
   $('#cal-title').textContent = new Date(y, m - 1, 1).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+  /* Cada sala administra sus reservas: el dueño solo cuenta las de sus propias salas */
+  const salasPropias = esDueño() ? (state.rooms || []).filter(r => r.ownerId === yo.id).map(r => r.id) : null;
+  /* Aviso de hasta cuándo se puede reservar, según la cuenta */
+  const hint = $('#cal-hint');
+  if (hint) hint.textContent = (esCuentaControl()
+    ? 'Puedes reservar hasta con 60 días de anticipación.'
+    : 'Los músicos y las bandas pueden reservar hasta con 7 días de anticipación.')
+    + (salasPropias ? ' Los días con un número son las reservas de tu sala.' : ' Los días con reservas muestran un número.');
   const grid = $('#cal-grid');
   grid.innerHTML = ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá'].map(d => `<div class="cal-h">${d}</div>`).join('');
   const first = new Date(y, m - 1, 1).getDay();
   const days = new Date(y, m, 0).getDate();
   const today = todayStr();
-  const max = addDaysStr(today, 60);
+  const max = maxFechaReserva();
   const counts = {};
-  state.reservations.forEach(r => { counts[r.date] = (counts[r.date] || 0) + 1; });
+  state.reservations.forEach(r => {
+    if (r.estado === 'cancelada') return;                       /* una reserva cancelada no cuenta */
+    if (salasPropias && !salasPropias.includes(r.roomId)) return;
+    counts[r.date] = (counts[r.date] || 0) + 1;
+  });
   for (let i = 0; i < first; i++) grid.insertAdjacentHTML('beforeend', '<div></div>');
   for (let d = 1; d <= days; d++) {
     const ds = `${calCursor}-${pad2(d)}`;

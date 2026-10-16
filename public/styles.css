@@ -5511,7 +5511,7 @@ main#view-comunidad:has(.suscripcion-wrap) > .panel {
 
 #view-admin .sol-req-actions .btn,
 #view-admin .sala-actions .btn,
-#viewadmin .cuentas-actions .btn {
+#view-admin .cuentas-actions .btn {
   border-radius: 12px;
   font-size: .88rem;
   height: 44px;
