@@ -438,12 +438,46 @@ function persist(state) {
   fs.renameSync(tmp, DATA_FILE);
 }
 
-/* Estado que se envía al cliente (sin PIN, sin cuentas ni sesiones) */
-function publicState(state) {
+/* Estado que se envía al cliente (sin PIN, sin cuentas ni sesiones, y con privacidad en reservas) */
+function publicState(state, req) {
   const { users, sessions, notificaciones, ...resto } = state;
+  const admin = req ? esSuper(state, req) : false;
+  const u = req ? sesionActual(state, req) : null;
+  const miSala = (u && !admin) ? salaDelUsuario(state, u) : null;
+  const miUserId = u ? u.id : null;
+  const miTel = u ? String(u.telefono || '').trim() : '';
+
+  const reservations = (state.reservations || []).map(r => {
+    // 1. Super Administrador ve todas las reservas con datos completos
+    if (admin) {
+      const { pago, ...x } = r;
+      return pago ? { ...x, pagoEstado: pago.estado } : x;
+    }
+    // 2. Dueño de sala ve reservas completas de su propia sala
+    if (miSala && r.roomId === miSala.id) {
+      const { pago, ...x } = r;
+      return pago ? { ...x, pagoEstado: pago.estado } : x;
+    }
+    // 3. Usuario dueño de la reserva ve su propia reserva completa (para "Mis reservas")
+    if (miUserId && (r.userId === miUserId || (miTel && r.phone && r.phone === miTel))) {
+      const { pago, ...x } = r;
+      return pago ? { ...x, pagoEstado: pago.estado } : x;
+    }
+    // 4. Visitante público o cualquier otro usuario: se ocultan datos personales (nombre real, teléfono, email, notas, pago)
+    return {
+      id: r.id,
+      roomId: r.roomId,
+      date: r.date,
+      start: r.start,
+      end: r.end,
+      estado: r.estado,
+      name: 'Reservado',
+    };
+  });
+
   return {
     ...resto,
-    reservations: (state.reservations || []).map(({ pago, ...x }) => (pago ? { ...x, pagoEstado: pago.estado } : x)),
+    reservations,
     settings: {
       currency: state.settings.currency,
       hours: state.settings.hours,
@@ -1465,9 +1499,9 @@ async function handleApi(req, res, url, parts) {
     return sendJson(res, 200, { state: publicState(state) });
   }
 
-  // Estado completo (sin datos privados)
+  // Estado completo (con privacidad según sesión)
   if (method === 'GET' && url.pathname === '/api/state') {
-    return sendJson(res, 200, publicState(state));
+    return sendJson(res, 200, publicState(state, req));
   }
 
   /* ======================= RESERVAS ======================= */
@@ -1480,6 +1514,12 @@ async function handleApi(req, res, url, parts) {
     const phone = String(body.phone || (u && u.telefono) || '').trim();
     if (!date || !roomId || !start || !end) return sendJson(res, 400, { error: 'Faltan datos de la reserva' });
     if (!name) return sendJson(res, 400, { error: 'Escribe el nombre o el de la banda' });
+    /* Los músicos y las bandas reservan con un máximo de 7 días de anticipación */
+    if (u.rol === 'USER') {
+      const corte = new Date();
+      corte.setDate(corte.getDate() + 7);
+      if (date > dateStr(corte)) return sendJson(res, 403, { error: 'Los músicos y las bandas pueden reservar hasta 7 días para adelante' });
+    }
     const room = state.rooms.find(r => r.id === roomId && r.activo !== false && r.estado === 'aprobada');
     if (!room) return sendJson(res, 400, { error: 'La sala no existe o no está disponible' });
     const startMin = toMin(start), endMin = toMin(end);
