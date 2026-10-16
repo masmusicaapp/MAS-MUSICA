@@ -5314,6 +5314,21 @@ main#view-comunidad:has(.suscripcion-wrap) > .panel {
   display: block;
 }
 
+/* Las barras de búsqueda también son <label>, pero no son etiquetas de campo:
+   recuperan su forma de barra (icono + input en la misma fila, texto centrado). */
+#view-admin .salas-buscar,
+#view-admin .cuentas-buscar {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0;
+}
+#view-admin .salas-buscar input,
+#view-admin .cuentas-buscar input {
+  margin: 0;
+  padding: 0;
+  box-shadow: none;
+}
+
 /* Inputs dentro del admin */
 #view-admin input[type="text"],
 #view-admin input[type="search"],
