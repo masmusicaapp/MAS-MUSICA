@@ -4108,90 +4108,10 @@ body.modo-control label:has(> #pd-instrumentos) { display: none !important; }
 }
 
 /* ================= COMUNIDAD (solo músicos) ================= */
-.comu-tabs { display: flex; gap: 6px; margin: 4px 0 14px; flex-wrap: wrap; }
-.comu-tab {
-  flex: 1 1 0; min-width: 0;
-  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-  padding: 9px 10px; border-radius: 12px; cursor: pointer;
-  background: var(--soft2); color: var(--muted);
-  border: 1px solid var(--line); font: inherit; font-size: .88rem; font-weight: 600;
-  white-space: nowrap;
-  transition: background .15s ease, color .15s ease, border-color .15s ease;
-}
-.comu-tab:hover { color: var(--text); }
-.comu-tab.active { background: rgba(0, 160, 56, .16); color: var(--accent2); border-color: var(--accent); font-weight: 700; }
-.comu-badge {
-  min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px;
-  background: var(--danger); color: #fff; font-size: .68rem; font-weight: 700;
-  display: inline-flex; align-items: center; justify-content: center;
-}
-.comu-filtros { display: flex; align-items: center; gap: 10px; margin: 0 0 12px; flex-wrap: wrap; }
-.comu-lista, .comu-chats, #comu-siguiendo { display: flex; flex-direction: column; gap: 10px; }
-.comu-card {
-  display: flex; gap: 12px; align-items: flex-start;
-  padding: 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel2);
-}
-.comu-avatar {
-  flex: none; width: 46px; height: 46px; border-radius: 50%; overflow: hidden;
-  background: var(--soft2); display: inline-flex; align-items: center; justify-content: center;
-}
-.comu-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.comu-avatar-letra { background: rgba(0, 160, 56, .18); color: var(--accent2); font-weight: 800; font-size: 1.1rem; }
-.comu-info { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1 1 auto; }
-.comu-info strong { font-size: .95rem; color: var(--text); }
-.comu-user { color: var(--muted); font-weight: 500; font-size: .82rem; }
-.comu-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 2px; }
-.comu-tag { font-size: .72rem; padding: 2px 9px; border-radius: 999px; background: var(--soft2); color: var(--muted); border: 1px solid var(--line); }
-.comu-me-sigue { align-self: flex-start; font-size: .7rem; padding: 2px 9px; border-radius: 999px; background: rgba(0, 160, 56, .16); color: var(--accent2); font-weight: 700; }
-.comu-acciones { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
-.comu-sub { margin: 14px 0 8px; font-size: .9rem; color: var(--muted); }
-.comu-chat-item {
-  display: flex; gap: 12px; align-items: center; width: 100%; text-align: left; cursor: pointer;
-  padding: 11px 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel2);
-  font: inherit; color: var(--text);
-}
-.comu-chat-item:hover { border-color: var(--accent); }
-.comu-chat-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1 1 auto; }
-.comu-chat-info strong { font-size: .93rem; }
-.comu-chat-info .small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.comu-chat { display: flex; flex-direction: column; gap: 10px; }
-.comu-chat-head { display: flex; align-items: center; gap: 10px; }
-.comu-chat-nombre { display: flex; flex-direction: column; line-height: 1.15; flex: 1 1 auto; min-width: 0; }
-.comu-hilo {
-  display: flex; flex-direction: column; gap: 8px;
-  max-height: min(52vh, 420px); min-height: 180px; overflow-y: auto;
-  padding: 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--bg-deep);
-}
-.comu-burbuja {
-  max-width: 82%; padding: 8px 11px; border-radius: 14px; font-size: .9rem;
-  display: flex; flex-direction: column; gap: 2px; word-break: break-word;
-}
-.comu-burbuja .comu-texto { white-space: pre-wrap; }
-.comu-burbuja.mio { align-self: flex-end; background: var(--accent); color: var(--on-accent); border-bottom-right-radius: 4px; }
-.comu-burbuja.otro { align-self: flex-start; background: var(--panel2); color: var(--text); border: 1px solid var(--line); border-bottom-left-radius: 4px; }
-.comu-hora { font-size: .65rem; opacity: .75; align-self: flex-end; }
-.comu-form { display: flex; gap: 8px; align-items: center; }
-.comu-form input {
-  flex: 1 1 auto; min-width: 0; padding: 10px 12px; border-radius: 12px;
-  border: 1px solid var(--line); background: var(--panel2); color: var(--text); font: inherit;
-}
-.comu-form input:focus { outline: 2px solid var(--accent); outline-offset: 0; border-color: var(--accent); }
-
-/* Suscripción al chat global */
-.suscripcion-chat {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  gap: 20px;
-  padding: 32px 20px;
-  background: linear-gradient(135deg, var(--panel2), var(--panel));
-  border: 1px solid var(--line);
-  border-radius: 20px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, .12);
-  max-width: 400px;
-  margin: 0 auto;
-}
+/* Solo queda el chat global a pantalla completa (contenedor #comu-chats):
+   sus estilos están en "CHAT GLOBAL A PANTALLA COMPLETA" más abajo.
+   Acá va únicamente el contenedor, que también usan la suscripción y el estado de carga. */
+.comu-chats { display: flex; flex-direction: column; gap: 10px; }
 
 /* Chat global grupal */
 .chat-global {
@@ -4375,36 +4295,6 @@ body.chat-abierto .chat-global-form {
 }
 /* Mientras se verifica el acceso, el texto de carga conserva su aire */
 .comu-cargando { margin: 0; padding: 16px; }
-
-.suscripcion-icono {
-  font-size: 3.5rem;
-  line-height: 1;
-}
-
-.suscripcion-chat h3 {
-  margin: 0;
-  font-size: 1.4rem;
-}
-
-.suscripcion-chat p {
-  margin: 0;
-  font-size: .95rem;
-  line-height: 1.5;
-  color: var(--muted);
-}
-
-.suscripcion-chat h3 {
-  margin: 0;
-  font-size: 1.3rem;
-  width: 100%;
-}
-
-.suscripcion-chat p {
-  margin: 0;
-  font-size: .92rem;
-  line-height: 1.5;
-  width: 100%;
-}
 
 /* [bloque viejo .suscripcion-planes / .suscripcion-plan-nombre eliminado: no se usaba] */
 

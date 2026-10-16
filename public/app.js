@@ -2343,7 +2343,7 @@ function prepararSwipeNavegacion() {
   document.addEventListener('touchstart', e => {
     const target = e.target;
     /* Solo en el panel de admin, no en inputs/modales/la app principal */
-    if (target.closest('#dock-container, .modal, .notif-drop, .ajustes-drop, input, textarea, select, .hour-times, .comu-form, .chat-global-form')) return;
+    if (target.closest('#dock-container, .modal, .notif-drop, .ajustes-drop, input, textarea, select, .hour-times, .chat-global-form')) return;
     const admin = document.getElementById('view-admin');
     if (!admin || admin.hidden) return;
     touchStartX = e.touches[0].clientX;
@@ -2444,26 +2444,7 @@ function irInstrumentos() { mostrarLugar(); }
 function irMisReservas() { mostrarMisReservas(); }
 
 /* ================= Comunidad (solo músicos) ================= */
-let comuTab = 'musicos';
-let comuBusqueda = '';
-let comuSoloZona = false;
-let comuLista = [];
-let comuChatCon = null;
-let comuPollTimer = null;
-let comuBuscarTimer = null;
-let comuConvFirma = '';
-let comuHiloFirma = '';
-
-const comuAvatar = m => {
-  const inicial = esc(String((m && m.nombre) || '?').trim().charAt(0).toUpperCase() || '?');
-  return m && m.foto
-    ? `<span class="comu-avatar"><img src="${esc(m.foto)}" alt=""></span>`
-    : `<span class="comu-avatar comu-avatar-letra">${inicial}</span>`;
-};
-
-const horaCorta = ts => new Date(ts).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
-
-function irComunidad(tab) {
+function irComunidad() {
   /* Solo los músicos (rol USER) tienen comunidad; admin y dueños van al Perfil */
   if (!esMúsico()) {
     const navPerfil = document.getElementById('nav-mine');
@@ -2490,14 +2471,6 @@ function irComunidad(tab) {
       mostrarSuscripcionChat();
     }
   });
-}
-
-function activarComuPane(tab) {
-  /* Ya no hay pestañas, solo el chat global */
-}
-
-function cambiarComuTab(tab) {
-  /* Ya no hay pestañas, el chat se carga directamente desde irComunidad */
 }
 
 /* Verificar si el usuario tiene acceso al chat global */
@@ -2687,211 +2660,6 @@ function fechaChat(ts) {
   return d.toDateString() === new Date().toDateString() ? `hoy · ${hm}` : `${d.toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })} · ${hm}`;
 }
 
-function pararComuPoll() { if (comuPollTimer) { clearInterval(comuPollTimer); comuPollTimer = null; } }
-function iniciarComuPoll() {
-  pararComuPoll();
-  comuPollTimer = setInterval(() => {
-    const v = $('#view-comunidad');
-    if (!v || v.hidden) return;
-    if (comuTab === 'mensajes') {
-      if (comuChatCon) cargarComuChat(comuChatCon, true);
-      else cargarComuConversaciones(true);
-    }
-  }, 5000);
-}
-
-/* ----- Directorio de músicos ----- */
-async function cargarComuMusicos() {
-  const host = $('#comu-lista');
-  if (!host) return;
-  host.innerHTML = '<p class="muted small">Cargando músicos…</p>';
-  try {
-    const q = new URLSearchParams();
-    if (comuBusqueda.trim()) q.set('q', comuBusqueda.trim());
-    if (comuSoloZona && yo && yo.localidad) q.set('zona', yo.localidad);
-    const r = await api('/api/comunidad/musicos?' + q.toString());
-    comuLista = r.musicos || [];
-    const nota = $('#comu-zona-nota');
-    if (nota) nota.textContent = (yo && yo.localidad) ? `Tu zona: ${yo.localidad}` : 'Cargá tu localidad en el Perfil';
-    renderComuLista();
-  } catch (e) { host.innerHTML = `<p class="muted">${esc(e.message)}</p>`; }
-}
-
-const comuTags = instrumentos => (instrumentos && instrumentos.length)
-  ? `<div class="comu-tags">${instrumentos.map(i => `<span class="comu-tag">${esc(i)}</span>`).join('')}</div>`
-  : '';
-
-const comuBotones = (m, conSeg) => `<div class="comu-acciones">
-    ${conSeg ? `<button type="button" class="btn btn-sm ${m.siguiendo ? 'btn-primary' : ''}" data-comu-seguir="${m.id}">${m.siguiendo ? 'Siguiendo ✓' : 'Seguir'}</button>` : ''}
-    <button type="button" class="btn btn-sm btn-primary" data-comu-msg="${m.id}">💬 Mensaje</button>
-  </div>`;
-
-function renderComuLista() {
-  const host = $('#comu-lista');
-  if (!comuLista.length) {
-    host.innerHTML = '<p class="muted">No se encontraron músicos con ese filtro.</p>';
-    return;
-  }
-  host.innerHTML = comuLista.map(m => `
-    <div class="comu-card" data-id="${m.id}">
-      ${comuAvatar(m)}
-      <div class="comu-info">
-        <strong>${esc(m.nombre)} <span class="comu-user">@${esc(m.usuario)}</span></strong>
-        <span class="muted small">📍 ${m.localidad ? esc(m.localidad) : 'Sin localidad'}</span>
-        ${comuTags(m.instrumentos)}
-        ${m.meSigue ? '<span class="comu-me-sigue">Te sigue</span>' : ''}
-        ${comuBotones(m, true)}
-      </div>
-    </div>`).join('');
-}
-
-/* ----- Seguir / dejar de seguir ----- */
-async function comuSeguir(id, btn) {
-  if (btn) btn.disabled = true;
-  try {
-    const r = await api('/api/comunidad/seguir', { method: 'POST', body: { userId: id } });
-    const item = comuLista.find(m => m.id === id);
-    if (item) item.siguiendo = r.siguiendo;
-    $$(`[data-comu-seguir="${id}"]`).forEach(b => {
-      b.disabled = false;
-      b.classList.toggle('btn-primary', r.siguiendo);
-      b.textContent = r.siguiendo ? 'Siguiendo ✓' : 'Seguir';
-    });
-    toast(r.siguiendo ? 'Ahora seguís a este músico' : 'Dejaste de seguir', 'ok');
-  } catch (e) { if (btn) btn.disabled = false; toast(e.message, 'error'); }
-}
-
-/* ----- Mensajes ----- */
-function actualizarComuBadge(n) {
-  const b = $('#comu-msg-badge');
-  if (!b) return;
-  b.hidden = !n;
-  b.textContent = n > 9 ? '9+' : String(n || 0);
-}
-
-async function cargarComuConversaciones(silent) {
-  const host = $('#comu-chats');
-  if (!host) return;
-  if (!silent) host.innerHTML = '<p class="muted small">Cargando…</p>';
-  try {
-    const r = await api('/api/comunidad/conversaciones');
-    actualizarComuBadge(r.sinLeer);
-    const firma = JSON.stringify(r.conversaciones);
-    if (silent && firma === comuConvFirma) return;
-    comuConvFirma = firma;
-    if (!r.conversaciones.length) { host.innerHTML = '<p class="muted">Todavía no tenés conversaciones. Entrá a «Músicos» y escribile a alguien.</p>'; return; }
-    host.innerHTML = r.conversaciones.map(c => `
-      <button type="button" class="comu-chat-item" data-comu-open="${c.id}">
-        ${comuAvatar(c)}
-        <span class="comu-chat-info">
-          <strong>${esc(c.nombre)} <span class="comu-user">@${esc(c.usuario)}</span></strong>
-          <span class="muted small">${c.ultimo ? (c.ultimo.mio ? 'Vos: ' : '') + esc(c.ultimo.texto) : 'Decile algo 👋'}</span>
-        </span>
-        ${c.sinLeer ? `<span class="comu-badge">${c.sinLeer}</span>` : ''}
-      </button>`).join('');
-  } catch (e) { if (!silent) host.innerHTML = `<p class="muted">${esc(e.message)}</p>`; }
-}
-
-function cerrarComuChat() {
-  comuChatCon = null;
-  comuHiloFirma = '';
-  const chat = $('#comu-chat'), chats = $('#comu-chats');
-  if (chat) { chat.hidden = true; chat.innerHTML = ''; }
-  if (chats) chats.hidden = false;
-}
-
-async function abrirComuChat(userId) {
-  if (!esMúsico()) return;
-  activarComuPane('mensajes');
-  comuChatCon = userId;
-  comuHiloFirma = '';
-  $('#comu-chats').hidden = true;
-  $('#comu-chat').hidden = false;
-  $('#comu-chat').innerHTML = '<p class="muted small">Cargando…</p>';
-  await cargarComuChat(userId, false);
-  iniciarComuPoll();
-}
-
-async function cargarComuChat(userId, silent) {
-  try {
-    const r = await api('/api/comunidad/mensajes?con=' + encodeURIComponent(userId));
-    if (comuChatCon !== userId) return;
-    const v = $('#view-comunidad');
-    if (!v || v.hidden) return;
-    if (silent) pintarComuHilo(r.mensajes);
-    else renderComuChat(r);
-  } catch (e) { /* en silencio durante el refresco automático */ }
-}
-
-function renderComuChat(r) {
-  const m = r.musico;
-  $('#comu-chat').innerHTML = `
-    <div class="comu-chat-head">
-      <button type="button" class="btn btn-sm btn-ghost" id="comu-chat-volver" title="Volver">←</button>
-      ${comuAvatar(m)}
-      <span class="comu-chat-nombre"><strong>${esc(m.nombre)}</strong><span class="comu-user">@${esc(m.usuario)}</span></span>
-      <button type="button" class="btn btn-sm ${r.siguiendo ? 'btn-primary' : ''}" data-comu-seguir="${m.id}">${r.siguiendo ? 'Siguiendo ✓' : 'Seguir'}</button>
-    </div>
-    <div class="comu-hilo" id="comu-hilo"></div>
-    <form class="comu-form" id="comu-form" autocomplete="off">
-      <input id="comu-input" type="text" maxlength="600" placeholder="Escribí un mensaje…" autocomplete="off">
-      <button class="btn btn-sm btn-primary" type="submit">Enviar</button>
-    </form>`;
-  comuHiloFirma = '';
-  pintarComuHilo(r.mensajes);
-  const input = $('#comu-input');
-  if (input) input.focus();
-}
-
-function pintarComuHilo(msgs) {
-  const host = $('#comu-hilo');
-  if (!host) return;
-  const firma = (msgs.length || 0) + ':' + (msgs.length ? msgs[msgs.length - 1].id : '');
-  if (firma === comuHiloFirma) return;
-  comuHiloFirma = firma;
-  host.innerHTML = msgs.length
-    ? msgs.map(m => `<div class="comu-burbuja ${m.mio ? 'mio' : 'otro'}">
-        <span class="comu-texto">${esc(m.texto)}</span>
-        <span class="comu-hora">${horaCorta(m.fecha)}</span>
-      </div>`).join('')
-    : '<p class="muted small">Escribile para arrancar la charla 👋</p>';
-  host.scrollTop = host.scrollHeight;
-}
-
-async function enviarComuMensaje(texto) {
-  if (!comuChatCon || !texto.trim()) return;
-  const input = $('#comu-input');
-  if (input) input.value = '';
-  try {
-    await api('/api/comunidad/mensajes', { method: 'POST', body: { para: comuChatCon, texto: texto.trim() } });
-    await cargarComuChat(comuChatCon, true);
-  } catch (e) { if (input) { input.value = texto; input.focus(); } toast(e.message, 'error'); }
-}
-
-/* ----- Siguiendo ----- */
-async function cargarComuSiguiendo(silent) {
-  const host = $('#comu-siguiendo');
-  if (!host) return;
-  if (!silent) host.innerHTML = '<p class="muted small">Cargando…</p>';
-  try {
-    const r = await api('/api/comunidad/siguiendo');
-    const bloque = (titulo, lista, vacio, conSeg) => `
-      <h3 class="comu-sub">${titulo}</h3>
-      ${lista.length ? lista.map(m => `
-        <div class="comu-card" data-id="${m.id}">
-          ${comuAvatar(m)}
-          <div class="comu-info">
-            <strong>${esc(m.nombre)} <span class="comu-user">@${esc(m.usuario)}</span></strong>
-            <span class="muted small">📍 ${m.localidad ? esc(m.localidad) : 'Sin localidad'}</span>
-            ${comuTags(m.instrumentos)}
-            ${comuBotones(m, conSeg)}
-          </div>
-        </div>`).join('') : `<p class="muted small">${vacio}</p>`}`;
-    host.innerHTML = bloque('⭐ A quiénes seguís', r.sigo.map(x => Object.assign({ siguiendo: true }, x)), 'Todavía no seguís a nadie.', true)
-      + bloque('👥 Quiénes te siguen', r.meSiguen, 'Nadie te sigue todavía.', false);
-  } catch (e) { if (!silent) host.innerHTML = `<p class="muted">${esc(e.message)}</p>`; }
-}
-
 function renderMine() {
   /* El Perfil abre con la tarjeta de perfil (banda o sala); debajo, los datos y favoritas */
   renderPerfilMine();
@@ -2975,7 +2743,6 @@ function mostrarAcceso() {
 
 /* Cierra todas las vistas menos la que se vaya a mostrar */
 function ocultarVistas() {
-  pararComuPoll();
   clearInterval(chatGlobalTimer);
   chatGlobalTimer = null;
   document.body.classList.remove('chat-abierto');
@@ -5138,35 +4905,6 @@ function wirePublic() {
   $$('#dock-container [data-nav]').forEach(b => {
     b.onclick = () => ACCIONES_NAV[b.dataset.nav]();
   });
-  /* Comunidad (solo músicos) */
-  if ($('#view-comunidad')) {
-    $$('#view-comunidad .comu-tab').forEach(b => { b.onclick = () => cambiarComuTab(b.dataset.comuTab); });
-    const comuBuscar = $('#comu-buscar');
-    if (comuBuscar) comuBuscar.oninput = e => {
-      comuBusqueda = e.target.value;
-      clearTimeout(comuBuscarTimer);
-      comuBuscarTimer = setTimeout(cargarComuMusicos, 300);
-    };
-    const comuZona = $('#comu-zona');
-    if (comuZona) comuZona.onclick = () => {
-      if (!yo || !yo.localidad) { toast('Cargá tu localidad en el Perfil para filtrar por zona', 'warn'); return; }
-      comuSoloZona = !comuSoloZona;
-      comuZona.classList.toggle('btn-primary', comuSoloZona);
-      cargarComuMusicos();
-    };
-    $('#view-comunidad').onclick = e => {
-      const sg = e.target.closest('[data-comu-seguir]');
-      if (sg) return comuSeguir(sg.dataset.comuSeguir, sg);
-      const msg = e.target.closest('[data-comu-msg]');
-      if (msg) return abrirComuChat(msg.dataset.comuMsg);
-      const op = e.target.closest('[data-comu-open]');
-      if (op) return abrirComuChat(op.dataset.comuOpen);
-      if (e.target.closest('#comu-chat-volver')) return cambiarComuTab('mensajes');
-    };
-    $('#view-comunidad').addEventListener('submit', e => {
-      if (e.target.id === 'comu-form') { e.preventDefault(); enviarComuMensaje($('#comu-input').value); }
-    });
-  }
   $('#home-search').oninput = e => { busquedaMine = e.target.value; renderMineRapido(); };
   /* Perfil / Ajustes: filas, apariencia, avisos y accesos */
   $('#mine-user').onclick = e => {
