@@ -3973,60 +3973,6 @@ function cerrarPanelAjustes() {
   drop.setAttribute('aria-hidden', 'true');
 }
 
-/* En el celular, el panel de Ajustes se cierra deslizando el dedo hacia la izquierda
-   (reemplaza a la flecha "←"). Son eventos táctiles: con el mouse no se activa.
-   Si el gesto arranca vertical, se deja pasar para no trabar el scroll del panel. */
-function prepararSwipeCerrarAjustes() {
-  const sheet = $('#ajustes-sheet');
-  if (!sheet || sheet._swipeOk) return;
-  sheet._swipeOk = true;
-  const UMBRAL = 45;      /* cuánto hay que deslizar hacia la izquierda para que cierre */
-  const FLICK = 30;       /* ...o menos, si el deslizamiento fue rápido */
-  const TOPE = 120;       /* cuánto puede acompañar el dedo como máximo */
-  let x0 = 0, y0 = 0, dx = 0, t0 = 0, activo = false, decidido = false, horizontal = false;
-
-  const limpiar = () => {
-    const s = $('#ajustes-sheet');
-    if (s) { s.style.transition = ''; s.style.transform = ''; }
-  };
-  const soltar = cerrar => {
-    const s = $('#ajustes-sheet');
-    const deslizo = horizontal ? -dx : 0;
-    const rapido = (Date.now() - t0) < 350 && deslizo >= FLICK;
-    activo = false; decidido = false; horizontal = false; dx = 0;
-    limpiar();
-    if (s && cerrar && (deslizo >= UMBRAL || rapido)) cerrarPanelAjustes();
-  };
-
-  sheet.addEventListener('touchstart', e => {
-    if (!e.touches || e.touches.length !== 1) return;
-    if (!$('#ajustes-drop').classList.contains('open')) return;
-    x0 = e.touches[0].clientX; y0 = e.touches[0].clientY;
-    t0 = Date.now(); dx = 0; activo = true; decidido = false; horizontal = false;
-  }, { passive: true });
-
-  sheet.addEventListener('touchmove', e => {
-    if (!activo) return;
-    const mx = e.touches[0].clientX - x0;
-    const my = e.touches[0].clientY - y0;
-    if (!decidido) {
-      if (Math.abs(mx) < 8 && Math.abs(my) < 8) return;   /* todavía no sé la dirección */
-      decidido = true;
-      horizontal = Math.abs(mx) > Math.abs(my);
-      if (!horizontal) { activo = false; return; }        /* es scroll del panel: no me meto */
-    }
-    dx = mx > 0 ? 0 : (mx < -TOPE ? -TOPE : mx);          /* solo cuenta hacia la izquierda */
-    const s = $('#ajustes-sheet');
-    if (!s) return;
-    s.style.transition = 'none';
-    s.style.transform = 'translateX(' + dx + 'px)';
-    e.preventDefault();
-  }, { passive: false });
-
-  sheet.addEventListener('touchend', () => soltar(true));
-  sheet.addEventListener('touchcancel', () => soltar(false));
-}
-
 /* Toda la configuración: cuenta, preferencias, reservas y ayuda */
 function renderPanelAjustes() {
   const bod = $('#ajustes-sheet-body');
@@ -5278,10 +5224,9 @@ function wirePublic() {
     if ($('#notif-drop').classList.contains('open')) return cerrarPanelNotif();
     if ($('#ajustes-drop').classList.contains('open')) return cerrarPanelAjustes();
   });
-  /* Panel de ajustes: cerrar con ✕, el fondo, Escape o deslizando hacia la izquierda (celular) */
+  /* Panel de ajustes: cerrar con ✕, el fondo o Escape */
   $('#ajustes-panel-cerrar').onclick = cerrarPanelAjustes;
   $('#ajustes-backdrop').onclick = cerrarPanelAjustes;
-  prepararSwipeCerrarAjustes();
   $('#ajustes-sheet-body').onclick = e => {
     const aj = e.target.closest('[data-aj]');
     if (aj) return accionAjustes(aj.dataset.aj);
