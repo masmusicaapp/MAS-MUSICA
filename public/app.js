@@ -2939,8 +2939,6 @@ function pantallaAuth(vista = 'inicio') {
   const vol = '<button class="btn btn-sm btn-ghost auth-volver" data-vista="inicio">← Volver</button>';
 
   if (vista === 'inicio') {
-    const cIni = (state && state.settings && state.settings.contacto) || {};
-    const igIni = cIni.instagram ? limpiarIdentRed(cIni.instagram) : '';
     b.innerHTML = `
       <div class="auth-card">
         <div class="auth-titulo">
@@ -2983,7 +2981,6 @@ function pantallaAuth(vista = 'inicio') {
         <p class="auth-cuenta">¿Ya tenés cuenta?
           <button type="button" class="auth-link" data-vista="login">Iniciar sesión</button>
         </p>
-        ${igIni ? `<p class="auth-redes"><a class="auth-link" target="_blank" rel="noopener" href="https://www.instagram.com/${esc(igIni)}">📸 Seguinos en Instagram ${esc('@' + igIni)}</a></p>` : ''}
       </div>`;
     return;
   }
