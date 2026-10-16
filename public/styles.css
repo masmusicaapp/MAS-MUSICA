@@ -702,12 +702,6 @@ textarea:focus {
 .admin-chips .chip.on i {
   box-shadow: 0 0 0 1px var(--bg);
 }
-  transition: background .15s, color .15s, border-color .15s, transform .1s;
-}
-.admin-chips .chip:active { transform: scale(.95); }
-.admin-chips .chip i { width: 9px; height: 9px; border-radius: 50%; background: var(--c, var(--muted)); }
-.admin-chips .chip.on { background: var(--text); color: var(--bg); border-color: var(--text); }
-.admin-chips .chip.on i { box-shadow: 0 0 0 1px var(--bg); }
 
 .res-list { display: grid; gap: 10px; }
 .res-card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
@@ -2228,19 +2222,6 @@ main {
   }
   .notif-sheet-body::-webkit-scrollbar-thumb:hover { background: var(--accent2); }
 
-  /* Panel de ajustes */
-  .ajustes-sheet-body {
-    scrollbar-width: thin;
-    scrollbar-color: var(--accent) var(--panel2);
-  }
-  .ajustes-sheet-body::-webkit-scrollbar { width: 8px; display: block; }
-  .ajustes-sheet-body::-webkit-scrollbar-track { background: var(--panel2); border-radius: 8px; }
-  .ajustes-sheet-body::-webkit-scrollbar-thumb {
-    background: var(--accent); border-radius: 8px;
-    border: 2px solid var(--panel2);
-  }
-  .ajustes-sheet-body::-webkit-scrollbar-thumb:hover { background: var(--accent2); }
-
   /* Contenido principal de cada vista */
   main {
     scrollbar-width: thin;
@@ -3522,7 +3503,6 @@ main {
   #view-mine { grid-template-columns: repeat(auto-fit, minmax(clamp(360px, 28vw, 560px), 1fr)); }
   #mapa { height: calc(100dvh - 230px); min-height: 460px; max-height: 1200px; }
   .modal-box { max-width: clamp(640px, 42vw, 960px); }
-}
 
 /* Notebook bajita (1366x768 o menos de alto): se compacta para no hacer scroll */
 @media (min-width: 1024px) and (max-height: 800px) {
@@ -3927,15 +3907,6 @@ main {
     padding: 8px 14px 18px;
   }
 
-  /* Panel de ajustes */
-  .ajustes-sheet {
-    border-radius: 18px 18px 0 0;
-  }
-
-  .ajustes-sheet-head {
-    padding: 14px 16px 10px;
-  }
-
   /* Cards de salas */
   .room-card {
     padding: 14px;
@@ -3957,7 +3928,7 @@ main {
   }
 
   /* Contenedores con overflow */
-  .panel, .modal-box, .notif-sheet, .ajustes-sheet {
+  .panel, .modal-box, .notif-sheet {
     max-width: 100%;
     box-sizing: border-box;
   }
@@ -4240,18 +4211,6 @@ body.modo-control label:has(> #pd-instrumentos) { display: none !important; }
   border-radius: 14px 14px 0 0;
 }
 
-.chat-global-tit {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-
-.chat-global-head h3 {
-  margin: 0;
-  font-size: 1.1rem;
-}
-
 /* Botón de volver: sale del chat y vuelve al Inicio */
 .chat-global-volver {
   flex: none;
@@ -4396,8 +4355,6 @@ body.chat-abierto #view-comunidad > .panel {
   background: none;
   box-shadow: none;
 }
-/* La cabecera "Chat global" queda afuera: título y volver van en el chat */
-body.chat-abierto #view-comunidad .comu-head { display: none; }
 body.chat-abierto #comu-chats {
   display: flex;
   flex-direction: column;
@@ -4652,11 +4609,6 @@ button, a, .btn { transition: all .2s ease; }
   box-shadow: 0 -10px 40px rgba(0, 0, 0, .3);
 }
 
-.ajustes-sheet {
-  border-radius: 20px 20px 0 0;
-  box-shadow: 0 -10px 40px rgba(0, 0, 0, .3);
-}
-
 /* ---------- MEJORAS EN BOTONES ---------- */
 
 .btn {
@@ -4691,28 +4643,6 @@ main#view-comunidad:has(.suscripcion-wrap) > .panel {
   padding: 0;
   box-shadow: none;
 }
-
-/* La cabecera "Chat global" (burbuja + subtítulo) no se muestra sobre la
-   pantalla de suscripción; vuelve sola cuando ya se ve el chat. */
-main#view-comunidad:has(.suscripcion-wrap) > .panel > .comu-head { display: none; }
-
-/* Encabezado "Chat global" con burbuja (estilo mock) */
-.comu-head { flex-direction: column; align-items: flex-start; gap: 6px; }
-.comu-title {
-  display: flex; align-items: center; gap: 10px;
-  font-family: "Barlow Condensed", "Barlow", sans-serif;
-  font-style: italic; font-weight: 800;
-  text-transform: none; letter-spacing: 0;
-  font-size: 1.35rem; line-height: 1; color: var(--muted);
-}
-.comu-bubble {
-  flex: none;
-  width: 26px; height: 26px;
-  border-radius: 8px 8px 8px 2px;
-  background: var(--text);
-  display: flex; align-items: center; justify-content: center; gap: 3px;
-}
-.comu-bubble i { width: 4px; height: 4px; border-radius: 50%; background: var(--bg); display: block; }
 
 /* ---------- Contenido ----------
    (selector con #comu-chats para no ser pisado por la regla responsive
