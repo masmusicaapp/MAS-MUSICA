@@ -5320,7 +5320,7 @@ main#view-comunidad:has(.suscripcion-wrap) > .panel {
 #view-admin .cuentas-buscar {
   display: flex;
   align-items: center;
-  margin-bottom: 0;
+  margin: 12px 0;
 }
 #view-admin .salas-buscar input,
 #view-admin .cuentas-buscar input {
