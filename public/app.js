@@ -315,6 +315,8 @@ function renderPerfilMine() {
     if (banda) break;
   }
   if (!banda) {
+    /* Registrar banda es cosa de músicos: el administrador no ve esta tarjeta */
+    if (esCuentaControl()) { host.hidden = true; host.innerHTML = ''; return; }
     host.hidden = false;
     host.innerHTML = `
     <div class="perfil-mini">
@@ -1883,6 +1885,8 @@ function montarRecortador(host, opciones = {}) {
 
 /* ---------- Registrar / editar banda ---------- */
 function formularioBanda(id, alGuardar) {
+  /* Registrar una banda es solo para músicos; el administrador solo edita o elimina */
+  if (!id && esCuentaControl()) { toast('Registrar una banda es solo para músicos', 'warn'); return; }
   const b = id ? bandas().find(x => x.id === id) : { nombre: '', telefono: '', foto: '' };
   if (id && !b) return;
   const fotoActual = b.foto || '';
@@ -2116,7 +2120,7 @@ function renderConfirm() {
           ${listaBandas.map(b => `<option value="${esc(b.nombre)}" ${elegida && b.id === elegida.id ? 'selected' : ''}>${esc(b.nombre)}</option>`).join('')}
         </select>
       </label>
-      <button class="btn btn-sm" id="bk-register-band">🎭 Registrar mi banda</button>
+      ${esCuentaControl() ? '' : '<button class="btn btn-sm" id="bk-register-band">🎭 Registrar mi banda</button>'}
     </div>
     <label>Nombre o banda *<input id="bk-name" maxlength="60" placeholder="Ej.: Banda Luna" autocomplete="name" value="${yo ? esc(yo.nombre) : ''}"></label>
     <label>Teléfono (opcional)${yo ? '' : ' <span class="muted small">(creá una cuenta para no escribirlo cada vez)</span>'}<input id="bk-phone" type="tel" maxlength="20" placeholder="Ej.: +56 9 1234 5678" value="${yo ? esc(yo.telefono || '') : ''}"></label>
@@ -2147,8 +2151,9 @@ function renderConfirm() {
   selBand.onchange = pintarBanda;
   if (elegida) pintarBanda();
 
-  /* Registrar una banda nueva y seleccionarla */
-  $('#bk-register-band').onclick = () => formularioBanda(null, creada => {
+  /* Registrar una banda nueva y seleccionarla (solo músicos) */
+  const btnRegBanda = $('#bk-register-band');
+  if (btnRegBanda) btnRegBanda.onclick = () => formularioBanda(null, creada => {
     if (!creada) return;
     renderConfirm();                       /* recarga el selector */
     const nuevoSel = $('#bk-band');
@@ -2289,6 +2294,12 @@ function mostrarLugar() {
 function setNav(nav) {
   navActual = nav;
   document.body.classList.toggle('modo-control', esCuentaControl());
+  /* Al dejar el panel de administración, la barra inferior vuelve a mostrarse.
+     (También cuando se sale con el botón Atrás del navegador, que no pasa por salirAdmin) */
+  if (nav !== 'admin') {
+    document.body.classList.remove('admin-abierto');
+    $('#btn-exit-admin').hidden = true;
+  }
   /* En el Mapa la barra inferior va transparente (solo en celular) */
   document.body.classList.toggle('nav-mapa', nav === 'mapa');
   $$('#dock-container [data-nav]').forEach(b => b.classList.toggle('active', b.dataset.nav === nav));
@@ -7491,8 +7502,7 @@ function wireAdmin() {
     const del = e.target.closest('[data-del-photo]');
     if (del) return eliminarFotoLugar(del.dataset.delPhoto);
   };
-  /* Bandas registradas */
-  $('#btn-new-band').onclick = () => formularioBanda(null);
+  /* Bandas registradas: solo editar o eliminar (desde acá no se registran) */
   $('#bands-admin').onclick = e => {
     const ed = e.target.closest('[data-edit-band]');
     if (ed) return formularioBanda(ed.dataset.editBand);
