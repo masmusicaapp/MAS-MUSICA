@@ -6199,22 +6199,12 @@ function renderInicioAdmin() {
     </div>
 
     <div class="inicio-grid">
-      <section class="inicio-card">
+      <section class="inicio-card ancha">
         <h3>Próximas reservas de hoy</h3>
         ${list.length ? `<ul class="inicio-prox">${list.slice(0, 6).map(r => `
           <li><time>${esc(r.start)}–${esc(r.end)}</time><span class="nom">${esc(r.name)}</span><span class="sala">${esc(nombreSala(r.roomId))}</span></li>`).join('')}</ul>`
           : '<p class="muted small">No hay reservas para hoy.</p>'}
         <div class="inicio-pie"><button class="btn btn-sm" data-goto="reservas">Ver agenda completa</button></div>
-      </section>
-
-      <section class="inicio-card">
-        <h3>Accesos rápidos</h3>
-        <div class="inicio-links">
-          <button class="inicio-link" data-goto="solicitudes"><span>Solicitudes</span>${solicitudes ? `<b class="n">${solicitudes}</b>` : ''}<i>›</i></button>
-          <button class="inicio-link" data-goto="promociones"><span>Promociones</span><i>›</i></button>
-          <button class="inicio-link" data-goto="estadisticas"><span>Estadísticas</span><i>›</i></button>
-          <button class="inicio-link" data-goto="ajustes"><span>Ajustes</span><i>›</i></button>
-        </div>
       </section>
 
       <section class="inicio-card ancha">
