@@ -3077,6 +3077,9 @@ function pantallaAuth(vista = 'inicio') {
           ${campoAuth('mu-inst', '¿Qué instrumento tocás?', { ph: 'Ej.: Bajo, Guitarra (separados por coma)', max: 200 })}
           <button class="btn btn-primary btn-block btn-lg" type="submit">Crear mi cuenta</button>
         </form>
+        <p class="auth-cuenta">¿Olvidaste tu contraseña o tu cuenta está bloqueada?
+          <button type="button" class="auth-link" data-vista="ayuda">Pedí ayuda</button>
+        </p>
       </div>`;
     return;
   }
@@ -3098,7 +3101,10 @@ function pantallaAuth(vista = 'inicio') {
             ${campoPassword('sg-pass', 'Contraseña', { fuerza: true, ph: 'Mínimo 6 caracteres' })}
             <label class="check"><input type="checkbox" id="sg-soy"> Soy responsable de esta sala</label>
             <button class="btn btn-primary btn-block btn-lg" type="submit">Continuar →</button>
-          </form>` : `
+          </form>
+          <p class="auth-cuenta">¿Olvidaste tu contraseña o tu cuenta está bloqueada?
+            <button type="button" class="auth-link" data-vista="ayuda">Pedí ayuda</button>
+          </p>` : `
           <p class="auth-sub">Paso 2 de 2 · Los datos de la sala. La administración de Más Música la revisa antes de publicarla.</p>
           <form id="f-sala" class="auth-form" novalidate>
             ${campoAuth('sa-name', 'Nombre de la sala', { req: true, valida: 'obligatorio', ph: 'Ej.: Estudio Sur' })}
@@ -5413,6 +5419,8 @@ function renderAyuda() {
     <div class="row wrap">
       ${a.estado === 'pendiente' && a.cuenta && (a.cuenta.bloqueado || a.cuenta.activo === false) && a.cuenta.rol !== 'SUPER_ADMIN'
         ? `<button class="btn btn-sm" data-ayuda-desbloquear="${a.id}">🔓 Desbloquear cuenta</button>` : ''}
+      ${a.estado === 'pendiente' && a.cuenta && a.cuenta.rol !== 'SUPER_ADMIN'
+        ? `<button class="btn btn-sm" data-ayuda-clave="${a.id}">🔑 Dar contraseña nueva</button>` : ''}
       ${a.estado === 'pendiente' ? `<button class="btn btn-sm btn-ghost" data-ayuda-resolver="${a.id}">✓ Marcar resuelto</button>` : ''}
       ${a.estado === 'resuelta' ? '<span class="muted small">✓ Resuelto' + (a.resuelta ? ' el ' + fechaCorta(a.resuelta) : '') + '</span>' : ''}
     </div>
@@ -5448,6 +5456,32 @@ async function resolverAyuda(id, desbloquear) {
     }
     await cargarAyuda();
   } catch (e) { toast(e.message, 'error'); }
+}
+
+/* Contraseña temporal legible para pasarle a quien no puede entrar */
+function claveTemporalUsuario() {
+  const abc = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+  let s = '';
+  for (let i = 0; i < 8; i++) s += abc[Math.floor(Math.random() * abc.length)];
+  return s;
+}
+
+/* La administración le da una contraseña nueva a la cuenta del pedido; el músico la cambia al entrar */
+async function darClaveDesdeAyuda(id) {
+  const a = (window.__ayuda || []).find(x => x.id === id);
+  if (!a || !a.cuenta || !a.cuenta.id) return toast('Ese pedido no tiene una cuenta asociada', 'error');
+  const nueva = prompt(`Contraseña nueva para @${a.cuenta.usuario} (mínimo 6 caracteres).\nSe la pasás a la persona para que entre:`, claveTemporalUsuario());
+  if (nueva === null) return;
+  const clave = String(nueva).trim();
+  if (clave.length < 6) return toast('La contraseña debe tener al menos 6 caracteres', 'error');
+  try {
+    await api('/api/admin/usuarios/' + a.cuenta.id, { method: 'PUT', admin: true, body: { password: clave } });
+  } catch (e) { return toast(e.message, 'error'); }
+  /* Al darle una clave nueva, el pedido queda resuelto */
+  try { await api('/api/admin/ayuda', { method: 'POST', admin: true, body: { id: a.id } }); } catch (e) {}
+  alert(`Contraseña nueva de @${a.cuenta.usuario}:\n\n${clave}\n\nPasásela y que la cambie al entrar.`);
+  toast('Contraseña actualizada y pedido resuelto ✓', 'ok');
+  await cargarAyuda();
 }
 
 /* ---------- Reservas del día ---------- */
@@ -7044,7 +7078,7 @@ function wireAdmin() {
     if (ed) return formularioSala(ed.dataset.solEditar);
   };
   /* Cuentas registradas */
-  $('#usuarios-buscar').oninput = e => { filtroUsuarios = e.target.value; renderUsuarios(); };
+  $('#usuarios-buscar').oninput = () => renderUsuarios();
   $('#usuarios-list').onclick = e => {
     const b = e.target.closest('[data-user-bloquear]');
     if (b) return accionUsuario(b.dataset.userBloquear, 'bloquear');
@@ -7065,6 +7099,8 @@ function wireAdmin() {
   $('#ayuda-list').onclick = e => {
     const des = e.target.closest('[data-ayuda-desbloquear]');
     if (des) return resolverAyuda(des.dataset.ayudaDesbloquear, true);
+    const clv = e.target.closest('[data-ayuda-clave]');
+    if (clv) return darClaveDesdeAyuda(clv.dataset.ayudaClave);
     const res = e.target.closest('[data-ayuda-resolver]');
     if (res) return resolverAyuda(res.dataset.ayudaResolver, false);
   };
