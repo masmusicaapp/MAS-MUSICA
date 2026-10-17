@@ -1238,6 +1238,9 @@ main {
   background: var(--line); border-radius: 9999px; margin-top: 8px;
 }
 
+/* Botón flotante "＋ nueva reserva": solo aparece en celular (ver media query al final) */
+.dock-fab { display: none; }
+
 /* En el Mapa (celular) la barra de 5 opciones va transparente: los íconos
    flotan sobre el mapa, sin cápsula de fondo. En escritorio el riel no cambia. */
 @media (max-width: 959px) {
@@ -2138,6 +2141,20 @@ main {
 .btn-ig svg { width: 25px; height: 25px; display: block; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .25)); }
 .btn-ig:hover { transform: translateY(-1px); border-color: var(--accent); box-shadow: 0 4px 14px rgba(0, 160, 56, .28); }
 .btn-ig:active { transform: scale(.94); }
+/* Logo de mi sala en la cabecera: chip redondo al lado del de Instagram (solo el dueño, si tiene logo) */
+.btn-sala-logo {
+  position: relative; flex: 0 0 auto;
+  width: 42px; height: 42px; padding: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 50%; overflow: hidden;
+  background: var(--panel2);
+  border: 1px solid var(--line);
+  cursor: pointer;
+  transition: border-color .15s, box-shadow .15s, transform .12s;
+}
+.btn-sala-logo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.btn-sala-logo:hover { transform: translateY(-1px); border-color: var(--accent); box-shadow: 0 4px 14px rgba(0, 160, 56, .28); }
+.btn-sala-logo:active { transform: scale(.94); }
 /* Con avisos sin leer: acento verde de la app + campana que se sacude */
 .btn-notif.tiene-nuevas {
   border-color: var(--accent);
@@ -5440,4 +5457,59 @@ main#view-comunidad:has(.suscripcion-wrap) > .panel {
   .admin-stats .stat span {
     white-space: normal;
   }
+}
+
+/* =====================================================================
+   BARRA INFERIOR EN CELULAR (diseño "tab bar")
+   - El ícono de la opción activa va dentro de una cápsula pintada.
+   - La rayita de "inicio" va adentro de la barra, centrada y bien abajo.
+   - Botón flotante "＋" arriba a la derecha, que arranca una reserva.
+   Solo celular: en escritorio el dock es el riel lateral.
+   ===================================================================== */
+@media (max-width: 959px) {
+  /* Un poco más de alto abajo para alojar la rayita adentro */
+  .bottom-nav {
+    height: 68px;
+    border-radius: 28px;
+    padding: 6px 8px 16px;
+  }
+
+  /* Cada opción: el ícono dentro de una cápsula que se pinta al estar activa */
+  .nav-btn { gap: 3px; }
+  .nav-btn svg {
+    width: 46px; height: 34px;
+    padding: 5px 11px;
+    border-radius: 17px;
+    transition: background .2s ease;
+  }
+  .nav-btn.active svg { background: rgba(0, 160, 56, .18); }
+
+  /* La rayita va adentro de la barra */
+  .home-indicator {
+    position: absolute;
+    left: 50%; bottom: 6px;
+    transform: translateX(-50%);
+    margin: 0;
+    width: 112px; height: 4px;
+    background: var(--soft);
+  }
+
+  /* Botón flotante "＋": arriba de la barra, a la derecha */
+  .dock-fab {
+    display: grid;
+    position: absolute;
+    right: 6px;
+    bottom: calc(100% + 12px);
+    width: 56px; height: 56px;
+    padding: 0;
+    place-items: center;
+    border: 0; border-radius: 18px;
+    background: var(--accent);
+    color: #fff;
+    cursor: pointer;
+    box-shadow: 0 10px 26px rgba(0, 0, 0, .45), 0 4px 12px rgba(0, 160, 56, .35);
+    transition: transform .15s ease, background .15s ease;
+  }
+  .dock-fab svg { width: 26px; height: 26px; }
+  .dock-fab:active { transform: scale(.92); }
 }

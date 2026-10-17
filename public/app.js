@@ -5046,6 +5046,9 @@ function wirePublic() {
   };
   const btnSalaLogo = $('#btn-sala-logo');
   if (btnSalaLogo) btnSalaLogo.onclick = mostrarPanel;
+  /* Botón flotante de la barra inferior: arranca una reserva */
+  const fabReserva = $('#dock-fab');
+  if (fabReserva) fabReserva.onclick = nuevaReserva;
   /* Resumen del Inicio: solo el acceso para iniciar sesión */
   $('#inicio-resumen').onclick = e => {
     if (e.target.closest('#sum-login')) return pantallaAuth('login');
