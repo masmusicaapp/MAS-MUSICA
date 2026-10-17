@@ -2296,14 +2296,9 @@ main {
   background: rgba(220, 38, 38, .1); border: 1px solid rgba(220, 38, 38, .2);
   border-radius: 50%; color: var(--danger, #dc2626);
   font-size: .75rem; cursor: pointer;
-  opacity: 0; transition: opacity .15s, background .15s, transform .12s;
+  opacity: 1; transition: opacity .15s, background .15s, transform .12s;
 }
-.notif-item:hover .notif-borrar { opacity: 1; }
 .notif-borrar:hover { background: rgba(220, 38, 38, .22); transform: scale(1.1); }
-/* En celular (sin hover) el botón de borrar siempre se ve */
-@media (hover: none) {
-  .notif-borrar { opacity: 1; }
-}
 .notif-item.swipe-borrando {
   border-color: rgba(220, 38, 38, .4);
   background: rgba(220, 38, 38, .06);

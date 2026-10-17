@@ -3579,16 +3579,8 @@ async function marcarUnaNotif(id) {
   pintarBadgeNotif();
 }
 
-/* Borrar una notificación individual (con animación de cierre) */
+/* Borrar una notificación individual (sin confirmar, con animación de cierre) */
 async function borrarNotificacion(id, itemEl) {
-  const okBorrar = await confirmarAccion(
-    '¿Borrar este aviso?',
-    '¿Borrar aviso?',
-    'Sí, borrar',
-    'No',
-    'peligro'
-  );
-  if (!okBorrar) return;
   try {
     await api('/api/notificaciones/' + id, { method: 'DELETE' });
     notificaciones = notificaciones.filter(n => n.id !== id);
@@ -3722,6 +3714,14 @@ async function irANotificacion(id) {
   if (r) {
     irReservasFiltradas(/cancelada/i.test(n.titulo || '') ? 'historial' : 'proximas');
     setTimeout(() => resaltarReserva(r.id, '#home-mine-body'), 180);
+    return;
+  }
+
+  /* Avisos de pedido de ayuda → panel de administración, pestaña Ayuda */
+  if (/pedido de ayuda/i.test(n.titulo || '') && esSuper()) {
+    window.__ayuda = null;      /* fuerza recargar los pedidos */
+    showAdmin();
+    renderAdminTab('ayuda');
     return;
   }
 
@@ -4961,7 +4961,7 @@ function wirePublic() {
     const borrar = e.target.closest('[data-borrar-notif]');
     if (borrar) {
       e.stopPropagation();
-      const card = borrar.closest('.notif-card');
+      const card = borrar.closest('.notif-item');
       return borrarNotificacion(borrar.dataset.borrarNotif, card);
     }
     const leer = e.target.closest('[data-leer-notif]');
@@ -4971,14 +4971,14 @@ function wirePublic() {
     }
     const pr = e.target.closest('[data-promo-id]');
     if (pr) return abrirPromo(pr.dataset.promoId);
-    const it = e.target.closest('.notif-card[data-notif-id]');
+    const it = e.target.closest('.notif-item[data-notif-id]');
     if (it) irANotificacion(it.dataset.notifId);
   };
   $('#notif-sheet-body').onkeydown = e => {
     if (e.key !== 'Enter' && e.key !== ' ') return;
     const pr = e.target.closest('[data-promo-id]');
     if (pr) { e.preventDefault(); return abrirPromo(pr.dataset.promoId); }
-    const it = e.target.closest('.notif-card[data-notif-id]');
+    const it = e.target.closest('.notif-item[data-notif-id]');
     if (it) { e.preventDefault(); irANotificacion(it.dataset.notifId); }
   };
   /* Tabs de notificaciones (Todas / Sin leer) */
