@@ -100,7 +100,11 @@ function guardarImagen(id, dataUrl, sufijo, subcarpeta) {
   const idLimpio = String(id || 'x').replace(/[^a-zA-Z0-9._-]/g, '').slice(0, 80);
   const sufLimpio = String(sufijo || '').replace(/[^a-zA-Z0-9._-]/g, '').slice(0, 20);
   fs.mkdirSync(path.join(PUBLIC_DIR, 'assets', subcarpeta), { recursive: true });
-  const rel = `assets/${subcarpeta}/${idLimpio}${sufLimpio}.${ext}`;
+  /* Cada subida lleva un sello único en el nombre. Si el nombre fuera siempre el mismo
+     (por ejemplo assets/salas/<sala>.jpg), al cambiar la foto el navegador seguiría
+     mostrando la imagen vieja guardada en caché: la ruta no cambia y reusa la misma. */
+  const sello = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const rel = `assets/${subcarpeta}/${idLimpio}${sufLimpio}-${sello}.${ext}`;
   fs.writeFileSync(path.join(PUBLIC_DIR, rel), buf);
   return rel;
 }
