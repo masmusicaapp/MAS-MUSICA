@@ -298,6 +298,7 @@ function salaNueva(datos = {}) {
     name: '',
     descripcion: '',
     direccion: '',
+    numero: '',
     localidad: '',
     mapa: '',
     lat: null,
@@ -378,6 +379,7 @@ function migrarSala(r) {
   out.lat = r.lat === null || r.lat === '' || r.lat === undefined || !Number.isFinite(Number(r.lat)) ? null : Number(r.lat);
   out.lng = r.lng === null || r.lng === '' || r.lng === undefined || !Number.isFinite(Number(r.lng)) ? null : Number(r.lng);
   out.direccion = String(r.direccion || '').slice(0, 160);
+  out.numero = String(r.numero || '').slice(0, 12);
   out.localidad = String(r.localidad || '').slice(0, 80);
   return out;
 }
@@ -2438,6 +2440,7 @@ function datosDeSala(body, prev = {}) {
   if (body.features !== undefined) out.features = listaTexto(body.features, 20, 60);
   if (body.descripcion !== undefined) out.descripcion = String(body.descripcion).slice(0, 600);
   if (body.direccion !== undefined) out.direccion = String(body.direccion).slice(0, 160);
+  if (body.numero !== undefined) out.numero = String(body.numero).slice(0, 12);
   if (body.localidad !== undefined) out.localidad = String(body.localidad).slice(0, 80);
   if (body.mapa !== undefined) out.mapa = String(body.mapa).slice(0, 300);
   if (body.lat !== undefined) {
