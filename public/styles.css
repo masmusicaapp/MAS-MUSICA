@@ -3693,7 +3693,9 @@ main {
   #view-panel > .admin-head { grid-column: 1 / -1; }
   #view-panel > #panel-estado { grid-column: 1 / -1; }
   #view-panel > .admin-tabs {
-    grid-column: 1; grid-row: 2 / span 40;
+    /* Sin fila fija: #panel-estado va arriba a todo el ancho y el menú queda debajo,
+       al lado del contenido. Antes se pisaban (el menú tapaba el resumen). */
+    grid-column: 1;
     position: sticky; top: 12px; align-self: start;
     max-height: calc(100dvh - 150px); overflow-y: auto; scrollbar-width: thin;
     flex-direction: column; gap: 1px; overflow-x: visible;
