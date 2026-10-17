@@ -4261,17 +4261,6 @@ function renderPanelInicio() {
         <div class="inicio-pie"><button class="btn btn-sm" data-goto-ptab="reservas">Ver todas las reservas</button></div>
       </section>
 
-      <section class="inicio-card">
-        <h3>Accesos rápidos</h3>
-        <div class="inicio-links">
-          <button class="inicio-link" data-goto-ptab="sala"><span>Mi sala</span><i>›</i></button>
-          <button class="inicio-link" data-goto-ptab="disponibilidad"><span>Disponibilidad</span><i>›</i></button>
-          <button class="inicio-link" data-goto-ptab="reservas"><span>Reservas</span><i>›</i></button>
-          <button class="inicio-link" data-goto-ptab="movimientos"><span>Movimientos</span><i>›</i></button>
-          <button class="inicio-link" data-goto-ptab="datos"><span>Mis datos</span><i>›</i></button>
-        </div>
-      </section>
-
       <section class="inicio-card ancha">
         <h3>🎉 Promociones activas <span class="muted small">(${promos.length})</span></h3>
         ${promosBloqueHTML(promos, 'No hay promociones activas en este momento.')}
