@@ -572,6 +572,9 @@ textarea:focus {
   border: 1px solid rgba(0, 160, 56, .5);
   box-shadow: 0 6px 18px rgba(0, 160, 56, .22);
 }
+/* El logo de la sala en el encabezado del panel (reemplaza el ícono 🎛️) */
+#panel-head-logo { overflow: hidden; }
+#panel-head-logo img { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: inherit; }
 .admin-head h1 { font-size: 1.45rem; line-height: 1.05; margin: 0; }
 .admin-head p { margin: 4px 0 0; }
 

@@ -4178,11 +4178,22 @@ async function cargarPanel() {
   }
 }
 
+/* El logo de la sala, arriba en el encabezado del panel (si no hay, queda el ícono 🎛️) */
+function renderPanelLogo() {
+  const box = $('#panel-head-logo');
+  if (!box) return;
+  const sala = (panelDatos && panelDatos.room) || miSala || {};
+  box.innerHTML = sala.foto
+    ? `<img src="${esc(sala.foto)}" alt="${esc(sala.name || 'Mi sala')}">`
+    : '🎛️';
+}
+
 function renderPanelTab(tab) {
   panelTab = tab;
   $$('.admin-tab[data-ptab]').forEach(b => b.classList.toggle('active', b.dataset.ptab === tab));
   ['inicio', 'sala', 'disponibilidad', 'reservas', 'movimientos', 'datos'].forEach(t => { $('#ptab-' + t).hidden = t !== tab; });
   if (!panelDatos) return;
+  renderPanelLogo();
   renderPanelEstado();
   ({ inicio: renderPanelInicio, sala: renderPanelSala, disponibilidad: renderPanelDisponibilidad, reservas: renderPanelReservas, movimientos: renderPanelMovimientos, datos: renderPanelDatos }[tab])();
 }
