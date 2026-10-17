@@ -3972,7 +3972,7 @@ function renderPerfilCuenta() {
 
     <div class="perfil-stats">
       <div class="perfil-stat"><strong>${nReservas}</strong><span>Reservas</span></div>
-      <div class="perfil-stat"><strong>${nFavoritas}</strong><span>Favoritas</span></div>
+      ${esCuentaControl() ? '' : `<div class="perfil-stat"><strong>${nFavoritas}</strong><span>Favoritas</span></div>`}
       <div class="perfil-stat"><strong>${nBandas}</strong><span>Bandas</span></div>
     </div>
 
@@ -3991,17 +3991,21 @@ function renderPerfilCuenta() {
       <div class="aj-row aj-dato">${svgAj(ICO_AJ.pin)}
         <span class="aj-txt">Localidad<small>${esc(yo.localidad || 'Sin definir')}</small></span>
       </div>
-      <div class="aj-row aj-dato">${svgAj(ICO_AJ.nota)}
+      ${esCuentaControl() ? '' : `<div class="aj-row aj-dato">${svgAj(ICO_AJ.nota)}
         <span class="aj-txt">Instrumentos<small>${instrumentos || 'No agregaste ninguno'}</small></span>
-      </div>
+      </div>`}
       <div class="aj-row aj-dato">${svgAj(ICO_AJ.cal)}
         <span class="aj-txt">Cuenta creada<small>${yo.creado ? fechaCorta(yo.creado) : '—'}</small></span>
       </div>
     </div>`;
 
-  const salones = salasPublicas().filter(r => (yo.favoritos || []).includes(r.id));
-  fav.hidden = false;
-  fav.innerHTML = `
+  if (esCuentaControl()) {
+    fav.hidden = true;
+    fav.innerHTML = '';
+  } else {
+    const salones = salasPublicas().filter(r => (yo.favoritos || []).includes(r.id));
+    fav.hidden = false;
+    fav.innerHTML = `
     <div class="panel-head"><h2>♥️ Mis salas favoritas</h2>
       <button class="btn btn-sm" id="fav-ver">Ver salas</button>
     </div>
@@ -4010,6 +4014,7 @@ function renderPerfilCuenta() {
           ${r.foto ? `<img src="${esc(r.foto)}" alt="">` : '<span class="sala-chip-foto">🎸</span>'}
           <span>${esc(r.name)}<small>${fmtMoney(r.price)}/h</small></span></button>`).join('')}</div>`
       : '<p class="muted small">Todavía no guardaste ninguna sala. Tocá el ♡ en una sala para guardarla acá.</p>'}`;
+  }
 
   /* Los avisos viven en la campana y en el panel de Ajustes del engranaje */
   notif.hidden = true;
