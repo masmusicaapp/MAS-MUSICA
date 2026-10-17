@@ -1634,7 +1634,9 @@ async function buscarDireccion(direccion) {
 
   /* 2. OpenStreetMap (Nominatim) */
   try {
-    const res = await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + encodeURIComponent(q));
+    /* countrycodes=ar: igual que con Google, el mapa es argentino. Evita que una
+       dirección rara o incompleta caiga en otro país. */
+    const res = await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=ar&q=' + encodeURIComponent(q));
     const lista = await res.json();
     if (!lista || !lista.length) { toast('No encontré esa dirección', 'warn'); return null; }
     return { lat: Number(lista[0].lat), lng: Number(lista[0].lon), nombre: lista[0].display_name };
@@ -2427,6 +2429,8 @@ function irSalas(vista) {
 
 /* El mapa tiene su propia pantalla */
 function irMapa() {
+  /* El dueño de sala no tiene mapa de salas: lo llevamos a su lista de salas */
+  if (esDueño()) { irSalas(); return; }
   ocultarVistas();
   $('#view-mapa').hidden = false;
   setNav('mapa');
@@ -2765,6 +2769,14 @@ function actualizarBarraSesion() {
   if (naPanel) naPanel.hidden = !esDueño();
   const naComunidad = $('#nav-comunidad');
   if (naComunidad) naComunidad.hidden = !esMúsico();
+  /* El dueño de sala no tiene mapa de salas (ni la pestaña ni el botón de la lista) */
+  const naMapa = $('#nav-reservar');
+  if (naMapa) naMapa.hidden = esDueño();
+  const bVerMapa = $('#btn-ver-mapa');
+  if (bVerMapa) bVerMapa.hidden = esDueño();
+  /* El botón flotante de "nueva reserva" es solo para músicos */
+  const fabReserva = $('#dock-fab');
+  if (fabReserva) fabReserva.hidden = !esMúsico();
   /* Si es admin o dueño, el botón de Comunidad se oculta (ya venía hidden) */
   if (!yo) {
     $('#btn-notif').hidden = true;
@@ -4423,6 +4435,8 @@ function renderPanelEstado() {
 /* --- Mi sala --- */
 function renderPanelSala() {
   const r = panelDatos.room;
+  ubicacionManual = false;
+  ubicacionIntentada = '';
   $('#ps-name').value = r.name || '';
   $('#ps-price').value = r.price || 0;
   $('#ps-descripcion').value = r.descripcion || '';
@@ -4448,6 +4462,8 @@ function renderPanelSala() {
     ? `<img src="${esc(r.fotoPortada)}" alt="Foto horizontal de ${esc(r.name)}">`
     : '<span>Sin foto horizontal</span>';
   renderFotosPanel();
+  /* Si escribió la dirección pero todavía no está en el mapa, la ubicamos sola */
+  autoUbicarSala();
 }
 
 function renderFotosPanel() {
@@ -4457,7 +4473,80 @@ function renderFotosPanel() {
       <button class="btn btn-sm btn-danger" data-quitar-foto="${i}">Quitar</button></div>`).join('');
 }
 
+/* ---------- Ubicación de la sala en el mapa ----------
+   Con la dirección escrita alcanza: buscamos el punto (Google si hay clave, si no
+   OpenStreetMap) y guardamos latitud/longitud, así la sala ya figura en el mapa
+   sin tener que ubicarla a mano. */
+let ubicacionManual = false;   /* el dueño ubicó el punto a mano en esta edición */
+let ubicacionIntentada = '';   /* sala ya intentada (evita reintentos en bucle) */
+
+function direccionDeLaSala() {
+  const calle = [$('#ps-direccion').value.trim(), $('#ps-localidad').value.trim()].filter(Boolean).join(', ');
+  return calle || $('#ps-mapa').value.trim();
+}
+
+/* Busca la dirección y deja el punto en el formulario (no guarda).
+   Devuelve 'exacta' si encontró la dirección, 'aprox' si solo se ubicó por la
+   localidad y false si no se pudo ubicar. */
+async function resolverUbicacionSala() {
+  const dir = direccionDeLaSala();
+  if (dir.length < 4) return false;
+  const p = await buscarDireccion(dir);
+  if (p) {
+    $('#ps-lat').value = p.lat.toFixed(5);
+    $('#ps-lng').value = p.lng.toFixed(5);
+    return 'exacta';
+  }
+  /* Si no aparece la calle (nombre raro o sin altura), la ubicamos al menos
+     en la localidad: así la sala aparece en el mapa y el dueño ajusta el punto. */
+  const loc = $('#ps-localidad').value.trim();
+  if (loc.length >= 3 && loc.toLowerCase() !== dir.toLowerCase()) {
+    const q = await buscarDireccion(loc);
+    if (q) {
+      $('#ps-lat').value = q.lat.toFixed(5);
+      $('#ps-lng').value = q.lng.toFixed(5);
+      return 'aprox';
+    }
+  }
+  return false;
+}
+const AVISO_UBICACION_APROX = 'Quedó en el centro de tu localidad 📍 Ajustala con "Ubicar en el mapa".';
+
+/* Al abrir la ficha de la sala: si ya hay dirección pero todavía no hay punto, la
+   ubicamos y la guardamos, así aparece en el mapa sin hacer nada más. */
+function autoUbicarSala() {
+  const r = panelDatos && panelDatos.room;
+  if (!r || ubicacionManual || tieneUbicacion(r)) return;
+  if (ubicacionIntentada === r.id) return;
+  if (direccionDeLaSala().length < 4) return;
+  ubicacionIntentada = r.id;
+  (async () => {
+    if (!await resolverUbicacionSala()) return;
+    try {
+      const data = await api('/api/panel/sala', {
+        method: 'PUT',
+        body: { roomId: r.id, lat: $('#ps-lat').value, lng: $('#ps-lng').value },
+      });
+      state = data.state;
+      r.lat = Number($('#ps-lat').value);
+      r.lng = Number($('#ps-lng').value);
+      miSala = state.rooms.find(x => x.id === r.id) || miSala;
+      renderPanelEstado();
+      toast('Listo: tu sala ya figura en el mapa 📍', 'ok');
+    } catch (e) { /* si falla, queda para cuando toque Guardar */ }
+  })();
+}
+
 async function guardarPanelSala() {
+  /* Con la dirección escrita y sin punto (o si cambió la dirección) ubicamos la
+     sala antes de guardar, para que quede en el mapa. */
+  const _r = panelDatos && panelDatos.room;
+  const _dir = direccionDeLaSala();
+  const _hayPunto = $('#ps-lat').value.trim() !== '' && $('#ps-lng').value.trim() !== '';
+  const _dirPrevia = _r ? [String(_r.direccion || '').trim(), String(_r.localidad || '').trim()].filter(Boolean).join(', ') : '';
+  if (!ubicacionManual && _dir.length >= 4 && (!_hayPunto || _dir !== _dirPrevia)) {
+    await resolverUbicacionSala();
+  }
   const fotos = (panelDatos.room.fotos || []).map(f => ({ titulo: f.titulo, foto: f.foto }));
   fotos.push(...panelFotosTmp);
   const body = {
@@ -4624,10 +4713,14 @@ function wirePanel() {
   $('#ps-ubicar').onclick = async () => {
     const p = await abrirSelectorUbicacion($('#ps-lat').value, $('#ps-lng').value, 'Ubicá tu sala');
     if (!p) return;
+    ubicacionManual = true;
     $('#ps-lat').value = p.lat.toFixed(5);
     $('#ps-lng').value = p.lng.toFixed(5);
     toast('Ubicación puesta. Guardá los cambios para publicarla en el mapa.', 'ok');
   };
+  /* Si el dueño escribe las coordenadas a mano, se respeta su punto */
+  $('#ps-lat').oninput = () => { ubicacionManual = true; };
+  $('#ps-lng').oninput = () => { ubicacionManual = true; };
   $('#ps-buscar-direccion').onclick = async () => {
     const dir = $('#ps-direccion').value.trim() + ' ' + $('#ps-localidad').value.trim();
     const p = await buscarDireccion(dir);
