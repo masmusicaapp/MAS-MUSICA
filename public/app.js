@@ -2767,12 +2767,16 @@ function actualizarBarraSesion() {
   if (naComunidad) naComunidad.hidden = !esMúsico();
   /* Si es admin o dueño, el botón de Comunidad se oculta (ya venía hidden) */
   if (!yo) {
-    $('#btn-panel').hidden = true;
     $('#btn-notif').hidden = true;
     $('#btn-ajustes').hidden = true;
+    const bPanel = $('#btn-panel');
+    if (bPanel) bPanel.hidden = true;
+    const chipSala = $('#btn-sala-logo');
+    if (chipSala) chipSala.hidden = true;
     return;
   }
-  $('#btn-panel').hidden = !esDueño();
+  const bPanel = $('#btn-panel');
+  if (bPanel) bPanel.hidden = !esDueño();
   actualizarAccionesHeader();
 }
 
@@ -2781,6 +2785,18 @@ function actualizarAccionesHeader() {
   $('#btn-ajustes').hidden = !yo || $('#view-mine').hidden;
   $('#btn-notif').hidden = !yo || !$('#view-mine').hidden;
   if (yo && $('#view-mine').hidden) pintarBadgeNotif();
+  renderHeaderSalaLogo();
+}
+
+/* Mi sala: su logo arriba en la barra, al lado del de Instagram (solo el dueño, si subió logo) */
+function renderHeaderSalaLogo() {
+  const b = $('#btn-sala-logo');
+  if (!b) return;
+  const sala = miSala || ((esDueño() && state) ? (state.rooms || []).find(r => r.ownerId === yo.id) : null);
+  if (!sala || !sala.foto) { b.hidden = true; b.innerHTML = ''; return; }
+  b.hidden = false;
+  b.title = 'Mi sala: ' + (sala.name || '');
+  b.innerHTML = `<img src="${esc(sala.foto)}" alt="${esc(sala.name || 'Mi sala')}">`;
 }
 
 function pintarBadgeNotif() {
@@ -4475,6 +4491,7 @@ async function guardarPanelSala() {
     await cargarPanel();
     renderPanelTab('sala');
     renderSalasStrip();
+    renderHeaderSalaLogo();
     toast('Sala guardada ✓', 'ok');
   } catch (e) { toast(e.message, 'error'); }
 }
@@ -5027,7 +5044,8 @@ function wirePublic() {
     toast(e.target.checked ? 'Vas a ver un aviso en pantalla cuando llegue una novedad'
          : 'Avisos en pantalla desactivados (igual los encontrás en la campana)', 'ok');
   };
-  $('#btn-panel').onclick = mostrarPanel;
+  const btnSalaLogo = $('#btn-sala-logo');
+  if (btnSalaLogo) btnSalaLogo.onclick = mostrarPanel;
   /* Resumen del Inicio: solo el acceso para iniciar sesión */
   $('#inicio-resumen').onclick = e => {
     if (e.target.closest('#sum-login')) return pantallaAuth('login');
