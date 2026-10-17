@@ -340,6 +340,13 @@ h3.sub {
 .cal-nav { display: flex; align-items: center; gap: 8px; }
 .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
 .cal-h { text-align: center; font-size: .8rem; color: var(--muted); padding: 4px 0; text-transform: uppercase; }
+.cal-reservas-dia { margin-top: 10px; padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel2); }
+.cal-res-dia-head { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
+.cal-res-dia-lista { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 4px; }
+.cal-res-dia-item { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; font-size: .9rem; }
+.cal-res-dia-hora { font-weight: 600; min-width: 96px; }
+.cal-res-dia-sala { color: var(--muted); }
+.cal-res-dia-vacio { margin: 4px 0 0; }
 .cal-day {
   position: relative; aspect-ratio: 1;
   background: var(--panel2); border: 1px solid var(--line); border-radius: 10px;

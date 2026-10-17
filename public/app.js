@@ -461,6 +461,38 @@ function renderCalendar() {
     grid.insertAdjacentHTML('beforeend',
       `<button class="${cls}" data-date="${ds}" ${dis ? 'disabled' : ''}>${d}${badge}</button>`);
   }
+  renderCalReservasDia();
+}
+
+/* Reservas del día seleccionado en el calendario, ordenadas por hora */
+function renderCalReservasDia() {
+  const caja = $('#cal-reservas-dia');
+  if (!caja) return;
+  const fecha = sel && sel.date;
+  if (!fecha) { caja.innerHTML = ''; return; }
+  const salasPropias = esDueño() ? ((state && state.rooms) || []).filter(r => r.ownerId === (yo && yo.id)).map(r => r.id) : null;
+  let lista = (state && state.reservations || []).filter(r => r.date === fecha && r.estado !== 'cancelada');
+  if (salasPropias) lista = lista.filter(r => salasPropias.includes(r.roomId));
+  lista = lista.slice().sort((a, b) => String(a.start).localeCompare(String(b.start)));
+  if (!lista.length) {
+    caja.innerHTML = `<p class="muted small cal-res-dia-vacio">Sin reservas para el ${esc(fmtDate(fecha, { weekday: 'long', day: 'numeric', month: 'long' }))}.</p>`;
+    return;
+  }
+  const nombreSala = id => { const s = (state && state.rooms || []).find(x => x.id === id); return s ? s.name : 'Sala'; };
+  caja.innerHTML = `
+    <div class="cal-res-dia-head">
+      <strong>Reservas del ${esc(fmtDate(fecha, { weekday: 'long', day: 'numeric', month: 'long' }))}</strong>
+      <span class="muted small">${lista.length} reserva(s), ordenadas por hora</span>
+    </div>
+    <ul class="cal-res-dia-lista">
+      ${lista.map(r => `
+        <li class="cal-res-dia-item">
+          <span class="cal-res-dia-hora">${esc(r.start)} – ${esc(r.end)}</span>
+          <span class="cal-res-dia-sala">${esc(nombreSala(r.roomId))}</span>
+          <span class="cal-res-dia-nom">${esc(r.name || '')}</span>
+          ${r.estado === 'pendiente_pago' ? '<span class="badge badge-next">Pendiente de pago</span>' : ''}
+        </li>`).join('')}
+    </ul>`;
 }
 
 function renderRooms() {
@@ -766,7 +798,7 @@ function popupSala(r) {
         <span class="muted small">${fmtMoney(r.price)}/hora · 👥 ${r.capacity}${dist}${eq ? ` · 🎚 ${eq} elemento(s)` : ''}</span>
         <div class="row pop-acciones">
           <button class="btn btn-primary btn-sm" data-mapa-sala="${r.id}">Ver horarios</button>
-          <button class="btn btn-sm" data-mapa-ficha="${r.id}">ℹ️ Ficha</button>
+          <button class="btn btn-primary btn-sm" data-mapa-ficha="${r.id}">ℹ️ Ficha</button>
           ${urlSegura(gmaps) ? `<a class="btn btn-sm" href="${urlSegura(gmaps)}" target="_blank" rel="noopener">📍 Google Maps</a>` : ''}
           ${tel ? `<a class="btn btn-sm" href="tel:${esc(telHref)}">📞 Llamar</a>` : ''}
           ${yo ? `<button class="btn btn-sm" data-mapa-fav="${r.id}">${esFavorita(r.id) ? '♥' : '♡'}</button>` : ''}
@@ -885,7 +917,7 @@ function renderMapaLista() {
           </div>
           <div class="mapa-item-acciones">
             ${ubic ? `<button class="btn btn-sm btn-primary" data-mapa-ver="${esc(r.id)}">🗺 Ver en el mapa</button>` : ''}
-            <button class="btn btn-sm" data-mapa-ficha="${esc(r.id)}">ℹ️ Ficha</button>
+            <button class="btn btn-primary btn-sm" data-mapa-ficha="${esc(r.id)}">ℹ️ Ficha</button>
             ${enlace ? `<a class="btn btn-sm" href="${enlace}" target="_blank" rel="noopener">📍 Google Maps</a>` : ''}
           </div>
         </article>`;
@@ -4236,7 +4268,6 @@ function renderPanelInicio() {
   const ingresos = lista.reduce((s, r) => s + precioReserva(r), 0);
   const pendPago = lista.filter(r => r.estado === 'pendiente_pago').length;
   const semana = todas.filter(r => r.date > hoy && r.date <= addDaysStr(hoy, 7)).length;
-  const promos = promosActivas();
   const fechaTxt = new Date().toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' });
 
   cont.innerHTML = `
@@ -4260,18 +4291,11 @@ function renderPanelInicio() {
           : '<p class="muted small">No hay reservas para hoy.</p>'}
         <div class="inicio-pie"><button class="btn btn-sm" data-goto-ptab="reservas">Ver todas las reservas</button></div>
       </section>
-
-      <section class="inicio-card ancha">
-        <h3>🎉 Promociones activas <span class="muted small">(${promos.length})</span></h3>
-        ${promosBloqueHTML(promos, 'No hay promociones activas en este momento.')}
-      </section>
     </div>`;
 
   cont.onclick = e => {
     const g = e.target.closest('[data-goto-ptab]');
     if (g) return renderPanelTab(g.dataset.gotoPtab);
-    const pp = e.target.closest('[data-promo-id]');
-    if (pp && !e.target.closest('a')) abrirPromo(pp.dataset.promoId);
   };
 }
 
@@ -6346,7 +6370,6 @@ function renderInicioAdmin() {
   const ingresos = list.reduce((s, r) => s + precioReserva(r), 0);
   const pendPago = list.filter(r => r.estado === 'pendiente_pago').length;
   const solicitudes = (state.rooms || []).filter(r => r.estado === 'pendiente').length;
-  const promos = promosActivas();
   const nombreSala = id => { const s = (state.rooms || []).find(x => x.id === id); return s ? s.name : 'Sala eliminada'; };
 
   cont.innerHTML = `
@@ -6370,19 +6393,11 @@ function renderInicioAdmin() {
           : '<p class="muted small">No hay reservas para hoy.</p>'}
         <div class="inicio-pie"><button class="btn btn-sm" data-goto="reservas">Ver agenda completa</button></div>
       </section>
-
-      <section class="inicio-card ancha">
-        <h3>🎉 Promociones activas <span class="muted small">(${promos.length})</span></h3>
-        ${promosBloqueHTML(promos, 'No hay promociones activas. Cuando actives una, aparece acá.')}
-        <div class="inicio-pie"><button class="btn btn-sm" data-goto="promociones">Administrar promociones</button></div>
-      </section>
     </div>`;
 
   cont.onclick = e => {
     const g = e.target.closest('[data-goto]');
     if (g) return renderAdminTab(g.dataset.goto);
-    const pp = e.target.closest('[data-promo-id]');
-    if (pp && !e.target.closest('a')) abrirPromo(pp.dataset.promoId);
   };
 }
 
