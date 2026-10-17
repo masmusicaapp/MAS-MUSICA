@@ -350,7 +350,7 @@ function renderPerfilMine() {
     <div class="perfil-mini">
       ${banda.fotoGrupal ? `<img class="perfil-fondo" src="${esc(banda.fotoGrupal)}" alt="">` : ''}
       ${banda.foto
-        ? `<img class="perfil-avatar-circular" src="${esc(banda.foto)}" alt="${esc(banda.nombre)}" data-foto="${esc(banda.foto)}" data-foto-alt="${esc(banda.nombre)}" title="Toca para ver en grande">`
+        ? `<img class="perfil-avatar-circular" src="${esc(banda.foto)}" alt="${esc(banda.nombre)}" data-foto="${esc(banda.foto)}" data-foto-alt="${esc(banda.nombre)}" title="Tocá para ver en grande">`
         : '<div class="perfil-avatar-circular perfil-sin-foto">🎭</div>'}
       <div class="perfil-mini-info">
         <h3>${esc(banda.nombre)}</h3>
@@ -381,7 +381,7 @@ function renderPerfilSala() {
     <div class="perfil-mini">
       ${r.foto ? `<img class="perfil-fondo" src="${esc(r.foto)}" alt="">` : ''}
       ${r.foto
-        ? `<img class="perfil-avatar-circular" src="${esc(r.foto)}" alt="${esc(r.name)}" data-foto="${esc(r.foto)}" data-foto-alt="${esc(r.name)}" title="Toca para ver en grande">`
+        ? `<img class="perfil-avatar-circular" src="${esc(r.foto)}" alt="${esc(r.name)}" data-foto="${esc(r.foto)}" data-foto-alt="${esc(r.name)}" title="Tocá para ver en grande">`
         : '<div class="perfil-avatar-circular perfil-sin-foto">🎛️</div>'}
       <div class="perfil-mini-info">
         <h3>${esc(r.name)}</h3>
@@ -437,7 +437,7 @@ function renderCalendar() {
   /* Aviso de hasta cuándo se puede reservar, según la cuenta */
   const hint = $('#cal-hint');
   if (hint) hint.textContent = (esCuentaControl()
-    ? 'Puedes reservar hasta con 60 días de anticipación.'
+    ? 'Podés reservar hasta con 60 días de anticipación.'
     : 'Los músicos y las bandas pueden reservar hasta con 7 días de anticipación.')
     + (salasPropias ? ' Los días con un número son las reservas de tu sala.' : ' Los días con reservas muestran un número.');
   const grid = $('#cal-grid');
@@ -847,7 +847,7 @@ function renderSalasSinUbicacion() {
   const sinUbic = salasPublicas().filter(r => !tieneUbicacion(r));
   caja.innerHTML = sinUbic.length ? `
       <h3 class="sub">Salas sin ubicación en el mapa</h3>
-      <p class="muted small">${sinUbic.length} sala(s) todavía no tienen punto en el mapa. El dueño lo ubica desde su panel (Mi sala → 🗺 Ubicar en el mapa).</p>
+      <p class="muted small">${sinUbic.length} sala(s) todavía no tienen punto en el mapa. El dueño lo ubica desde su panel (Información → 🗺 Ubicar en el mapa).</p>
       <div class="ficha-chips">${sinUbic.map(r => `<span class="chip">${esc(r.name)}</span>`).join('')}</div>`
     : '';
 }
@@ -1829,7 +1829,7 @@ function montarRecortador(host, opciones = {}) {
     <div class="crop-frame ${formato === 'horizontal' ? 'ancho' : ''} ${formato === 'cuadrado' ? 'circulo' : ''}" style="aspect-ratio:${ratio}">
       <canvas class="crop-canvas"></canvas>
       <div class="crop-grid"></div>
-      <div class="crop-empty">📷<br>Elige una imagen</div>
+      <div class="crop-empty">📷<br>Elegí una imagen</div>
     </div>
     <div class="crop-controls">
       <button class="btn btn-sm" data-crop="out" title="Achicar">➖</button>
@@ -2037,7 +2037,7 @@ function formularioBanda(id, alGuardar) {
 
   $('#bd-save').onclick = async () => {
     const nombre = $('#bd-name').value.trim();
-    if (!nombre) { toast('Escribe el nombre de la banda', 'warn'); return; }
+    if (!nombre) { toast('Escribí el nombre de la banda', 'warn'); return; }
     const integrantes = Array.from($('#bd-miembros').children).map(fila => ({
       nombre: fila.querySelector('[data-m-nombre]').value.trim(),
       instrumento: fila.querySelector('[data-m-instrumento]').value.trim(),
@@ -2105,7 +2105,7 @@ function verPerfilBanda(id) {
     <div class="perfil">
       ${b.fotoGrupal ? `<img class="perfil-fondo" src="${esc(b.fotoGrupal)}" alt="">` : ''}
       ${b.foto
-        ? `<img class="perfil-avatar-circular grande" src="${esc(b.foto)}" alt="${esc(b.nombre)}" data-foto="${esc(b.foto)}" data-foto-alt="${esc(b.nombre)}" title="Toca para ver en grande">`
+        ? `<img class="perfil-avatar-circular grande" src="${esc(b.foto)}" alt="${esc(b.nombre)}" data-foto="${esc(b.foto)}" data-foto-alt="${esc(b.nombre)}" title="Tocá para ver en grande">`
         : '<div class="perfil-avatar-circular grande perfil-sin-foto">🎭</div>'}
       <h3>${esc(b.nombre)}</h3>
       <div class="perfil-tags">
@@ -2174,7 +2174,7 @@ function renderConfirm() {
       </div>
       <label class="lbl-band">Banda registrada (opcional)
         <select id="bk-band">
-          <option value="">— Escribe tu nombre —</option>
+          <option value="">— Escribí tu nombre —</option>
           ${listaBandas.map(b => `<option value="${esc(b.nombre)}" ${elegida && b.id === elegida.id ? 'selected' : ''}>${esc(b.nombre)}</option>`).join('')}
         </select>
       </label>
@@ -2242,10 +2242,10 @@ function renderConfirm() {
 async function confirmBooking() {
   const name = $('#bk-name').value.trim();
   const phone = $('#bk-phone').value.trim();
-  if (!name) { toast('Escribe tu nombre o el de tu banda', 'warn'); return; }
+  if (!name) { toast('Escribí tu nombre o el de tu banda', 'warn'); return; }
   const startMin = toMin(sel.slot.start), endMin = toMin(sel.slot.end);
   if (!rangoDisponible(sel.date, sel.roomId, startMin, endMin)) {
-    toast('Ese horario ya no está disponible. Elige otro.', 'error');
+    toast('Ese horario ya no está disponible. Elegí otro.', 'error');
     sel.range = null;
     renderSlots();
     goStep(3);

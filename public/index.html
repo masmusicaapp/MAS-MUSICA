@@ -75,10 +75,10 @@
   <h2>⚠️ No se pudo conectar al servidor</h2>
   <p>Esta aplicación necesita el backend corriendo. En una terminal, dentro de la carpeta <strong>salas-ensayo</strong>:</p>
   <ol>
-    <li>Ejecuta <code>node server.js</code> (o <code>npm start</code>)</li>
-    <li>Abre <code>http://localhost:3000</code> en el navegador</li>
+    <li>Ejecutá <code>node server.js</code> (o <code>npm start</code>)</li>
+    <li>Abrí <code>http://localhost:3000</code> en el navegador</li>
   </ol>
-  <p class="muted small">¿No tienes Node.js? Descárgalo gratis desde <a href="https://nodejs.org" target="_blank" rel="noopener">nodejs.org</a> (versión LTS).</p>
+  <p class="muted small">¿No tenés Node.js? Descargalo gratis desde <a href="https://nodejs.org" target="_blank" rel="noopener">nodejs.org</a> (versión LTS).</p>
 </div>
 
 <header class="app-header" hidden id="app-header">
@@ -97,23 +97,7 @@
       <svg class="notif-svg" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1A1.7 1.7 0 0 0 9 19.4a1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
       <span class="notif-txt">Ajustes</span>
     </button>
-    <a id="btn-ig" class="btn-ig" title="Seguinos en Instagram" aria-label="Seguinos en Instagram" href="#" target="_blank" rel="noopener" hidden>
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <defs>
-          <linearGradient id="ig-grad" x1="0" y1="24" x2="24" y2="0" gradientUnits="userSpaceOnUse">
-            <stop offset="0" stop-color="#F9CE34"/>
-            <stop offset=".31" stop-color="#EE2A7B"/>
-            <stop offset=".62" stop-color="#6228D7"/>
-            <stop offset="1" stop-color="#2136A0"/>
-          </linearGradient>
-        </defs>
-        <rect x="1.1" y="1.1" width="21.8" height="21.8" rx="6.4" fill="url(#ig-grad)"/>
-        <circle cx="12" cy="12" r="4.5" fill="none" stroke="#fff" stroke-width="1.6"/>
-        <circle cx="17.2" cy="6.8" r="1.5" fill="#fff"/>
-      </svg>
-    </a>
     <button id="btn-sala-logo" class="btn-sala-logo" title="Mi sala" aria-label="Mi sala" hidden></button>
-    <button id="btn-install" class="btn btn-ghost" title="Instalar app" hidden>📲 <span class="txt">Instalar</span></button>
     <button id="btn-exit-admin" class="btn btn-ghost" hidden title="Salir del panel">← <span class="txt">Salir del panel</span></button>
   </div>
 </header>
@@ -141,7 +125,7 @@
   <section id="step-1" class="step">
     <div class="panel">
       <div class="panel-head">
-        <h2>📅 Elige la fecha</h2>
+        <h2>📅 Elegí la fecha</h2>
         <div class="cal-nav">
           <button id="btn-today" class="btn btn-sm">Hoy</button>
           <button id="cal-prev" class="btn btn-sm" aria-label="Mes anterior">‹</button>
@@ -161,13 +145,13 @@
   <section id="step-2" class="step" hidden>
     <div class="panel">
       <div class="panel-head">
-        <h2>🎸 Elige tu sala</h2>
-        <div class="row">
-          <button class="btn btn-sm" id="btn-filtro-fav">♡ Favoritas</button>
-          <button class="btn btn-sm" id="btn-ver-instrumentos">🎸 Instrumentos y lugar</button>
-          <button class="btn btn-sm" id="btn-ver-mapa">🗺 Ver en el mapa</button>
-          <button class="btn btn-sm" id="btn-back-1">← Cambiar fecha</button>
-        </div>
+        <h2>🎸 Elegí tu sala</h2>
+        <button class="btn btn-sm" id="btn-back-1">← Cambiar fecha</button>
+      </div>
+      <div class="rooms-toolbar" role="toolbar" aria-label="Opciones de salas">
+        <button class="btn btn-sm" id="btn-filtro-fav" aria-pressed="false">♡ Favoritas</button>
+        <button class="btn btn-sm" id="btn-ver-mapa">🗺 Ver en el mapa</button>
+        <button class="btn btn-sm" id="btn-ver-instrumentos">Instrumentos y lugar</button>
       </div>
       <div id="rooms-grid" class="rooms-grid"></div>
     </div>
@@ -179,7 +163,7 @@
         <h2 id="slots-title">🕐 Horarios disponibles</h2>
         <button class="btn btn-sm" id="btn-back-room">← Cambiar sala</button>
       </div>
-      <p class="muted small">Toca un horario para marcar el <strong>inicio</strong> y luego uno posterior para extender la selección. Para reservar 1 hora, toca el horario y pulsa "Continuar".</p>
+      <p class="muted small">Tocá un horario para marcar el <strong>inicio</strong> y luego uno posterior para extender la selección. Para reservar 1 hora, tocá el horario y pulsá "Continuar".</p>
       <div id="slots-grid" class="slots-grid"></div>
       <div id="range-bar" class="range-bar" hidden>
         <span id="range-text"></span>
@@ -245,15 +229,15 @@
       <h2>🎸 Instrumentos y lugar</h2>
     </div>
     <nav class="lugar-tabs">
-      <button class="lugar-tab active" data-lugar-tab="instrumentos">🎸 Instrumentos</button>
-      <button class="lugar-tab" data-lugar-tab="alquiler">🎒 Alquiler</button>
-      <button class="lugar-tab" data-lugar-tab="lugar">📷 El lugar</button>
+      <button class="lugar-tab active" data-lugar-tab="instrumentos">Instrumentos</button>
+      <button class="lugar-tab" data-lugar-tab="alquiler">Alquiler</button>
+      <button class="lugar-tab" data-lugar-tab="lugar">El lugar</button>
     </nav>
     <div id="tab-instrumentos" class="lugar-pane">
       <div id="instruments-grid" class="inst-grid"></div>
     </div>
     <div id="tab-alquiler" class="lugar-pane" hidden>
-      <p class="muted small">Instrumentos que puedes añadir a tu reserva. Se cobran por hora de ensayo.</p>
+      <p class="muted small">Instrumentos que podés añadir a tu reserva. Se cobran por hora de ensayo.</p>
       <div id="alquiler-grid" class="inst-grid"></div>
     </div>
     <div id="tab-lugar-fotos" class="lugar-pane" hidden>
@@ -283,14 +267,14 @@
   <nav class="admin-tabs" aria-label="Secciones de la sala">
     <button class="admin-tab admin-tab-inicio" data-ptab="inicio">Inicio</button>
     <span class="admin-tab-group">Sala</span>
-    <button class="admin-tab" data-ptab="sala">Mi sala</button>
-    <button class="admin-tab" data-ptab="disponibilidad">Disponibilidad</button>
+    <button class="admin-tab" data-ptab="sala">Información</button>
+    <button class="admin-tab" data-ptab="disponibilidad">Horarios</button>
     <span class="admin-tab-group">Reservas</span>
-    <button class="admin-tab" data-ptab="reservas">Reservas</button>
+    <button class="admin-tab" data-ptab="reservas">Listado</button>
     <span class="admin-tab-group">Dinero</span>
     <button class="admin-tab" data-ptab="movimientos">Movimientos</button>
     <span class="admin-tab-group">Cuenta</span>
-    <button class="admin-tab" data-ptab="datos">Mis datos</button>
+    <button class="admin-tab" data-ptab="datos">Datos de la cuenta</button>
   </nav>
 
   <section id="ptab-inicio" class="tab" hidden>
@@ -303,12 +287,19 @@
         <h2>🏠 Información de la sala</h2>
         <button class="btn btn-primary btn-sm" id="btn-guardar-sala">💾 Guardar cambios</button>
       </div>
+      <details class="sala-sec" open>
+        <summary>📝 Datos básicos</summary>
+        <div class="sala-sec-body">
       <div class="row2">
         <label>Nombre de la sala *<input id="ps-name" maxlength="60"></label>
         <label>Precio por hora *<input type="number" id="ps-price" min="1" step="1"></label>
       </div>
       <label>Descripción<textarea id="ps-descripcion" rows="3" maxlength="600" placeholder="Ej.: Sala con buena acústica, aire acondicionado..."></textarea></label>
-      <h3 class="sub">Ubicación y contacto</h3>
+        </div>
+      </details>
+      <details class="sala-sec" open>
+        <summary>📍 Ubicación y contacto</summary>
+        <div class="sala-sec-body">
       <div class="row2">
         <label>Dirección<input id="ps-direccion" maxlength="160"></label>
         <label>Número<input id="ps-numero" maxlength="12" placeholder="1234"></label>
@@ -330,7 +321,11 @@
         <button class="btn btn-sm" id="ps-buscar-direccion">🔎 Buscar por dirección</button>
       </div>
       <p class="muted small">Con la ubicación puesta, tu sala aparece en el mapa de Más Música para que los músicos la encuentren.</p>
-      <h3 class="sub">Equipamiento disponible</h3>
+        </div>
+      </details>
+      <details class="sala-sec">
+        <summary>🎛️ Equipamiento disponible</summary>
+        <div class="sala-sec-body">
       <div class="row2">
         <label>Instrumentos disponibles<input id="ps-eq-instrumentos" maxlength="300" placeholder="Ej.: Guitarra, Bajo, Batería"></label>
         <label>Batería<input id="ps-eq-bateria" maxlength="300" placeholder="Ej.: Pearl Export 5 piezas"></label>
@@ -343,16 +338,26 @@
         <label>Consola / sonido<input id="ps-eq-consola" maxlength="300" placeholder="Ej.: Allen&Heath 12 canales + 2 parlantes"></label>
         <label>Otros<input id="ps-eq-otros" maxlength="300" placeholder="Ej.: Aire acondicionado, placard, baño"></label>
       </div>
-      <h3 class="sub">Logo y fotografías</h3>
+        </div>
+      </details>
+      <details class="sala-sec">
+        <summary>🖼️ Logo y fotografías</summary>
+        <div class="sala-sec-body">
       <div class="sala-foto-edit" id="ps-preview-logo"></div>
       <label>Logo de la sala<input type="file" id="ps-logo" accept="image/*"></label>
       <label>Fotografías de la sala<input type="file" id="ps-fotos" accept="image/*" multiple></label>
       <p class="muted small">El logo aparece al lado del logo de la app cuando eligen esa sala.</p>
       <div id="ps-fotos-grid" class="mini-fotos"></div>
-      <h3 class="sub">Foto horizontal (la que se ve en el mapa)</h3>
+        </div>
+      </details>
+      <details class="sala-sec">
+        <summary>🗺️ Foto horizontal del mapa</summary>
+        <div class="sala-sec-body">
       <div class="portada-preview" id="ps-portada-preview"></div>
       <label>Cambiar foto horizontal<input type="file" id="ps-portada" accept="image/*"></label>
       <p class="muted small">Es la foto grande que se muestra al tocar el punto de tu sala en el mapa.</p>
+        </div>
+      </details>
     </div>
   </section>
 
@@ -808,7 +813,7 @@
       <div class="panel-head">
         <h2>🎭 Bandas registradas</h2>
       </div>
-      <p class="muted small">Las bandas se registran solas al reservar; aquí puedes editarlas o eliminarlas.</p>
+      <p class="muted small">Las bandas se registran solas al reservar; acá podés editarlas o eliminarlas.</p>
       <div id="bands-admin"></div>
     </div>
   </section>
@@ -908,6 +913,22 @@
       </div>
     </div>
     <div class="notif-sheet-body" id="ajustes-sheet-body"></div>
+    <div class="aj-pie">
+      <a id="btn-ig" class="aj-enlace" href="#" target="_blank" rel="noopener" hidden><svg class="aj-ico" viewBox="0 0 24 24" aria-hidden="true">
+        <defs>
+          <linearGradient id="ig-grad" x1="0" y1="24" x2="24" y2="0" gradientUnits="userSpaceOnUse">
+            <stop offset="0" stop-color="#F9CE34"/>
+            <stop offset=".31" stop-color="#EE2A7B"/>
+            <stop offset=".62" stop-color="#6228D7"/>
+            <stop offset="1" stop-color="#2136A0"/>
+          </linearGradient>
+        </defs>
+        <rect x="1.1" y="1.1" width="21.8" height="21.8" rx="6.4" fill="url(#ig-grad)"/>
+        <circle cx="12" cy="12" r="4.5" fill="none" stroke="#fff" stroke-width="1.6"/>
+        <circle cx="17.2" cy="6.8" r="1.5" fill="#fff"/>
+      </svg> Seguinos en Instagram</a>
+      <button id="btn-install" class="aj-enlace" hidden>📲 Instalar la app en el celular</button>
+    </div>
   </section>
 </div>
 
