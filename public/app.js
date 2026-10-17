@@ -122,8 +122,14 @@ function guardarToken(t) {
   try { t ? localStorage.setItem(TOKEN_KEY, t) : localStorage.removeItem(TOKEN_KEY); } catch (e) { /* modo privado */ }
 }
 
-/* Salas que se publican: aprobadas y activas */
-const salasPublicas = () => (state.rooms || []).filter(r => r.activo !== false && r.estado === 'aprobada');
+/* Salas que se publican: aprobadas y activas.
+   El dueño de una sala (ROOM_ADMIN) ve únicamente su propia sala, en la lista,
+   el mapa, el calendario y las favoritas. */
+const salasPublicas = () => (state.rooms || []).filter(r => {
+  if (r.activo === false) return false;
+  if (esDueño()) return r.ownerId === yo.id;
+  return r.estado === 'aprobada';
+});
 const esFavorita = id => !!(yo && (yo.favoritos || []).includes(id));
 
 async function api(path, { method = 'GET', body, admin = false } = {}) {
