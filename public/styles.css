@@ -1240,6 +1240,8 @@ main {
 
 /* Botón flotante "＋ nueva reserva": solo aparece en celular (ver media query al final) */
 .dock-fab { display: none; }
+/* Cuando se oculta por rol (músicos solamente), tiene que ganarle al display:grid del celular */
+.dock-fab[hidden] { display: none; }
 
 /* En el Mapa (celular) la barra de 5 opciones va transparente: los íconos
    flotan sobre el mapa, sin cápsula de fondo. En escritorio el riel no cambia. */
@@ -5472,6 +5474,12 @@ main#view-comunidad:has(.suscripcion-wrap) > .panel {
     height: 68px;
     border-radius: 28px;
     padding: 6px 8px 16px;
+    /* Las columnas se crean solas según las opciones visibles de cada rol:
+       así, si un rol tiene menos opciones (ej.: el dueño de sala no tiene
+       "Mapa"), las que quedan se reparten por igual sin dejar un hueco. */
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
   }
 
   /* Cada opción: el ícono dentro de una cápsula que se pinta al estar activa */

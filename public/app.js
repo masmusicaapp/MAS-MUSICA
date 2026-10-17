@@ -375,7 +375,7 @@ function renderPerfilSala() {
   if (!host || !miSala) return;
   const r = miSala;
   const etq = r.estado === 'aprobada' ? '✅ Aprobada' : r.estado === 'rechazada' ? '✖ Rechazada' : '⏳ En revisión';
-  const zona = [r.localidad, r.direccion].filter(Boolean).join(' · ');
+  const zona = [r.localidad, [r.direccion, r.numero].filter(Boolean).join(' ')].filter(Boolean).join(' · ');
   host.hidden = false;
   host.innerHTML = `
     <div class="perfil-mini">
@@ -433,7 +433,7 @@ function renderCalendar() {
   const [y, m] = calCursor.split('-').map(Number);
   $('#cal-title').textContent = new Date(y, m - 1, 1).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
   /* Cada sala administra sus reservas: el dueño solo cuenta las de sus propias salas */
-  const salasPropias = esDueño() ? (state.rooms || []).filter(r => r.ownerId === yo.id).map(r => r.id) : null;
+  const salasPropias = esDueño() ? ((state && state.rooms) || []).filter(r => r.ownerId === (yo && yo.id)).map(r => r.id) : null;
   /* Aviso de hasta cuándo se puede reservar, según la cuenta */
   const hint = $('#cal-hint');
   if (hint) hint.textContent = (esCuentaControl()
@@ -493,7 +493,7 @@ function renderRooms() {
       </div>
       <div class="room-info">
         <h3>${esc(r.name)}</h3>
-        ${r.localidad || r.direccion ? `<div class="room-ubic">📍 ${esc([r.localidad, r.direccion].filter(Boolean).join(' · '))}</div>` : ''}
+        ${r.localidad || r.direccion ? `<div class="room-ubic">📍 ${esc([r.localidad, [r.direccion, r.numero].filter(Boolean).join(' ')].filter(Boolean).join(' · '))}</div>` : ''}
         <div class="price">${fmtMoney(r.price)}<span> /hora</span></div>
         <div class="cap">👥 Hasta ${r.capacity} ${r.capacity === 1 ? 'persona' : 'personas'}</div>
       </div>
@@ -532,7 +532,7 @@ function fichaSala(id) {
       ${r.telefono ? `<div><span class="muted">Teléfono</span><strong>${esc(r.telefono)}</strong></div>` : ''}
       ${r.localidad ? `<div><span class="muted">Zona</span><strong>${esc(r.localidad)}</strong></div>` : ''}
     </div>
-    ${r.direccion ? `<p class="ficha-dir">📍 ${esc(r.direccion)}${linkMapaSala(r) ? ` · <a href="${linkMapaSala(r)}" target="_blank" rel="noopener">ver en el mapa</a>` : ''}</p>` : ''}
+    ${r.direccion ? `<p class="ficha-dir">📍 ${esc([r.direccion, r.numero].filter(Boolean).join(' '))}${linkMapaSala(r) ? ` · <a href="${linkMapaSala(r)}" target="_blank" rel="noopener">ver en el mapa</a>` : ''}</p>` : ''}
     ${r.descripcion ? `<p class="ficha-desc">${esc(r.descripcion)}</p>` : ''}
     ${(r.features || []).length ? `<div class="ficha-chips">${r.features.map(f => `<span class="chip">${esc(f)}</span>`).join('')}</div>` : ''}
     <h4 class="sub">Equipamiento</h4>
@@ -598,7 +598,7 @@ function linkMapaSala(r) {
   if (!r) return '';
   if (tieneUbicacion(r)) return `https://www.google.com/maps/search/?api=1&query=${Number(r.lat)},${Number(r.lng)}`;
   if (urlSegura(r.mapa)) return urlSegura(r.mapa);
-  const dir = [r.direccion, r.localidad].filter(Boolean).join(', ');
+  const dir = [[r.direccion, r.numero].filter(Boolean).join(' '), r.localidad].filter(Boolean).join(', ');
   return dir ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(dir)}` : '';
 }
 
@@ -743,7 +743,7 @@ function fotoPortadaSala(r) {
 function popupSala(r) {
   const dist = miUbicacion ? ` · a ${distKm(miUbicacion[0], miUbicacion[1], Number(r.lat), Number(r.lng)).toFixed(1)} km` : '';
   const eq = Object.values(r.equipos || {}).filter(Boolean).length;
-  const dir = [r.direccion, r.localidad].filter(Boolean).join(' · ');
+  const dir = [[r.direccion, r.numero].filter(Boolean).join(' '), r.localidad].filter(Boolean).join(' · ');
   const tel = String(r.telefono || '').trim();
   const telHref = tel.replace(/[^0-9+]/g, '');
   const portada = fotoPortadaSala(r);
@@ -866,7 +866,7 @@ function renderMapaLista() {
         const km = (miUbicacion && ubic)
           ? distKm(miUbicacion[0], miUbicacion[1], Number(r.lat), Number(r.lng))
           : null;
-        const dir = [r.direccion, r.localidad].filter(Boolean).join(' · ');
+        const dir = [[r.direccion, r.numero].filter(Boolean).join(' '), r.localidad].filter(Boolean).join(' · ');
         const enlace = linkMapaSala(r);
         return `
         <article class="mapa-item${ubic ? '' : ' sin-punto'}"${ubic ? ` data-mapa-item="${esc(r.id)}"` : ''}>
@@ -4441,6 +4441,7 @@ function renderPanelSala() {
   $('#ps-price').value = r.price || 0;
   $('#ps-descripcion').value = r.descripcion || '';
   $('#ps-direccion').value = r.direccion || '';
+  $('#ps-numero').value = r.numero || '';
   $('#ps-localidad').value = r.localidad || '';
   $('#ps-telefono').value = r.telefono || '';
   $('#ps-capacity').value = r.capacity || 4;
@@ -4481,8 +4482,16 @@ let ubicacionManual = false;   /* el dueño ubicó el punto a mano en esta edici
 let ubicacionIntentada = '';   /* sala ya intentada (evita reintentos en bucle) */
 
 function direccionDeLaSala() {
-  const calle = [$('#ps-direccion').value.trim(), $('#ps-localidad').value.trim()].filter(Boolean).join(', ');
-  return calle || $('#ps-mapa').value.trim();
+  const calle = [$('#ps-direccion').value.trim(), $('#ps-numero').value.trim()].filter(Boolean).join(' ');
+  const completa = [calle, $('#ps-localidad').value.trim()].filter(Boolean).join(', ');
+  return completa || $('#ps-mapa').value.trim();
+}
+
+/* Dirección completa de una sala (calle + número + localidad) para mostrar y buscar */
+function salaDireccionCompleta(r) {
+  if (!r) return '';
+  const calle = [r.direccion, r.numero].filter(Boolean).join(' ');
+  return [calle, r.localidad].filter(Boolean).join(', ');
 }
 
 /* Busca la dirección y deja el punto en el formulario (no guarda).
@@ -4543,7 +4552,7 @@ async function guardarPanelSala() {
   const _r = panelDatos && panelDatos.room;
   const _dir = direccionDeLaSala();
   const _hayPunto = $('#ps-lat').value.trim() !== '' && $('#ps-lng').value.trim() !== '';
-  const _dirPrevia = _r ? [String(_r.direccion || '').trim(), String(_r.localidad || '').trim()].filter(Boolean).join(', ') : '';
+  const _dirPrevia = _r ? salaDireccionCompleta(_r) : '';
   if (!ubicacionManual && _dir.length >= 4 && (!_hayPunto || _dir !== _dirPrevia)) {
     await resolverUbicacionSala();
   }
@@ -4556,6 +4565,7 @@ async function guardarPanelSala() {
     capacity: Number($('#ps-capacity').value),
     descripcion: $('#ps-descripcion').value.trim(),
     direccion: $('#ps-direccion').value.trim(),
+    numero: $('#ps-numero').value.trim(),
     localidad: $('#ps-localidad').value.trim(),
     telefono: $('#ps-telefono').value.trim(),
     mapa: $('#ps-mapa').value.trim(),
@@ -5378,7 +5388,7 @@ function renderSolicitudes() {
       <div class="sol-req-top">
         <div>
           <h3>${esc(r.name)}</h3>
-          <p class="sol-req-meta">${esc([r.localidad, r.direccion].filter(Boolean).join(' · '))} · 👥 ${r.capacity}</p>
+          <p class="sol-req-meta">${esc([r.localidad, [r.direccion, r.numero].filter(Boolean).join(' ')].filter(Boolean).join(' · '))} · 👥 ${r.capacity}</p>
           <p class="sol-req-meta">Enviada por ${r.duenio ? '@' + esc(r.duenio.usuario) : '—'}${r.solicitud && r.solicitud.fecha ? ' · ' + fechaCorta(r.solicitud.fecha) : ''}</p>
           ${r.descripcion ? `<p class="sol-req-desc">${esc(r.descripcion)}</p>` : ''}
         </div>
