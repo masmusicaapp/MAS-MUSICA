@@ -1143,10 +1143,44 @@ function cerrarPopupMapa() {
 function abrirTarjetaSala(id) {
   const r = (state.rooms || []).find(x => x.id === id);
   if (!r) return;
+  const equ = r.equipos || {};
+  const filas = [
+    ['🎸 Instrumentos', equ.instrumentos],
+    ['🥁 Batería', equ.bateria],
+    ['🔊 Amplificadores', equ.amplificadores],
+    ['🎤 Micrófonos', equ.microfonos],
+    ['🎛️ Consola / sonido', equ.consola],
+    ['✨ Otros', equ.otros],
+  ].filter(f => f[1]);
+  const dias = [1, 2, 3, 4, 5, 6, 0].map(d => {
+    const h = horarioSalaDe(r)[String(d)];
+    return `<div class="dia-fila"><strong>${['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'][d]}</strong><span>${h ? `${h.open} – ${h.close}` : 'Cerrado'}</span></div>`;
+  }).join('');
   const card = $('#mapa-tarjeta-card');
   if (card) {
-    card.innerHTML = `<button type="button" class="mapa-tarjeta-close" onclick="cerrarTarjetaSala()" aria-label="Cerrar tarjeta">×</button>` + popupSala(r);
+    card.innerHTML = `
+      <button type="button" class="mapa-tarjeta-close" onclick="cerrarTarjetaSala()" aria-label="Cerrar tarjeta">×</button>
+      <div class="ficha-en-tarjeta">
+        <h3>${esc(r.name)}</h3>
+        ${r.fotoPortada ? `<div class="ficha-cover"><img src="${esc(r.fotoPortada)}" alt="Portada de ${esc(r.name)}"></div>` : ''}
+        ${r.foto ? `<div class="ficha-avatar"><img src="${esc(r.foto)}" alt="${esc(r.name)}"></div>` : ''}
+        <div class="ficha-grid">
+          <div><span class="muted">Precio</span><strong>${fmtMoney(r.price)} /hora</strong></div>
+          ${r.telefono ? `<div><span class="muted">Teléfono</span><strong>${esc(r.telefono)}</strong></div>` : ''}
+          ${r.localidad ? `<div><span class="muted">Zona</span><strong>${esc(r.localidad)}</strong></div>` : ''}
+        </div>
+        ${r.direccion ? `<p class="ficha-dir">📍 ${esc([r.direccion, r.numero].filter(Boolean).join(' '))}${linkMapaSala(r) ? ` · <a href="${linkMapaSala(r)}" target="_blank" rel="noopener">ver en el mapa</a>` : ''}</p>` : ''}
+        <div class="row">
+          <button class="btn btn-primary" id="tarjeta-reservar">Ver horarios →</button>
+          <button class="btn" id="tarjeta-ficha">ℹ️ Ficha completa</button>
+          <button class="btn" id="tarjeta-fav">${esFavorita(r.id) ? '♥ Quitar de favoritas' : '♡ Guardar como favorita'}</button>
+          <button class="btn" id="tarjeta-cerrar">Cerrar</button>
+        </div>`;
     card.onclick = accionesMapa;
+    const tc = $('#tarjeta-cerrar'); if (tc) tc.onclick = cerrarTarjetaSala;
+    const tr = $('#tarjeta-reservar'); if (tr) tr.onclick = () => { cerrarTarjetaSala(); elegirSala(r.id); };
+    const tf = $('#tarjeta-ficha'); if (tf) tf.onclick = () => { cerrarTarjetaSala(); fichaSala(r.id); };
+    const tfv = $('#tarjeta-fav'); if (tfv) tfv.onclick = () => { alternarFavorita(r.id); abrirTarjetaSala(r.id); };
   }
   const overlay = $('#mapa-tarjeta');
   if (overlay) overlay.hidden = false;
