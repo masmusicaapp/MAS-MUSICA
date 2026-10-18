@@ -3955,12 +3955,12 @@ function renderPerfilCuenta() {
   box.innerHTML = `
     <div class="panel-head"><h2>Mis datos</h2></div>
     <div class="aj-cuenta">
-      <div class="user-avatar aj-avatar ${esSuper() ? 'ava-super' : esDueño() ? 'ava-dueno' : 'ava-musico'}">${yo.foto ? `<img src="${esc(yo.foto)}" alt="${esc(yo.nombre)}">` : esSuper() ? `<img src="assets/logo-perfil-masmusica.png" alt="Admin">` : esc((yo.nombre || '?').trim().charAt(0).toUpperCase())}</div>
+      <div class="user-avatar aj-avatar">${yo.foto ? `<img src="${esc(yo.foto)}" alt="${esc(yo.nombre)}">` : esc((yo.nombre || '?').trim().charAt(0).toUpperCase())}</div>
       <div class="aj-cuenta-txt">
         <strong>${esc(yo.nombre)}</strong>
         <span>@${esc(yo.usuario)}${yo.localidad ? ' · ' + esc(yo.localidad) : ''}</span>
         <span class="aj-badges">
-          <span class="badge">${esDueño() ? '🎛️ Dueño de sala' : esSuper() ? '<img class="badge-ava" src="assets/logo-perfil-masmusica.png" alt=""> Admin' : '🎸 Músico'}</span>
+          <span class="badge">${esDueño() ? '🎛️ Dueño de sala' : esSuper() ? '👑 Administración general' : '🎸 Músico'}</span>
           ${miSala ? `<span class="badge ${miSala.estado === 'aprobada' ? '' : 'badge-next'}">Sala: ${esc(miSala.name)} · ${miSala.estado}</span>` : ''}
         </span>
       </div>
@@ -5437,7 +5437,7 @@ function renderUsuarios() {
   if (!cont) return;
   if (!window.__usuarios) { cont.innerHTML = '<p class="muted">Cargando cuentas…</p>'; cargarUsuarios(); return; }
 
-  const ROL = { USER: { label: 'Músico', emoji: '🎸', cls: 'musico' }, ROOM_ADMIN: { label: 'Dueño de sala', emoji: '🎛️', cls: 'sala' }, SUPER_ADMIN: { label: 'Admin', emoji: '<img class="rol-ava ava-super" src="assets/logo-perfil-masmusica.png" alt="">', cls: 'admin' } };
+  const ROL = { USER: { label: 'Músico', emoji: '🎸', cls: 'musico' }, ROOM_ADMIN: { label: 'Dueño de sala', emoji: '🎛️', cls: 'sala' }, SUPER_ADMIN: { label: 'Admin', emoji: '👑', cls: 'admin' } };
 
   /* Contadores por rol */
   const counts = { '': window.__usuarios.length };
@@ -6959,7 +6959,7 @@ function renderAjustes() {
   if (resumen) {
     const fecha = t => t ? new Date(t).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
     resumen.innerHTML = yo
-      ? `<div class="cm-ava ${yo ? (esSuper() ? 'ava-super' : esDueño() ? 'ava-dueno' : 'ava-musico') : ''}">${yo.foto ? `<img src="${esc(yo.foto)}" alt="">` : esSuper() ? `<img src="assets/logo-perfil-masmusica.png" alt="">` : '<img src="assets/logo-perfil-masmusica.png" alt="">'}</div>
+      ? `<div class="cm-ava">${yo.foto ? `<img src="${esc(yo.foto)}" alt="">` : '<span>👑</span>'}</div>
          <div class="cm-datos">
            <strong>${esc(yo.nombre)}</strong>
            <span class="cm-badge">Super administradora</span>

@@ -2567,6 +2567,10 @@ main {
   width: 96px; height: 96px; border-radius: 20px; object-fit: cover;
   margin: 0 auto 12px; display: block; border: 2px solid var(--line);
 }
+.ficha-fotos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 0 0 12px; }
+.ficha-foto { margin: 0; }
+.ficha-foto img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); cursor: pointer; }
+.ficha-foto figcaption { font-size: .75rem; color: var(--muted); text-align: center; margin-top: 2px; }
 .ficha-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
 .ficha-grid > div {
   background: var(--panel2); border: 1px solid var(--line);
