@@ -5138,7 +5138,7 @@ function wirePublic() {
   /* Barra inferior: 5 opciones */
   const ACCIONES_NAV = {
     inicio: irInicio,
-    salas: () => irSalasMapa('todas'),
+    salas: irSalas,
     mapa: irMapa,
     comunidad: () => irComunidad(),
     instrumentos: irInstrumentos,
@@ -5186,7 +5186,7 @@ function wirePublic() {
       .catch(err => { btn.disabled = false; toast(err.message, 'error'); });
   };
   $('#mine-favoritas').onclick = e => {
-    if (e.target.closest('#fav-ver')) { return irSalasMapa('favoritas'); }
+    if (e.target.closest('#fav-ver')) { filtroSalas = 'favoritas'; return irSalas(); }
     const s = e.target.closest('[data-ir-sala]');
     if (s) elegirSala(s.dataset.irSala);
   };
