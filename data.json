@@ -29,25 +29,26 @@
       }
     },
     "reglas": {
-      "cancelacionHoras": 0,
+      "cancelacionHoras": 24,
+      "avisoHoras": 24,
       "turnos": [
         30,
         60,
         90,
         120
       ],
-      "avisoHoras": 24,
       "senaPorcentaje": 30,
       "comisionPorcentaje": 8,
       "minutosPago": 15
     },
     "contacto": {
       "whatsapp": "",
-      "instagram": "",
+      "instagram": "masmusica.app",
       "facebook": "",
-      "email": "",
+      "email": "masmusica.app@gmail.com",
       "tiktok": ""
-    }
+    },
+    "gmapsKey": ""
   },
   "users": [
     {
@@ -57,8 +58,8 @@
       "email": "admin@masmusica.app",
       "telefono": "",
       "pass": {
-        "hash": "906b81925f9f196a6e520b335c1e4d54b09ace506ff4b1415704c8af859cf6edab190188b6f3db69034d92b3a262f6a080cd071aff6681cb35739142eb97f07b",
-        "salt": "94b7b50bd23c5c429dfa0f8928c181cb"
+        "hash": "bc7b7bb7d6a8516341051e0d66a3c68fa20f0655414fb1dad633c46d828b41cff05d5f57c9eaf7137d41973738c30dd0ca2f35e2510f0920b531c034028bf4c0",
+        "salt": "19d9e58c6bd0efbf11e38e2cc51df5b2"
       },
       "foto": "",
       "localidad": "",
@@ -68,54 +69,361 @@
       "bloqueado": false,
       "favoritos": [],
       "creado": 1791869715837,
-      "ultimoAcceso": 1791871928474,
+      "ultimoAcceso": 1792333454247,
+      "following": []
+    },
+    {
+      "id": "mv7lefoi9bnrgq",
+      "nombre": "Luca Guitarras",
+      "usuario": "luca_demo",
+      "email": "luca@test.com",
+      "telefono": "351-555-9876",
+      "pass": {
+        "hash": "af51eb918c461a73d0fb56c89300d9a69ef1d7b1797e369f8e851f66ad6e14501123e8d0a8288412eefcfea3062d14613faab862e32b082534e2090088db15b1",
+        "salt": "7e4a4683f164975d0517f4751e44ca97"
+      },
+      "foto": "",
+      "localidad": "Córdoba",
+      "instrumentos": [
+        "Guitarra"
+      ],
+      "rol": "USER",
+      "activo": true,
+      "bloqueado": false,
+      "favoritos": [],
+      "creado": 1791951071364,
+      "ultimoAcceso": 1792333249741,
+      "following": []
+    },
+    {
+      "id": "mv7m2hewcm5zmb",
+      "nombre": "Ana Guitarras",
+      "usuario": "ana_guitarra",
+      "email": "ana@test.com",
+      "telefono": "351-555-5931",
+      "pass": {
+        "hash": "ff1442a38a6736bdc811637b6e2c55b766bb97e3d603516c75b82c937652aa8834f90ad825b151c14c2cec74c53750c00850158025f333649c3fd77680f747e0",
+        "salt": "0c06eba7c1deecef71e7e5fbf93e8b00"
+      },
+      "foto": "",
+      "localidad": "Córdoba",
+      "instrumentos": [
+        "Guitarra eléctrica",
+        "Acústica"
+      ],
+      "rol": "USER",
+      "activo": true,
+      "bloqueado": false,
+      "favoritos": [],
+      "creado": 1791952193342,
+      "ultimoAcceso": 1792080867436,
+      "following": []
+    },
+    {
+      "id": "mv7m2hkr5wsxvx",
+      "nombre": "Pedro Baterista",
+      "usuario": "pedro_bateria",
+      "email": "pedro@test.com",
+      "telefono": "351-555-9758",
+      "pass": {
+        "hash": "16ba07b8ecc98556a2c7e854f49be35d4ed5bf33b69ff835d398014240ca88183da625cd4cb507bc0d0ef7db6738a38f18dcbc925cf975f5448b8cee71964e85",
+        "salt": "4b1d1dad9776dcc6e3ba02fa42eb219c"
+      },
+      "foto": "",
+      "localidad": "Córdoba",
+      "instrumentos": [
+        "Batería",
+        "Percusión"
+      ],
+      "rol": "USER",
+      "activo": true,
+      "bloqueado": false,
+      "favoritos": [],
+      "creado": 1791952193556,
+      "ultimoAcceso": 1791983027777,
+      "following": []
+    },
+    {
+      "id": "mv7m2hrxric3hm",
+      "nombre": "Laura Teclados",
+      "usuario": "laura_teclado",
+      "email": "laura@test.com",
+      "telefono": "351-555-5624",
+      "pass": {
+        "hash": "cf625113889623c3dca981be0e745be086bbde34d72508b03462765af6eca73455c08f64c4d849a46c857ee451e247895dc2e06d43849df521a79fb4466479ad",
+        "salt": "70237da2ab81775b36b67757a0121b08"
+      },
+      "foto": "",
+      "localidad": "Córdoba",
+      "instrumentos": [
+        "Teclado",
+        "Piano",
+        "Sintetizador"
+      ],
+      "rol": "USER",
+      "activo": true,
+      "bloqueado": false,
+      "favoritos": [],
+      "creado": 1791952193873,
+      "ultimoAcceso": 1792078400492,
+      "following": []
+    },
+    {
+      "id": "mv7m2hyphzzuns",
+      "nombre": "Marcos Bajo",
+      "usuario": "marcos_bajo",
+      "email": "marcos@test.com",
+      "telefono": "351-555-7982",
+      "pass": {
+        "hash": "53f2afbf85ab830e51105a93689c27eb6bb387616be5b51f33699a55d54a83c901ddb544913b7ca9db4379851c445c6badc8c65bc369071c001d243a4277f410",
+        "salt": "7ac309d1093b2f939f7c9c9e57e9d3e5"
+      },
+      "foto": "",
+      "localidad": "Córdoba",
+      "instrumentos": [
+        "Bajo eléctrico"
+      ],
+      "rol": "USER",
+      "activo": true,
+      "bloqueado": false,
+      "favoritos": [],
+      "creado": 1791952194056,
+      "ultimoAcceso": 1792081699888,
+      "following": []
+    },
+    {
+      "id": "mv7m2i4s71228d",
+      "nombre": "Sofía Vocal",
+      "usuario": "sofia_canto",
+      "email": "sofia@test.com",
+      "telefono": "351-555-1563",
+      "pass": {
+        "hash": "56caedeef3e291a5e85fb1deb44b348f577984bbd51c4d9722486622f54841f10c79d17c383e156a9877caeb3cc260ae26457abd66f8dcdb77dbb887c536b043",
+        "salt": "47aec8958b1beb64b3a9bd09e8313155"
+      },
+      "foto": "",
+      "localidad": "Córdoba",
+      "instrumentos": [
+        "Voz",
+        "Coros"
+      ],
+      "rol": "USER",
+      "activo": true,
+      "bloqueado": false,
+      "favoritos": [],
+      "creado": 1791952194272,
+      "ultimoAcceso": 1792078879994,
+      "following": []
+    },
+    {
+      "id": "mvbu9ffjfkcx69",
+      "nombre": "Marcelo Molina",
+      "usuario": "madeinpilar",
+      "email": "molina@gmail.com",
+      "telefono": "11217782377",
+      "pass": {
+        "hash": "683cebff9057a74f1a38a9863e9ddb1a103d32aeaa213e6e3828e54fc4655347fe75d5edf7346ee603df78f257dd1fcd4834fd8e9a55af497ed324e480828f9d",
+        "salt": "e846845bea135b281a3bf6b73f8e9b93"
+      },
+      "foto": "",
+      "localidad": "",
+      "instrumentos": [],
+      "rol": "ROOM_ADMIN",
+      "activo": true,
+      "bloqueado": false,
+      "favoritos": [],
+      "creado": 1792207819048,
+      "ultimoAcceso": 1792207819048,
+      "following": []
+    },
+    {
+      "id": "mvdwx9mpn15no3",
+      "nombre": "Administración Más Música",
+      "usuario": "admin2",
+      "email": "admin2@masmusica.app",
+      "telefono": "",
+      "pass": {
+        "hash": "e62b53084818be4d25aed6e2bd2b50cbb9003114c3471ee819f344084a799e4ff30ae4f1e7b405edb0ca15312979a68cd997832ed79181a69013cfa380b4df00",
+        "salt": "f65ba486ef34645993e735bd199ec25b"
+      },
+      "foto": "",
+      "localidad": "",
+      "instrumentos": [],
+      "rol": "SUPER_ADMIN",
+      "activo": true,
+      "bloqueado": false,
+      "favoritos": [],
+      "creado": 1792333222806,
+      "ultimoAcceso": 1792333236662,
       "following": []
     }
   ],
   "sessions": [
     {
-      "tokenHash": "b3e7d723228496fb4e9b039e53d3e434dbf26c65c54590effcb0eec3f7fe53fc",
-      "userId": "mv68ypbrqxg3ci",
-      "creado": 1791871928474,
-      "expira": 1794463928474
-    }
-  ],
-  "notificaciones": [],
-  "ayuda": [],
-  "mensajes": [],
-  "promociones": [
+      "tokenHash": "6425bd42e21b282f405311025010d42b93cbab5de220555ec78579ac919041f9",
+      "userId": "mvdwx9mpn15no3",
+      "creado": 1792333236662,
+      "expira": 1794925236662
+    },
     {
-      "id": "mv68y9k6tlk1g3",
-      "titulo": "🎉 Bienvenido a Más Música",
-      "texto": "Reservá tu sala de ensayo online, guardá tus salas favoritas y gestioná tus reservas desde la app.",
-      "flyer": "",
-      "redes": "",
-      "activa": true,
-      "desde": 1791869695206,
-      "hasta": 1799645695206,
-      "creado": 1791869695206
+      "tokenHash": "9dcbae404b0886335e0365dc719c9ee12323d5254dd4da2a430129009d446a79",
+      "userId": "mv7lefoi9bnrgq",
+      "creado": 1792333249741,
+      "expira": 1794925249741
+    },
+    {
+      "tokenHash": "7e496f4fc41273ca57fa0262038d4904b0a669f63e6d9d82bb60cfe615ff7811",
+      "userId": "mv68ypbrqxg3ci",
+      "creado": 1792333423259,
+      "expira": 1794925423259
+    },
+    {
+      "tokenHash": "81ebd4f50465314df8b0361cdbe19cacaafb5647b8d45653d30355906fa85993",
+      "userId": "mv68ypbrqxg3ci",
+      "creado": 1792333454247,
+      "expira": 1794925454247
     }
   ],
+  "notificaciones": [
+    {
+      "id": "mvdxurcdu2rhzy",
+      "userId": "mvdwx9mpn15no3",
+      "titulo": "📥 Pedido de ayuda",
+      "texto": "Olvidé mi contraseña · molinamarcanthony@gmail.com — M",
+      "tipo": "warn",
+      "leida": false,
+      "fecha": 1792334785261
+    },
+    {
+      "id": "mvdxurcdugklrn",
+      "userId": "mv68ypbrqxg3ci",
+      "titulo": "📥 Pedido de ayuda",
+      "texto": "Olvidé mi contraseña · molinamarcanthony@gmail.com — M",
+      "tipo": "warn",
+      "leida": false,
+      "fecha": 1792334785261
+    },
+    {
+      "id": "mvdb3p14tdbw0s",
+      "userId": "mvbu9ffjfkcx69",
+      "titulo": "Nueva reserva",
+      "texto": "Marcelo Molina reservó made in pilar el 18 de octubre, de 10:00 a 13:00",
+      "tipo": "info",
+      "leida": false,
+      "fecha": 1792296571000,
+      "reservaId": "mvdb3p12clybpt",
+      "roomId": "mvbu9fl43gcxf4",
+      "para": "dueno"
+    },
+    {
+      "id": "mvdb3p13zjh40x",
+      "userId": "mvbu9ffjfkcx69",
+      "titulo": "Reserva confirmada",
+      "texto": "made in pilar · 18 de octubre · 10:00–13:00",
+      "tipo": "ok",
+      "leida": false,
+      "fecha": 1792296570999,
+      "reservaId": "mvdb3p12clybpt",
+      "roomId": "mvbu9fl43gcxf4"
+    },
+    {
+      "id": "mv7m2i8xar0tjk",
+      "userId": "mv7m2i4s71228d",
+      "titulo": "¡Bienvenido a Más Música!",
+      "texto": "Tu cuenta ya está activa. Buscá tu sala de ensayo y reservá.",
+      "tipo": "ok",
+      "leida": false,
+      "fecha": 1791952194273
+    },
+    {
+      "id": "mv7m2i2wzv3ozk",
+      "userId": "mv7m2hyphzzuns",
+      "titulo": "¡Bienvenido a Más Música!",
+      "texto": "Tu cuenta ya está activa. Buscá tu sala de ensayo y reservá.",
+      "tipo": "ok",
+      "leida": false,
+      "fecha": 1791952194056
+    },
+    {
+      "id": "mv7m2hxt3707g6",
+      "userId": "mv7m2hrxric3hm",
+      "titulo": "¡Bienvenido a Más Música!",
+      "texto": "Tu cuenta ya está activa. Buscá tu sala de ensayo y reservá.",
+      "tipo": "ok",
+      "leida": false,
+      "fecha": 1791952193873
+    },
+    {
+      "id": "mv7m2hp1t5ixz0",
+      "userId": "mv7m2hkr5wsxvx",
+      "titulo": "¡Bienvenido a Más Música!",
+      "texto": "Tu cuenta ya está activa. Buscá tu sala de ensayo y reservá.",
+      "tipo": "ok",
+      "leida": false,
+      "fecha": 1791952193557
+    },
+    {
+      "id": "mv7m2hj2tcvqic",
+      "userId": "mv7m2hewcm5zmb",
+      "titulo": "¡Bienvenido a Más Música!",
+      "texto": "Tu cuenta ya está activa. Buscá tu sala de ensayo y reservá.",
+      "tipo": "ok",
+      "leida": false,
+      "fecha": 1791952193342
+    },
+    {
+      "id": "mv7left0yw7u3p",
+      "userId": "mv7lefoi9bnrgq",
+      "titulo": "¡Bienvenido a Más Música!",
+      "texto": "Tu cuenta ya está activa. Buscá tu sala de ensayo y reservá.",
+      "tipo": "ok",
+      "leida": false,
+      "fecha": 1791951071364
+    }
+  ],
+  "ayuda": [
+    {
+      "id": "mvdxurcbhc05bn",
+      "fecha": 1792334785260,
+      "motivo": "olvide",
+      "ident": "molinamarcanthony@gmail.com",
+      "mensaje": "M",
+      "cuenta": null,
+      "estado": "pendiente",
+      "resuelta": 0
+    },
+    {
+      "id": "mvbkrhy7tycu16",
+      "fecha": 1792191865760,
+      "motivo": "olvide",
+      "ident": "molinamarcanthony@gmail.com",
+      "mensaje": "Ojh",
+      "cuenta": null,
+      "estado": "resuelta",
+      "resuelta": 1792202280503,
+      "resueltoPor": "mv68ypbrqxg3ci"
+    }
+  ],
+  "mensajes": [],
+  "promociones": [],
   "rooms": [
     {
-      "id": "r1",
-      "ownerId": null,
+      "id": "mvbu9fl43gcxf4",
+      "ownerId": "mvbu9ffjfkcx69",
       "estado": "aprobada",
-      "name": "Sala 1",
+      "name": "made in pilar",
       "descripcion": "",
-      "direccion": "",
-      "localidad": "",
-      "mapa": "",
-      "lat": null,
-      "lng": null,
+      "direccion": "Albert camus",
+      "numero": "",
+      "localidad": "pilar",
+      "mapa": "G4XW+R4 La Lonja, Provincia de Buenos Aires",
+      "lat": -34.4095,
+      "lng": -58.87899,
       "telefono": "",
-      "precio": 15000,
-      "price": 15000,
+      "precio": 10000,
+      "price": 10000,
       "capacity": 4,
-      "features": [
-        "Batería completa",
-        "Amplificadores"
-      ],
+      "features": [],
       "equipos": {
         "instrumentos": "",
         "amplificadores": "",
@@ -125,143 +433,76 @@
         "otros": ""
       },
       "fotos": [],
-      "foto": "/assets/salas/r1.jpg",
+      "foto": "assets/salas/mvbu9fl43gcxf4.jpg",
       "fotoPortada": "",
       "horario": {
-        "0": null,
-        "1": null,
-        "2": null,
-        "3": null,
-        "4": null,
-        "5": null,
-        "6": null
+        "0": {
+          "open": "10:00",
+          "close": "22:00"
+        },
+        "1": {
+          "open": "10:00",
+          "close": "22:00"
+        },
+        "2": {
+          "open": "10:00",
+          "close": "22:00"
+        },
+        "3": {
+          "open": "10:00",
+          "close": "22:00"
+        },
+        "4": {
+          "open": "10:00",
+          "close": "22:00"
+        },
+        "5": {
+          "open": "10:00",
+          "close": "22:00"
+        },
+        "6": {
+          "open": "10:00",
+          "close": "22:00"
+        }
       },
-      "horarioPropio": false,
-      "turnoMin": 60,
+      "horarioPropio": true,
+      "turnoMin": 120,
       "activo": true,
       "solicitud": {
-        "fecha": 1791869695206,
+        "fecha": 1792291747901,
         "revisada": 0,
         "motivo": "",
-        "revisor": ""
+        "revisor": "Administración Más Música"
       },
-      "creado": 1791869695206
-    },
-    {
-      "id": "r2",
-      "ownerId": null,
-      "estado": "aprobada",
-      "name": "Sala 2",
-      "descripcion": "",
-      "direccion": "",
-      "localidad": "",
-      "mapa": "",
-      "lat": null,
-      "lng": null,
-      "telefono": "",
-      "precio": 12000,
-      "price": 12000,
-      "capacity": 3,
-      "features": [
-        "Amplificadores",
-        "Rincón acústico"
-      ],
-      "equipos": {
-        "instrumentos": "",
-        "amplificadores": "",
-        "bateria": "",
-        "microfonos": "",
-        "consola": "",
-        "otros": ""
-      },
-      "fotos": [],
-      "foto": "/assets/lugar/sala-2.png",
-      "fotoPortada": "",
-      "horario": {
-        "0": null,
-        "1": null,
-        "2": null,
-        "3": null,
-        "4": null,
-        "5": null,
-        "6": null
-      },
-      "horarioPropio": false,
-      "turnoMin": 60,
-      "activo": true,
-      "solicitud": {
-        "fecha": 1791869695206,
-        "revisada": 0,
-        "motivo": "",
-        "revisor": ""
-      },
-      "creado": 1791869695206
-    },
-    {
-      "id": "r3",
-      "ownerId": null,
-      "estado": "aprobada",
-      "name": "Sala 3 — Premium",
-      "descripcion": "",
-      "direccion": "",
-      "localidad": "",
-      "mapa": "",
-      "lat": null,
-      "lng": null,
-      "telefono": "",
-      "precio": 22000,
-      "price": 22000,
-      "capacity": 8,
-      "features": [
-        "Batería",
-        "Amplificadores",
-        "Iluminación LED",
-        "Camarín"
-      ],
-      "equipos": {
-        "instrumentos": "",
-        "amplificadores": "",
-        "bateria": "",
-        "microfonos": "",
-        "consola": "",
-        "otros": ""
-      },
-      "fotos": [],
-      "foto": "/assets/lugar/sala-3.png",
-      "fotoPortada": "",
-      "horario": {
-        "0": null,
-        "1": null,
-        "2": null,
-        "3": null,
-        "4": null,
-        "5": null,
-        "6": null
-      },
-      "horarioPropio": false,
-      "turnoMin": 60,
-      "activo": true,
-      "solicitud": {
-        "fecha": 1791869695206,
-        "revisada": 0,
-        "motivo": "",
-        "revisor": ""
-      },
-      "creado": 1791869695206
+      "creado": 1792207819049
     }
   ],
   "reservations": [
     {
-      "id": "mv68y9k6549scr",
-      "roomId": "r1",
-      "date": "2026-10-13",
-      "start": "19:00",
-      "end": "21:00",
-      "name": "Banda Demo",
+      "id": "mvcpaqvaoyhseq",
+      "roomId": "mvbu9fl43gcxf4",
+      "date": "2026-10-17",
+      "start": "16:00",
+      "end": "19:00",
+      "name": "Administración Más Música",
       "phone": "",
-      "userId": null,
+      "userId": "mv68ypbrqxg3ci",
       "estado": "confirmada",
-      "createdAt": 1791869695206
+      "alquiler": [],
+      "createdAt": 1792259948422
+    },
+    {
+      "id": "mvdb3p12clybpt",
+      "roomId": "mvbu9fl43gcxf4",
+      "date": "2026-10-18",
+      "start": "10:00",
+      "end": "13:00",
+      "name": "Marcelo Molina",
+      "phone": "11217782377",
+      "userId": "mvbu9ffjfkcx69",
+      "estado": "confirmada",
+      "alquiler": [],
+      "createdAt": 1792296570999
     }
   ],
   "blocks": [],
@@ -281,7 +522,7 @@
       "descripcion": "Fender Frontman 20G, 20 W",
       "foto": "",
       "activo": true,
-      "alquiler": true,
+      "alquiler": false,
       "precioAlquiler": 8000
     },
     {
@@ -290,7 +531,7 @@
       "descripcion": "Fender Rumble 40, 40 W",
       "foto": "",
       "activo": true,
-      "alquiler": true,
+      "alquiler": false,
       "precioAlquiler": 9000
     },
     {
@@ -308,34 +549,127 @@
       "descripcion": "2 × Shure SM58 con cables",
       "foto": "",
       "activo": true,
-      "alquiler": true,
+      "alquiler": false,
       "precioAlquiler": 5000
     }
   ],
-  "placePhotos": [
+  "placePhotos": [],
+  "bands": [],
+  "chatSubscriptions": [
     {
-      "id": "mv68y9k6l8yr0b",
-      "titulo": "Sala 1",
-      "foto": "assets/lugar/sala-1.png"
+      "id": "mv7m3f4shanplo",
+      "userId": "mv7m2hewcm5zmb",
+      "plan": "mensual",
+      "estado": "activo",
+      "fechaInicio": 1791952236892,
+      "venceEn": 1794544236892,
+      "pago": {
+        "estado": "aprobado",
+        "fecha": 1791952236892
+      }
     },
     {
-      "id": "mv68y9k648pchw",
-      "titulo": "Sala 2",
-      "foto": "assets/lugar/sala-2.png"
+      "id": "mv7mhr243iivkn",
+      "userId": "mv7m2hkr5wsxvx",
+      "plan": "mensual",
+      "estado": "activo",
+      "fechaInicio": 1791952905532,
+      "venceEn": 1794544905532,
+      "pago": {
+        "estado": "aprobado",
+        "fecha": 1791952905532
+      }
     },
     {
-      "id": "mv68y9k62g6r0w",
-      "titulo": "Sala 3 — Premium",
-      "foto": "assets/lugar/sala-3.png"
+      "id": "mv9p0g733yrhkq",
+      "userId": "mv7lefoi9bnrgq",
+      "plan": "trimestral",
+      "estado": "activo",
+      "fechaInicio": 1792078069504,
+      "venceEn": 1799854069503,
+      "pago": {
+        "estado": "aprobado",
+        "fecha": 1792078069504
+      }
+    },
+    {
+      "id": "mv9p38sk6g7tem",
+      "userId": "mv7m2hrxric3hm",
+      "plan": "trimestral",
+      "estado": "activo",
+      "fechaInicio": 1792078199876,
+      "venceEn": 1799854199876,
+      "pago": {
+        "estado": "aprobado",
+        "fecha": 1792078199876
+      }
+    },
+    {
+      "id": "mv9pi1cj13pwuf",
+      "userId": "mv7m2i4s71228d",
+      "plan": "anual",
+      "estado": "activo",
+      "fechaInicio": 1792078890068,
+      "venceEn": 1823614890067,
+      "pago": {
+        "estado": "aprobado",
+        "fecha": 1792078890068
+      }
+    },
+    {
+      "id": "mv9rbl8js0be0o",
+      "userId": "mv7m2hyphzzuns",
+      "plan": "trimestral",
+      "estado": "activo",
+      "fechaInicio": 1792081948483,
+      "venceEn": 1799857948483,
+      "pago": {
+        "estado": "aprobado",
+        "fecha": 1792081948483
+      }
+    },
+    {
+      "id": "mv9vuk1ata36h9",
+      "userId": "mv8yrwxetsxmtu",
+      "plan": "mensual",
+      "estado": "activo",
+      "fechaInicio": 1792089551854,
+      "venceEn": 1794681551854,
+      "pago": {
+        "estado": "aprobado",
+        "fecha": 1792089551854
+      }
     }
   ],
-  "bands": [
+  "chatGlobal": [
     {
-      "id": "mv68y9k61l2mtt",
-      "nombre": "Banda Demo",
-      "telefono": "",
-      "foto": "",
-      "createdAt": 1791869695206
+      "id": "mv7mhdx0di92or",
+      "userId": "mv7m2hewcm5zmb",
+      "texto": "¡Hola! Soy Ana, toco guitarra eléctrica. ¿Alguien quiere tocar juntos? 🎸",
+      "fecha": 1791952888500
+    },
+    {
+      "id": "mv7mhrag9hnfas",
+      "userId": "mv7m2hkr5wsxvx",
+      "texto": "¡Hola Ana! Soy Pedro, baterista. Me encantaría tocar con una guitarrista. ¿Cuándo podemos juntarnos? 🥁",
+      "fecha": 1791952905832
+    },
+    {
+      "id": "mva21ai1ojip8r",
+      "userId": "mv8yrwxetsxmtu",
+      "texto": "Buenassss",
+      "fecha": 1792099943785
+    }
+  ],
+  "subscriptions": [
+    {
+      "id": "mvbu9fl62942g0",
+      "userId": "mvbu9ffjfkcx69",
+      "plan": "emprendedor",
+      "salasExtra": 0,
+      "estado": "activo",
+      "fechaInicio": 1792207819050,
+      "proximoVencimiento": 1794799819050
     }
   ]
 }
