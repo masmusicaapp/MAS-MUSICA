@@ -2114,6 +2114,15 @@ async function handleApi(req, res, url, parts) {
       room.precio = room.price;
       if (active !== undefined) room.activo = active === true;
       if (estado && ['pendiente', 'aprobada', 'rechazada', 'suspendida'].includes(estado)) room.estado = estado;
+      if (body.ownerId !== undefined) {
+        if (body.ownerId === null || body.ownerId === '') room.ownerId = null;
+        else {
+          const uOwner = state.users.find(x => x.id === body.ownerId);
+          if (!uOwner) return sendJson(res, 400, { error: 'Usuario no encontrado' });
+          room.ownerId = uOwner.id;
+          if (uOwner.rol === 'USER') uOwner.rol = 'ROOM_ADMIN';
+        }
+      }
       if (foto !== undefined) {
         const guardada = guardarFotoSala(room.id, foto);
         if (guardada) { if (room.foto && room.foto !== guardada) borrarFotoSala(room.foto); room.foto = guardada; }
