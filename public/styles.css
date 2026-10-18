@@ -2987,6 +2987,7 @@ main {
 .mapa-hoja-btn { display: none; }
 .mapa-hoja-cuerpo { display: block; }
 
+
 /* ---------- Mapa a pantalla completa (celular) ----------
    El mapa cubre TODA la pantalla; el título, los botones y las 5 opciones
    flotan por encima. La lista de salas se pliega en una hoja flotante. */
