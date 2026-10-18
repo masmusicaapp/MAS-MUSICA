@@ -1139,6 +1139,26 @@ function cerrarPopupMapa() {
   if (mapa && mapa.closePopup) { try { mapa.closePopup(); } catch (e) {} }
 }
 
+/* Tarjeta centrada (popup-sala) sobre el mapa */
+function abrirTarjetaSala(id) {
+  const r = (state.rooms || []).find(x => x.id === id);
+  if (!r) return;
+  const card = $('#mapa-tarjeta-card');
+  if (card) {
+    card.innerHTML = `<button type="button" class="mapa-tarjeta-close" onclick="cerrarTarjetaSala()" aria-label="Cerrar tarjeta">×</button>` + popupSala(r);
+    card.onclick = accionesMapa;
+  }
+  const overlay = $('#mapa-tarjeta');
+  if (overlay) overlay.hidden = false;
+  if (mapa) { try { mapa.panTo([Number(r.lat), Number(r.lng)], { animate: true }); } catch (e) {} }
+}
+function cerrarTarjetaSala() {
+  const overlay = $('#mapa-tarjeta');
+  if (overlay) overlay.hidden = true;
+  const card = $('#mapa-tarjeta-card');
+  if (card) card.innerHTML = '';
+}
+
 
 /* Acciones dentro de los popups (tanto Leaflet como Google) */
 function accionesMapa(e) {
@@ -1151,12 +1171,12 @@ function accionesMapa(e) {
   /* Tocar una sala de la lista la muestra en el mapa (salvo que toquen un botón o enlace) */
   if (!e.target.closest('button') && !e.target.closest('a')) {
     const item = e.target.closest('[data-mapa-item]');
-    if (item) return verSalaEnMapa(item.dataset.mapaItem);
+    if (item) { verSalaEnMapa(item.dataset.mapaItem); abrirTarjetaSala(item.dataset.mapaItem); }
   }
   const s = e.target.closest('[data-mapa-sala]');
   if (s) { cerrarPopupMapa(); return elegirSala(s.dataset.mapaSala); }
   const fch = e.target.closest('[data-mapa-ficha]');
-  if (fch) { cerrarPopupMapa(); return fichaSala(fch.dataset.mapaFicha); }
+  if (fch) { cerrarPopupMapa(); cerrarTarjetaSala(); return fichaSala(fch.dataset.mapaFicha); }
   const fav = e.target.closest('[data-mapa-fav]');
   if (fav) return alternarFavorita(fav.dataset.mapaFav);
   const cx = e.target.closest('[data-mapa-cancelar]');
@@ -1205,15 +1225,10 @@ function renderMapaLeaflet() {
     });
     marcasSala[r.id] = L.marker([Number(r.lat), Number(r.lng)], { icon: icono, title: r.name })
       .addTo(capaMarcas)
-      .bindPopup(popupSala(r), {
-        closeButton: true,
-        autoPan: true,
-        autoPanPadding: [50, 50],
-        className: 'popup-centrado',
-      })
       .on('click', () => {
         irACarruselSala(r.id);
         if (mapa) mapa.panTo([Number(r.lat), Number(r.lng)], { animate: true });
+        abrirTarjetaSala(r.id);
       });
   });
 

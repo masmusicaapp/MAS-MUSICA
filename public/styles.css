@@ -339,6 +339,12 @@ h3.sub {
 /* ---------- Calendario ---------- */
 .cal-nav { display: flex; align-items: center; gap: 8px; }
 .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+/* ---------- Tarjeta de sala sobre el mapa (popup-sala) ---------- */
+.mapa-tarjeta-overlay { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; background: rgba(5, 10, 20, 0.55); backdrop-filter: blur(3px); padding: 16px; box-sizing: border-box; }
+.mapa-tarjeta-overlay[hidden] { display: none; }
+.mapa-tarjeta-card { position: relative; width: 100%; max-width: 360px; background: #16243d; border-radius: 22px; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5); text-align: center; color: #fff; padding-bottom: 22px; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; overflow: hidden; }
+.mapa-tarjeta-close { position: absolute; top: 10px; right: 12px; z-index: 2; width: 32px; height: 32px; border: 0; border-radius: 50%; background: rgba(0, 0, 0, 0.45); color: #fff; font-size: 20px; cursor: pointer; display: grid; place-items: center; }
+.mapa-tarjeta-card .popup-centrado { /* reusa */ }
 .cal-h { text-align: center; font-size: .8rem; color: var(--muted); padding: 4px 0; text-transform: uppercase; }
 .cal-reservas-dia { margin-top: 10px; padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel2); }
 .cal-res-dia-head { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
