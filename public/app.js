@@ -2806,9 +2806,6 @@ function actualizarBarraSesion() {
   if (naMapa) naMapa.hidden = esDueño();
   const bVerMapa = $('#btn-ver-mapa');
   if (bVerMapa) bVerMapa.hidden = esDueño();
-  /* El botón flotante de "nueva reserva" es solo para músicos */
-  const fabReserva = $('#dock-fab');
-  if (fabReserva) fabReserva.hidden = !esMúsico();
   /* Si es admin o dueño, el botón de Comunidad se oculta (ya venía hidden) */
   if (!yo) {
     $('#btn-notif').hidden = true;
@@ -5167,9 +5164,6 @@ function wirePublic() {
   };
   const btnSalaLogo = $('#btn-sala-logo');
   if (btnSalaLogo) btnSalaLogo.onclick = mostrarPanel;
-  /* Botón flotante de la barra inferior: arranca una reserva */
-  const fabReserva = $('#dock-fab');
-  if (fabReserva) fabReserva.onclick = nuevaReserva;
   /* Resumen del Inicio: solo el acceso para iniciar sesión */
   $('#inicio-resumen').onclick = e => {
     if (e.target.closest('#sum-login')) return pantallaAuth('login');

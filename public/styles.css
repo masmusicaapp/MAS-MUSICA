@@ -1245,10 +1245,6 @@ main {
   background: var(--line); border-radius: 9999px; margin-top: 8px;
 }
 
-/* Botón flotante "＋ nueva reserva": solo aparece en celular (ver media query al final) */
-.dock-fab { display: none; }
-/* Cuando se oculta por rol (músicos solamente), tiene que ganarle al display:grid del celular */
-.dock-fab[hidden] { display: none; }
 
 /* En el Mapa (celular) la barra de 5 opciones va transparente: los íconos
    flotan sobre el mapa, sin cápsula de fondo. En escritorio el riel no cambia. */
@@ -5509,24 +5505,6 @@ main#view-comunidad:has(.suscripcion-wrap) > .panel {
     background: var(--soft);
   }
 
-  /* Botón flotante "＋": arriba de la barra, a la derecha */
-  .dock-fab {
-    display: grid;
-    position: absolute;
-    right: 6px;
-    bottom: calc(100% + 12px);
-    width: 56px; height: 56px;
-    padding: 0;
-    place-items: center;
-    border: 0; border-radius: 18px;
-    background: var(--accent);
-    color: #fff;
-    cursor: pointer;
-    box-shadow: 0 10px 26px rgba(0, 0, 0, .45), 0 4px 12px rgba(0, 160, 56, .35);
-    transition: transform .15s ease, background .15s ease;
-  }
-  .dock-fab svg { width: 26px; height: 26px; }
-  .dock-fab:active { transform: scale(.92); }
 }
 
 /* ===== Reorganización (v3): opciones de salas, secciones de la sala y pie de Ajustes ===== */
