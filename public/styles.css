@@ -581,7 +581,7 @@ textarea:focus {
 }
 /* El logo de la sala en el encabezado del panel (reemplaza el ícono 🎛️) */
 #panel-head-logo { overflow: hidden; }
-#panel-head-logo img { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: inherit; }
+#panel-head-logo img { width: 100%; height: 100%; object-fit: contain; object-position: center; display: block; border-radius: inherit; }
 .admin-head h1 { font-size: 1.45rem; line-height: 1.05; margin: 0; }
 .admin-head p { margin: 4px 0 0; }
 
@@ -2157,7 +2157,7 @@ main {
   cursor: pointer;
   transition: border-color .15s, box-shadow .15s, transform .12s;
 }
-.btn-sala-logo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.btn-sala-logo img { width: 100%; height: 100%; object-fit: contain; object-position: center; display: block; }
 .btn-sala-logo:hover { transform: translateY(-1px); border-color: var(--accent); box-shadow: 0 4px 14px rgba(0, 160, 56, .28); }
 .btn-sala-logo:active { transform: scale(.94); }
 /* Con avisos sin leer: acento verde de la app + campana que se sacude */
