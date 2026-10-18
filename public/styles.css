@@ -342,15 +342,28 @@ h3.sub {
 /* ---------- Tarjeta de sala sobre el mapa (popup-sala) ---------- */
 .mapa-tarjeta-overlay { position: fixed !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; height: 100dvh !important; z-index: 9999 !important; background: rgba(5, 10, 20, 0.55); backdrop-filter: blur(3px); box-sizing: border-box; }
 .mapa-tarjeta-overlay[hidden] { display: none !important; }
-.mapa-tarjeta-card { position: absolute !important; top: 50% !important; left: 50% !important; transform: translate(-50%, -50%) !important; width: calc(100% - 32px) !important; max-width: 360px !important; background: #16243d; border-radius: 22px; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5); text-align: center; color: #fff; padding-bottom: 22px; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; overflow: hidden; }
-.mapa-tarjeta-close { position: absolute; top: 10px; right: 12px; z-index: 2; width: 32px; height: 32px; border: 0; border-radius: 50%; background: rgba(0, 0, 0, 0.45); color: #fff; font-size: 20px; cursor: pointer; display: grid; place-items: center; }
-.mapa-tarjeta-card .pop { max-width: 100%; min-width: 0; align-items: center; }
-.mapa-tarjeta-card .pop-detalle { max-width: 100%; min-width: 0; text-align: center; }
-.mapa-tarjeta-card .pop-datos { text-align: center; }
-.mapa-tarjeta-card .pop-nombre { text-align: center; }
-.mapa-tarjeta-card .pop-linea { text-align: center; justify-content: center; }
-.mapa-tarjeta-card .pop-acciones { justify-content: center; }
-.mapa-tarjeta-card .pop .badge { align-self: center; }
+.mapa-tarjeta-card { position: absolute !important; top: 50% !important; left: 50% !important; transform: translate(-50%, -50%) !important; width: calc(100% - 32px) !important; max-width: 340px !important; background: var(--panel); border: 1px solid var(--line); border-radius: 22px; box-shadow: 0 24px 60px rgba(0, 0, 0, .45); color: var(--text); font-family: inherit; overflow: hidden; }
+.mapa-tarjeta-close { position: absolute; top: 10px; right: 10px; z-index: 3; width: 32px; height: 32px; border: 0; border-radius: 50%; background: rgba(0, 0, 0, .45); color: #fff; font-size: 20px; line-height: 1; cursor: pointer; display: grid; place-items: center; backdrop-filter: blur(2px); }
+.mapa-tarjeta-close:hover { background: rgba(0, 0, 0, .62); }
+/* Diseño limpio de la tarjeta del mapa */
+.mt-cover { position: relative; width: 100%; height: 130px; background: var(--panel2); overflow: hidden; }
+.mt-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.mt-cover.sin-foto img { object-fit: contain; opacity: .22; padding: 22px; }
+.mt-cuerpo { padding: 0 18px 18px; display: flex; flex-direction: column; align-items: center; text-align: center; }
+.mt-logo { width: 66px; height: 66px; border-radius: 50%; object-fit: cover; border: 3px solid var(--panel); margin-top: -34px; background: var(--panel2); box-shadow: 0 4px 12px rgba(0, 0, 0, .2); }
+.mt-logo-ico { display: grid; place-items: center; font-size: 30px; }
+.mt-nombre { margin: 10px 0 0; font-size: 1.1rem; font-weight: 800; color: var(--text); line-height: 1.25; }
+.mt-chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 10px 0 2px; }
+.mt-chip { display: inline-flex; align-items: center; gap: 4px; padding: 5px 11px; border-radius: 999px; background: var(--panel2); border: 1px solid var(--line); font-size: .82rem; font-weight: 700; color: var(--text); }
+.mt-chip em { font-style: normal; font-weight: 500; color: var(--muted); font-size: .76rem; }
+.mt-dir { margin: 8px 0 0; font-size: .84rem; color: var(--muted); line-height: 1.4; }
+.mt-dir a { color: var(--accent); text-decoration: none; font-weight: 600; }
+.mt-dir a:hover { text-decoration: underline; }
+.mt-tel { margin-top: 6px; font-size: .86rem; font-weight: 700; color: var(--accent2); text-decoration: none; }
+.mt-acciones { display: flex; gap: 8px; align-items: stretch; justify-content: center; margin-top: 14px; width: 100%; }
+.mt-acciones .btn { flex: 1; min-width: 0; }
+.mt-fav { flex: 0 0 auto !important; width: 44px; padding: 0 !important; font-size: 1.2rem; line-height: 1; }
+.mt-fav.on { color: #ef4444; border-color: #ef4444; }
 .cal-h { text-align: center; font-size: .8rem; color: var(--muted); padding: 4px 0; text-transform: uppercase; }
 .cal-reservas-dia { margin-top: 10px; padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel2); }
 .cal-res-dia-head { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
@@ -2998,9 +3011,9 @@ main {
   .mapa-lista-items { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
 }
 
-/* ---------- Hoja de salas del mapa ---------- */
-/* En escritorio la lista queda debajo del mapa, como siempre */
-.mapa-hoja { display: block; }
+/* Ocultar la lista de salas en el mapa (a pedido del usuario) */
+body.nav-mapa #mapa-hoja { display: none; }
+body.nav-mapa #mapa-lista-toggle { display: none; }
 .mapa-hoja-btn { display: none; }
 .mapa-hoja-cuerpo { display: block; }
 
@@ -5543,3 +5556,4 @@ main#view-comunidad:has(.suscripcion-wrap) > .panel {
 .aj-enlace[hidden] { display: none; }
 .aj-enlace:hover { border-color: var(--accent); }
 .aj-ico { width: 22px; height: 22px; flex: 0 0 auto; }
+#btn-mapa-fav.on { border-color: var(--accent) !important; color: var(--accent) !important; background: color-mix(in srgb, var(--accent) 16%, transparent) !important; }

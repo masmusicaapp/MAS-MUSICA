@@ -855,7 +855,8 @@ function renderSalasSinUbicacion() {
 /* ---------- Lista de salas del mapa (ordenada por cercanía si hay ubicación) ---------- */
 function salasOrdenadasParaMapa() {
   if (!state) return [];
-  const lista = salasPublicas().slice();
+  let lista = salasPublicas().slice();
+  if (filtroSalas === 'favoritas') lista = lista.filter(r => esFavorita(r.id));
   const dist = r => (miUbicacion && tieneUbicacion(r))
     ? distKm(miUbicacion[0], miUbicacion[1], Number(r.lat), Number(r.lng))
     : Infinity;
@@ -1158,24 +1159,29 @@ function abrirTarjetaSala(id) {
   }).join('');
   const card = $('#mapa-tarjeta-card');
   if (card) {
+    const dir = [r.direccion, r.numero].filter(Boolean).join(' ');
     card.innerHTML = `
       <button type="button" class="mapa-tarjeta-close" onclick="cerrarTarjetaSala()" aria-label="Cerrar tarjeta">×</button>
-      <div class="ficha-en-tarjeta">
-        <h3>${esc(r.name)}</h3>
-        ${r.fotoPortada ? `<div class="ficha-cover"><img src="${esc(r.fotoPortada)}" alt="Portada de ${esc(r.name)}"></div>` : ''}
-        ${r.foto ? `<div class="ficha-avatar"><img src="${esc(r.foto)}" alt="${esc(r.name)}"></div>` : ''}
-        <div class="ficha-grid">
-          <div><span class="muted">Precio</span><strong>${fmtMoney(r.price)} /hora</strong></div>
-          ${r.telefono ? `<div><span class="muted">Teléfono</span><strong>${esc(r.telefono)}</strong></div>` : ''}
-          ${r.localidad ? `<div><span class="muted">Zona</span><strong>${esc(r.localidad)}</strong></div>` : ''}
+      <div class="mt">
+        <div class="mt-cover ${r.fotoPortada ? '' : 'sin-foto'}">
+          ${r.fotoPortada ? `<img src="${esc(r.fotoPortada)}" alt="Portada de ${esc(r.name)}">` : '<img src="/assets/marca-agua-negro.png" alt="Más Música">'}
         </div>
-        ${r.direccion ? `<p class="ficha-dir">📍 ${esc([r.direccion, r.numero].filter(Boolean).join(' '))}${linkMapaSala(r) ? ` · <a href="${linkMapaSala(r)}" target="_blank" rel="noopener">ver en el mapa</a>` : ''}</p>` : ''}
-        <div class="row">
-          <button class="btn btn-primary" id="tarjeta-reservar">Ver horarios →</button>
-          <button class="btn" id="tarjeta-ficha">ℹ️ Ficha completa</button>
-          <button class="btn" id="tarjeta-fav">${esFavorita(r.id) ? '♥ Quitar de favoritas' : '♡ Guardar como favorita'}</button>
-          <button class="btn" id="tarjeta-cerrar">Cerrar</button>
-        </div>`;
+        <div class="mt-cuerpo">
+          ${r.foto ? `<img class="mt-logo" src="${esc(r.foto)}" alt="${esc(r.name)}">` : `<div class="mt-logo mt-logo-ico">🎸</div>`}
+          <h3 class="mt-nombre">${esc(r.name)}</h3>
+          <div class="mt-chips">
+            <span class="mt-chip">💵 ${fmtMoney(r.price)}<em>/hora</em></span>
+            ${r.localidad ? `<span class="mt-chip">📍 ${esc(r.localidad)}</span>` : ''}
+          </div>
+          ${dir ? `<p class="mt-dir">${esc(dir)}${linkMapaSala(r) ? ` · <a href="${linkMapaSala(r)}" target="_blank" rel="noopener">ver en el mapa</a>` : ''}</p>` : ''}
+          ${r.telefono ? `<a class="mt-tel" href="tel:${esc(String(r.telefono).replace(/[^0-9+]/g, ''))}">📞 ${esc(r.telefono)}</a>` : ''}
+          <div class="mt-acciones">
+            <button class="btn btn-primary" id="tarjeta-reservar">Ver horarios →</button>
+            <button class="btn" id="tarjeta-ficha">ℹ️ Ficha</button>
+            <button class="btn mt-fav ${esFavorita(r.id) ? 'on' : ''}" id="tarjeta-fav" title="${esFavorita(r.id) ? 'Quitar de favoritas' : 'Guardar como favorita'}" aria-label="${esFavorita(r.id) ? 'Quitar de favoritas' : 'Guardar como favorita'}">${esFavorita(r.id) ? '♥' : '♡'}</button>
+          </div>
+        </div>
+      </div>`;
     card.onclick = accionesMapa;
     const tc = $('#tarjeta-cerrar'); if (tc) tc.onclick = cerrarTarjetaSala;
     const tr = $('#tarjeta-reservar'); if (tr) tr.onclick = () => { cerrarTarjetaSala(); elegirSala(r.id); };
@@ -1250,7 +1256,8 @@ function renderMapaLeaflet() {
   marcasSala = {};
 
   /* 1. Salas publicadas */
-  const salas = salasPublicas().filter(tieneUbicacion);
+  let salas = salasPublicas().filter(tieneUbicacion);
+  if (filtroSalas === 'favoritas') salas = salas.filter(r => esFavorita(r.id));
   salas.forEach(r => {
     const icono = L.divIcon({
       className: 'mk-wrap',
@@ -1510,10 +1517,22 @@ function pedirMiUbicacion() {
   );
 }
 
+/* Estado del botón "Favoritas" del mapa */
+function pintarBotonFavMapa() {
+  const b = $('#btn-mapa-fav');
+  if (!b) return;
+  const on = filtroSalas === 'favoritas';
+  b.classList.toggle('on', on);
+  b.innerHTML = `${on ? '♥' : '♡'}<span class="mapa-btn-txt"> Favoritas</span>`;
+}
+
 /* Acciones dentro de los popups del mapa */
 function wireMapa() {
   $('#btn-mi-ubicacion').onclick = pedirMiUbicacion;
-  $('#btn-ver-todas').onclick = () => { renderMapa(); encuadrarMapa(); };
+  $('#btn-ver-todas').onclick = () => { filtroSalas = 'todas'; renderMapa(); encuadrarMapa(); pintarBotonFavMapa(); };
+  const bmf = $('#btn-mapa-fav');
+  if (bmf) bmf.onclick = () => { filtroSalas = filtroSalas === 'favoritas' ? 'todas' : 'favoritas'; renderMapa(); encuadrarMapa(); pintarBotonFavMapa(); };
+  pintarBotonFavMapa();
   $('#btn-ver-mapa').onclick = irMapa;
   const bvi = $('#btn-ver-instrumentos');
   if (bvi) bvi.onclick = irInstrumentos;
@@ -2509,6 +2528,25 @@ function irSalas(vista) {
   scrollMainArriba();
 }
 
+/* La vista "Salas" del menú muestra el mapa (con todas las salas) */
+function irSalasMapa(filtro) {
+  /* El dueño de sala no tiene mapa de salas públicas: ve su lista */
+  if (esDueño()) { irSalas(); return; }
+  filtroSalas = filtro === 'favoritas' ? 'favoritas' : 'todas';
+  ocultarVistas();
+  $('#view-mapa').hidden = false;
+  setNav('salas');
+  renderMapa();
+  pintarBotonFavMapa();
+  scrollMainArriba();
+  if (timerEncuadre) clearTimeout(timerEncuadre);
+  timerEncuadre = setTimeout(() => {
+    if (mapa) mapa.invalidateSize();
+    if (gmap) { try { google.maps.event.trigger(gmap, 'resize'); } catch (e) {} }
+    encuadrarMapa();
+  }, 220);
+}
+
 /* El mapa tiene su propia pantalla */
 function irMapa() {
   /* El dueño de sala no tiene mapa de salas: lo llevamos a su lista de salas */
@@ -2517,6 +2555,7 @@ function irMapa() {
   $('#view-mapa').hidden = false;
   setNav('mapa');
   renderMapa();
+  pintarBotonFavMapa();
   scrollMainArriba();
   if (timerEncuadre) clearTimeout(timerEncuadre);
   timerEncuadre = setTimeout(() => {
@@ -5099,7 +5138,7 @@ function wirePublic() {
   /* Barra inferior: 5 opciones */
   const ACCIONES_NAV = {
     inicio: irInicio,
-    salas: irSalas,
+    salas: () => irSalasMapa('todas'),
     mapa: irMapa,
     comunidad: () => irComunidad(),
     instrumentos: irInstrumentos,
@@ -5147,7 +5186,7 @@ function wirePublic() {
       .catch(err => { btn.disabled = false; toast(err.message, 'error'); });
   };
   $('#mine-favoritas').onclick = e => {
-    if (e.target.closest('#fav-ver')) { filtroSalas = 'favoritas'; return irSalas(); }
+    if (e.target.closest('#fav-ver')) { return irSalasMapa('favoritas'); }
     const s = e.target.closest('[data-ir-sala]');
     if (s) elegirSala(s.dataset.irSala);
   };
