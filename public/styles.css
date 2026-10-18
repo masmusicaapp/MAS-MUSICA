@@ -344,7 +344,13 @@ h3.sub {
 .mapa-tarjeta-overlay[hidden] { display: none; }
 .mapa-tarjeta-card { position: relative; width: 100%; max-width: 360px; background: #16243d; border-radius: 22px; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5); text-align: center; color: #fff; padding-bottom: 22px; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; overflow: hidden; }
 .mapa-tarjeta-close { position: absolute; top: 10px; right: 12px; z-index: 2; width: 32px; height: 32px; border: 0; border-radius: 50%; background: rgba(0, 0, 0, 0.45); color: #fff; font-size: 20px; cursor: pointer; display: grid; place-items: center; }
-.mapa-tarjeta-card .popup-centrado { /* reusa */ }
+.mapa-tarjeta-card .pop { max-width: 100%; min-width: 0; }
+.mapa-tarjeta-card .pop-detalle { max-width: 100%; min-width: 0; text-align: center; }
+.mapa-tarjeta-card .pop-datos { text-align: center; }
+.mapa-tarjeta-card .pop-nombre { text-align: center; }
+.mapa-tarjeta-card .pop-linea { text-align: center; justify-content: center; }
+.mapa-tarjeta-card .pop-acciones { justify-content: center; }
+.mapa-tarjeta-card .pop .badge { align-self: center; }
 .cal-h { text-align: center; font-size: .8rem; color: var(--muted); padding: 4px 0; text-transform: uppercase; }
 .cal-reservas-dia { margin-top: 10px; padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel2); }
 .cal-res-dia-head { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
