@@ -198,7 +198,7 @@ input, select { font-family: inherit; }
   border: 1px dashed var(--line); border-radius: 10px;
   background: var(--panel2); overflow: hidden; min-height: 70px;
 }
-.portada-preview img { width: 100%; height: 132px; object-fit: cover; display: block; }
+.portada-preview img { width: 100%; height: 132px; object-fit: contain; object-position: center; display: block; background: var(--panel2); }
 .portada-preview span { color: var(--muted); font-size: .84rem; padding: 14px; }
 
 .header-actions { display: flex; gap: 8px; margin-left: auto; flex: 0 0 auto; }
@@ -339,6 +339,31 @@ h3.sub {
 /* ---------- Calendario ---------- */
 .cal-nav { display: flex; align-items: center; gap: 8px; }
 .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+/* ---------- Tarjeta de sala sobre el mapa (popup-sala) ---------- */
+.mapa-tarjeta-overlay { position: fixed !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; height: 100dvh !important; z-index: 9999 !important; background: rgba(5, 10, 20, 0.55); backdrop-filter: blur(3px); box-sizing: border-box; }
+.mapa-tarjeta-overlay[hidden] { display: none !important; }
+.mapa-tarjeta-card { position: absolute !important; top: 50% !important; left: 50% !important; transform: translate(-50%, -50%) !important; width: calc(100% - 32px) !important; max-width: 340px !important; background: var(--panel); border: 1px solid var(--line); border-radius: 22px; box-shadow: 0 24px 60px rgba(0, 0, 0, .45); color: var(--text); font-family: inherit; overflow: hidden; }
+.mapa-tarjeta-close { position: absolute; top: 10px; right: 10px; z-index: 3; width: 32px; height: 32px; border: 0; border-radius: 50%; background: rgba(0, 0, 0, .45); color: #fff; font-size: 20px; line-height: 1; cursor: pointer; display: grid; place-items: center; backdrop-filter: blur(2px); }
+.mapa-tarjeta-close:hover { background: rgba(0, 0, 0, .62); }
+/* Diseño limpio de la tarjeta del mapa */
+.mt-cover { position: relative; width: 100%; height: 130px; background: var(--panel2); overflow: hidden; }
+.mt-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.mt-cover.sin-foto img { object-fit: contain; opacity: .22; padding: 22px; }
+.mt-cuerpo { padding: 0 18px 18px; display: flex; flex-direction: column; align-items: center; text-align: center; }
+.mt-logo { width: 66px; height: 66px; border-radius: 50%; object-fit: cover; border: 3px solid var(--panel); margin-top: -34px; background: var(--panel2); box-shadow: 0 4px 12px rgba(0, 0, 0, .2); }
+.mt-logo-ico { display: grid; place-items: center; font-size: 30px; }
+.mt-nombre { margin: 10px 0 0; font-size: 1.1rem; font-weight: 800; color: var(--text); line-height: 1.25; }
+.mt-chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 10px 0 2px; }
+.mt-chip { display: inline-flex; align-items: center; gap: 4px; padding: 5px 11px; border-radius: 999px; background: var(--panel2); border: 1px solid var(--line); font-size: .82rem; font-weight: 700; color: var(--text); }
+.mt-chip em { font-style: normal; font-weight: 500; color: var(--muted); font-size: .76rem; }
+.mt-dir { margin: 8px 0 0; font-size: .84rem; color: var(--muted); line-height: 1.4; }
+.mt-dir a { color: var(--accent); text-decoration: none; font-weight: 600; }
+.mt-dir a:hover { text-decoration: underline; }
+.mt-tel { margin-top: 6px; font-size: .86rem; font-weight: 700; color: var(--accent2); text-decoration: none; }
+.mt-acciones { display: flex; gap: 8px; align-items: stretch; justify-content: center; margin-top: 14px; width: 100%; }
+.mt-acciones .btn { flex: 1; min-width: 0; }
+.mt-fav { flex: 0 0 auto !important; width: 44px; padding: 0 !important; font-size: 1.2rem; line-height: 1; }
+.mt-fav.on { color: #ef4444; border-color: #ef4444; }
 .cal-h { text-align: center; font-size: .8rem; color: var(--muted); padding: 4px 0; text-transform: uppercase; }
 .cal-reservas-dia { margin-top: 10px; padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel2); }
 .cal-res-dia-head { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
@@ -581,7 +606,7 @@ textarea:focus {
 }
 /* El logo de la sala en el encabezado del panel (reemplaza el ícono 🎛️) */
 #panel-head-logo { overflow: hidden; }
-#panel-head-logo img { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: inherit; }
+#panel-head-logo img { width: 100%; height: 100%; object-fit: cover; object-position: center; display: block; border-radius: inherit; }
 .admin-head h1 { font-size: 1.45rem; line-height: 1.05; margin: 0; }
 .admin-head p { margin: 4px 0 0; }
 
@@ -2157,7 +2182,7 @@ main {
   cursor: pointer;
   transition: border-color .15s, box-shadow .15s, transform .12s;
 }
-.btn-sala-logo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.btn-sala-logo img { width: 100%; height: 100%; object-fit: cover; object-position: center; display: block; }
 .btn-sala-logo:hover { transform: translateY(-1px); border-color: var(--accent); box-shadow: 0 4px 14px rgba(0, 160, 56, .28); }
 .btn-sala-logo:active { transform: scale(.94); }
 /* Con avisos sin leer: acento verde de la app + campana que se sacude */
@@ -2413,13 +2438,6 @@ main {
 .aj-avatar img {
   width: 100%; height: 100%; object-fit: cover;
 }
-/* Color por grado de cuenta */
-.aj-avatar.ava-dueno { box-shadow: 0 0 0 3px var(--accent); }
-.aj-avatar.ava-musico { box-shadow: 0 0 0 3px #3b82f6; }
-.cm-ava.ava-dueno { box-shadow: 0 0 0 3px var(--accent); }
-.cm-ava.ava-musico { box-shadow: 0 0 0 3px #3b82f6; }
-.badge-ava { width: 16px; height: 16px; border-radius: 50%; object-fit: cover; vertical-align: middle; margin-right: 4px; }
-.rol-ava { width: 14px; height: 14px; border-radius: 50%; object-fit: cover; vertical-align: middle; margin-right: 2px; }
 
 .aj-cuenta-txt {
   display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1;
@@ -2574,6 +2592,10 @@ main {
   width: 96px; height: 96px; border-radius: 20px; object-fit: cover;
   margin: 0 auto 12px; display: block; border: 2px solid var(--line);
 }
+.ficha-cover { width: 100%; height: 150px; border-radius: 22px 22px 0 0; overflow: hidden; margin: 0 0 -44px; background: var(--panel2); }
+.ficha-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ficha-avatar { width: 88px; height: 88px; border-radius: 50%; overflow: hidden; border: 4px solid var(--panel); background: var(--panel2); margin: 0 auto 12px; position: relative; z-index: 2; box-shadow: 0 0 0 3px #22c55e, 0 8px 20px rgba(0, 0, 0, .4); }
+.ficha-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .ficha-fotos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 0 0 12px; }
 .ficha-foto { margin: 0; }
 .ficha-foto img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); cursor: pointer; }
@@ -2861,7 +2883,8 @@ main {
   display: block;
   width: 100%;
   height: 120px;
-  object-fit: cover;
+  object-fit: contain;
+  object-position: center;
   border-radius: 12px 12px 0 0;
   cursor: zoom-in;
   background: var(--panel2);
@@ -2988,11 +3011,12 @@ main {
   .mapa-lista-items { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
 }
 
-/* ---------- Hoja de salas del mapa ---------- */
-/* En escritorio la lista queda debajo del mapa, como siempre */
-.mapa-hoja { display: block; }
+/* Ocultar la lista de salas en el mapa (a pedido del usuario) */
+body.nav-mapa #mapa-hoja { display: none; }
+body.nav-mapa #mapa-lista-toggle { display: none; }
 .mapa-hoja-btn { display: none; }
 .mapa-hoja-cuerpo { display: block; }
+
 
 /* ---------- Mapa a pantalla completa (celular) ----------
    El mapa cubre TODA la pantalla; el título, los botones y las 5 opciones
@@ -5532,3 +5556,17 @@ main#view-comunidad:has(.suscripcion-wrap) > .panel {
 .aj-enlace[hidden] { display: none; }
 .aj-enlace:hover { border-color: var(--accent); }
 .aj-ico { width: 22px; height: 22px; flex: 0 0 auto; }
+#btn-mapa-fav.on { border-color: var(--accent) !important; color: var(--accent) !important; background: color-mix(in srgb, var(--accent) 16%, transparent) !important; }
+
+/* ===== Tarjeta del mapa: ajustes para celular ===== */
+@media (max-width: 959px) {
+  .mapa-tarjeta-card { max-width: calc(100% - 24px) !important; }
+  .mt-cover { height: 120px; }
+  .mt-cuerpo { padding: 0 16px 16px; }
+  .mt-nombre { font-size: 1.05rem; }
+  /* En pantalla chica el botón principal ocupa todo el ancho y "Ficha" + ♥ van abajo */
+  .mt-acciones { flex-wrap: wrap; }
+  .mt-acciones #tarjeta-reservar { flex: 1 1 100%; }
+  .mt-acciones #tarjeta-ficha { flex: 1 1 auto; }
+  .mt-fav { flex: 0 0 46px !important; }
+}

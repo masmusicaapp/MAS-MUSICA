@@ -7,6 +7,7 @@
 <link rel="icon" href="assets/icon-app-oscuro-192.png">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#0d1b2f">
+<link rel="apple-touch-icon" href="assets/icon-app-oscuro-192.png">
 <script>
   /* Tema elegido: se aplica antes de pintar para evitar parpadeos */
   try {
@@ -22,7 +23,7 @@
 </script>
 <style>
   /* Arranque: se pinta al instante aunque styles.css todavía cargue */
-  #splash { position: fixed; inset: 0; z-index: 99999 !important; background: #0d1b2f;
+  #splash { position: fixed; inset: 0; z-index: 200; background: #0d1b2f;
             display: flex; align-items: center; justify-content: center; }
   html[data-tema="claro"] #splash { background: #f5f5f2; }
   @media (prefers-color-scheme: light) { html[data-tema="auto"] #splash { background: #f5f5f2; } }
@@ -50,7 +51,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@500;600;700&family=Barlow+Condensed:ital,wght@1,900&display=swap">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
       integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
-<link rel="stylesheet" href="styles.css?v=4.6">
+<link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
@@ -74,10 +75,10 @@
   <h2>⚠️ No se pudo conectar al servidor</h2>
   <p>Esta aplicación necesita el backend corriendo. En una terminal, dentro de la carpeta <strong>salas-ensayo</strong>:</p>
   <ol>
-    <li>Ejecuta <code>node server.js</code> (o <code>npm start</code>)</li>
-    <li>Abre <code>http://localhost:3000</code> en el navegador</li>
+    <li>Ejecutá <code>node server.js</code> (o <code>npm start</code>)</li>
+    <li>Abrí <code>http://localhost:3000</code> en el navegador</li>
   </ol>
-  <p class="muted small">¿No tienes Node.js? Descárgalo gratis desde <a href="https://nodejs.org" target="_blank" rel="noopener">nodejs.org</a> (versión LTS).</p>
+  <p class="muted small">¿No tenés Node.js? Descargalo gratis desde <a href="https://nodejs.org" target="_blank" rel="noopener">nodejs.org</a> (versión LTS).</p>
 </div>
 
 <header class="app-header" hidden id="app-header">
@@ -96,9 +97,8 @@
       <svg class="notif-svg" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1A1.7 1.7 0 0 0 9 19.4a1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
       <span class="notif-txt">Ajustes</span>
     </button>
-    <button id="btn-install" class="btn btn-ghost" title="Instalar app" hidden>📲 <span class="txt">Instalar</span></button>
-    <button id="btn-panel" class="btn btn-ghost" title="Mi panel de sala" hidden>🎛️ <span class="txt">Mi sala</span></button>
-    <button id="btn-exit-admin" class="btn btn-ghost" hidden title="Volver a reservas">← <span class="txt">Volver a reservas</span></button>
+    <button id="btn-sala-logo" class="btn-sala-logo" title="Mi sala" aria-label="Mi sala" hidden></button>
+    <button id="btn-exit-admin" class="btn btn-ghost" hidden title="Salir del panel">← <span class="txt">Salir del panel</span></button>
   </div>
 </header>
 
@@ -112,7 +112,7 @@
 </main>
 
 <!-- ============ VISTA PÚBLICA (músico) ============ -->
-<main id="view-public">
+<main id="view-public" hidden>
   <!-- ============ MIS RESERVAS (en el inicio y al reservar) ============ -->
   <section class="panel mine-quick" id="home-mine" hidden>
     <div class="panel-head">
@@ -125,7 +125,7 @@
   <section id="step-1" class="step">
     <div class="panel">
       <div class="panel-head">
-        <h2>📅 Elige la fecha</h2>
+        <h2>📅 Elegí la fecha</h2>
         <div class="cal-nav">
           <button id="btn-today" class="btn btn-sm">Hoy</button>
           <button id="cal-prev" class="btn btn-sm" aria-label="Mes anterior">‹</button>
@@ -134,22 +134,24 @@
         </div>
       </div>
       <div id="cal-grid" class="cal-grid"></div>
-      <p class="muted small">Puedes reservar hasta con 60 días de anticipación. Los días con reservas muestran un número.</p>
+      <div id="cal-reservas-dia" class="cal-reservas-dia"></div>
+      <p class="muted small" id="cal-hint"></p>
     </div>
 
-    <!-- ============ RESUMEN DEL INICIO (alertas) ============ -->
-    <section class="panel" id="inicio-resumen"></section>
+    <!-- ============ INICIO: botón de ingreso (solo si no hay sesión) ============ -->
+    <section class="panel" id="inicio-resumen" hidden></section>
   </section>
 
   <section id="step-2" class="step" hidden>
     <div class="panel">
       <div class="panel-head">
-        <h2>🎸 Elige tu sala</h2>
-        <div class="row">
-          <button class="btn btn-sm" id="btn-filtro-fav">♡ Favoritas</button>
-          <button class="btn btn-sm" id="btn-ver-mapa">🗺 Ver en el mapa</button>
-          <button class="btn btn-sm" id="btn-back-1">← Cambiar fecha</button>
-        </div>
+        <h2>🎸 Elegí tu sala</h2>
+        <button class="btn btn-sm" id="btn-back-1">← Cambiar fecha</button>
+      </div>
+      <div class="rooms-toolbar" role="toolbar" aria-label="Opciones de salas">
+        <button class="btn btn-sm" id="btn-filtro-fav" aria-pressed="false">♡ Favoritas</button>
+        <button class="btn btn-sm" id="btn-ver-mapa">🗺 Ver en el mapa</button>
+        <button class="btn btn-sm" id="btn-ver-instrumentos">Equipos y sala</button>
       </div>
       <div id="rooms-grid" class="rooms-grid"></div>
     </div>
@@ -161,7 +163,7 @@
         <h2 id="slots-title">🕐 Horarios disponibles</h2>
         <button class="btn btn-sm" id="btn-back-room">← Cambiar sala</button>
       </div>
-      <p class="muted small">Toca un horario para marcar el <strong>inicio</strong> y luego uno posterior para extender la selección. Para reservar 1 hora, toca el horario y pulsa "Continuar".</p>
+      <p class="muted small">Tocá un horario para marcar el <strong>inicio</strong> y luego uno posterior para extender la selección. Para reservar 1 hora, tocá el horario y pulsá "Continuar".</p>
       <div id="slots-grid" class="slots-grid"></div>
       <div id="range-bar" class="range-bar" hidden>
         <span id="range-text"></span>
@@ -175,10 +177,7 @@
 
   <section id="step-4" class="step" hidden>
     <div class="panel">
-      <div class="panel-head">
-        <h2>📲 Confirma tu reserva</h2>
-        <button class="btn btn-sm btn-danger-soft" id="btn-cancelar-paso-reserva">✕ Cancelar y salir</button>
-      </div>
+      <div class="panel-head"><h2>📲 Confirma tu reserva</h2></div>
       <div id="confirm-body"></div>
     </div>
   </section>
@@ -190,24 +189,35 @@
     <div class="panel-head">
       <h2>🗺 Mapa de salas</h2>
       <div class="row">
-        <button class="btn btn-sm" id="btn-mi-ubicacion">📍 Mi ubicación</button>
-        <button class="btn btn-sm" id="btn-ver-todas">🔎 Ver todas</button>
+        <button class="btn btn-sm" id="btn-mi-ubicacion" title="Mi ubicación" aria-label="Mi ubicación">📍<span class="mapa-btn-txt"> Mi ubicación</span></button>
+        <button class="btn btn-sm" id="btn-ver-todas" title="Ver todas las salas" aria-label="Ver todas las salas">🔎<span class="mapa-btn-txt"> Ver todas</span></button>
+        <button class="btn btn-sm" id="btn-mapa-fav" title="Ver solo tus favoritas" aria-label="Ver solo tus favoritas">♡<span class="mapa-btn-txt"> Favoritas</span></button>
+        <button class="btn btn-sm" id="mapa-lista-toggle" title="Ocultar la lista de salas" aria-label="Ocultar la lista de salas">✕<span class="mapa-btn-txt"> Salas</span></button>
       </div>
     </div>
     <div id="pane-mapa">
       <div id="mapa" role="application" aria-label="Mapa de salas de ensayo"></div>
       <p class="muted small mapa-ayuda" id="mapa-fallback" hidden>No se pudo cargar el mapa (hace falta conexión a internet la primera vez). Podés ver las salas igual en la <button class="btn btn-sm" data-ir-lista="1">lista de salas</button>.</p>
-      <p class="muted small mapa-ayuda">Tocá una sala para ver su ficha y sus horarios. Tus reservas aparecen con 🎸 sobre el lugar.</p>
+      <p class="muted small mapa-ayuda">Tocá una sala para ver su ficha y sus horarios. Tus reservas aparecen con 🎸 sobre el lugar. Abajo tenés la lista de salas, ordenada por cercanía cuando tocás «📍 Mi ubicación».</p>
     </div>
-    <div id="mapa-sin-ubicacion"></div>
+    <div id="mapa-hoja" class="mapa-hoja">
+      <button type="button" class="mapa-hoja-btn" id="mapa-hoja-btn" aria-expanded="false" aria-controls="mapa-hoja-cuerpo" aria-label="Ver salas" title="Deslizá para ver las salas">
+        <span class="mapa-hoja-linea" aria-hidden="true"></span>
+      </button>
+      <div class="mapa-hoja-cuerpo" id="mapa-hoja-cuerpo">
+        <div class="mapa-hoja-card">
+          <div id="mapa-sin-ubicacion"></div>
+          <div id="mapa-lista" class="mapa-lista"></div>
+        </div>
+      </div>
+    </div>
   </div>
 </main>
-
-<!-- ============ MIS RESERVAS (cliente) ============ -->
 <main id="view-mine" hidden>
   <div id="mine-band-profile" class="panel" hidden></div>
   <section class="panel" id="mine-user" hidden></section>
-    <section class="panel" id="mine-favoritas" hidden></section>
+  <div id="mine-integrantes" class="panel" hidden></div>
+  <section class="panel" id="mine-favoritas" hidden></section>
   <section class="panel" id="mine-notif" hidden></section>
 </main>
 
@@ -215,19 +225,18 @@
 <main id="view-lugar" hidden>
   <div class="panel">
     <div class="panel-head">
-      <h2>🎸 Instrumentos y lugar</h2>
-      <button class="btn btn-sm" id="btn-back-lugar">← Volver a reservas</button>
+      <h2>🎸 Equipos y sala</h2>
     </div>
     <nav class="lugar-tabs">
-      <button class="lugar-tab active" data-lugar-tab="instrumentos">🎸 Instrumentos</button>
-      <button class="lugar-tab" data-lugar-tab="alquiler">🎒 Alquiler</button>
-      <button class="lugar-tab" data-lugar-tab="lugar">📷 El lugar</button>
+      <button class="lugar-tab active" data-lugar-tab="instrumentos">Equipos</button>
+      <button class="lugar-tab" data-lugar-tab="alquiler">Alquiler</button>
+      <button class="lugar-tab" data-lugar-tab="lugar">Sala</button>
     </nav>
     <div id="tab-instrumentos" class="lugar-pane">
       <div id="instruments-grid" class="inst-grid"></div>
     </div>
     <div id="tab-alquiler" class="lugar-pane" hidden>
-      <p class="muted small">Instrumentos que puedes añadir a tu reserva. Se cobran por hora de ensayo.</p>
+      <p class="muted small">Instrumentos que podés añadir a tu reserva. Se cobran por hora de ensayo.</p>
       <div id="alquiler-grid" class="inst-grid"></div>
     </div>
     <div id="tab-lugar-fotos" class="lugar-pane" hidden>
@@ -236,57 +245,72 @@
   </div>
 </main>
 
+<!-- ============ COMUNIDAD (solo músicos) ============ -->
+<main id="view-comunidad" hidden>
+  <div class="panel">
+    <div id="comu-chats" class="comu-chats"></div>
+  </div>
+</main>
+
 <!-- ============ PANEL DEL DUEÑO DE LA SALA ============ -->
 <main id="view-panel" hidden>
-  <div class="panel">
-    <div class="panel-head" style="align-items:center;flex-wrap:wrap;gap:14px;border-bottom:1px solid var(--line);padding-bottom:16px;margin-bottom:18px">
-      <div style="flex:1;min-width:240px">
-        <h2 style="margin:0 0 4px;font-size:1.4rem">🎛️ Panel de Mi Sala</h2>
-        <div id="panel-mis-salas-bar" style="display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap">
-          <!-- Selector dinámico de salas -->
-        </div>
-      </div>
-      <div style="display:flex;gap:8px;align-items:center">
-        <button class="btn btn-primary btn-sm" id="btn-panel-add-room">＋ Agregar sala</button>
-        <button class="btn btn-sm" id="btn-exit-panel">← Volver</button>
-      </div>
+  <header class="admin-head">
+    <span class="admin-head-ico" id="panel-head-logo">🎛️</span>
+    <div class="admin-head-txt">
+      <h1>Mi sala de ensayo</h1>
+      <p class="muted small">Panel del dueño de la sala</p>
     </div>
-    <div id="panel-estado"></div>
-    <nav class="admin-tabs">
-      <button class="admin-tab active" data-ptab="sala">🏠 Mi sala</button>
-      <button class="admin-tab" data-ptab="disponibilidad">🕐 Disponibilidad</button>
-      <button class="admin-tab" data-ptab="reservas">📲 Reservas</button>
-      <button class="admin-tab" data-ptab="datos">👤 Mis datos</button>
-      <button class="admin-tab" data-ptab="plan">💎 Mi suscripción</button>
-    </nav>
-  </div>
+    <button class="btn btn-sm" id="btn-exit-panel">← Volver</button>
+  </header>
+  <div id="panel-estado"></div>
+  <nav class="admin-tabs" aria-label="Secciones de la sala">
+    <button class="admin-tab admin-tab-inicio" data-ptab="inicio">Inicio</button>
+    <span class="admin-tab-group">Sala</span>
+    <button class="admin-tab" data-ptab="sala">Información</button>
+    <button class="admin-tab" data-ptab="disponibilidad">Horarios</button>
+    <span class="admin-tab-group">Reservas</span>
+    <button class="admin-tab" data-ptab="reservas">Listado</button>
+    <span class="admin-tab-group">Dinero</span>
+    <button class="admin-tab" data-ptab="movimientos">Movimientos</button>
+    <span class="admin-tab-group">Cuenta</span>
+    <button class="admin-tab" data-ptab="datos">Datos de la cuenta</button>
+  </nav>
+
+  <section id="ptab-inicio" class="tab" hidden>
+    <div id="panel-inicio"></div>
+  </section>
 
   <section id="ptab-sala" class="tab">
     <div class="panel">
-      <div class="panel-head" style="flex-wrap:wrap;gap:8px">
+      <div class="panel-head">
         <h2>🏠 Información de la sala</h2>
-        <div style="display:flex;align-items:center;gap:10px">
-          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:600;margin:0;font-size:0.9rem">
-            <input type="checkbox" id="ps-activo" style="width:18px;height:18px;accent-color:var(--accent)">
-            <span id="ps-activo-txt">Sala abierta para reservas</span>
-          </label>
-          <button class="btn btn-primary btn-sm" id="btn-guardar-sala">💾 Guardar cambios</button>
-        </div>
+        <button class="btn btn-primary btn-sm" id="btn-guardar-sala">💾 Guardar cambios</button>
       </div>
+      <details class="sala-sec" open>
+        <summary>📝 Datos básicos</summary>
+        <div class="sala-sec-body">
       <div class="row2">
         <label>Nombre de la sala *<input id="ps-name" maxlength="60"></label>
         <label>Precio por hora *<input type="number" id="ps-price" min="1" step="1"></label>
       </div>
       <label>Descripción<textarea id="ps-descripcion" rows="3" maxlength="600" placeholder="Ej.: Sala con buena acústica, aire acondicionado..."></textarea></label>
+        </div>
+      </details>
+      <details class="sala-sec" open>
+        <summary>📍 Ubicación y contacto</summary>
+        <div class="sala-sec-body">
       <div class="row2">
         <label>Dirección<input id="ps-direccion" maxlength="160"></label>
-        <label>Localidad / zona<input id="ps-localidad" maxlength="80"></label>
+        <label>Número<input id="ps-numero" maxlength="12" placeholder="1234"></label>
       </div>
       <div class="row2">
+        <label>Localidad / zona<input id="ps-localidad" maxlength="80"></label>
         <label>Teléfono de la sala<input id="ps-telefono" maxlength="30"></label>
-        <label>Capacidad<input type="number" id="ps-capacity" min="1" step="1"></label>
       </div>
-      <label>Ubicación en el mapa<input id="ps-mapa" maxlength="300" placeholder="Enlace de Google Maps o dirección corta"></label>
+      <div class="row2">
+        <label>Capacidad<input type="number" id="ps-capacity" min="1" step="1"></label>
+        <label>Ubicación en el mapa<input id="ps-mapa" maxlength="300" placeholder="Enlace de Google Maps o dirección corta"></label>
+      </div>
       <div class="row2">
         <label>Latitud<input id="ps-lat" inputmode="decimal" placeholder="-31.4201"></label>
         <label>Longitud<input id="ps-lng" inputmode="decimal" placeholder="-64.1888"></label>
@@ -296,7 +320,11 @@
         <button class="btn btn-sm" id="ps-buscar-direccion">🔎 Buscar por dirección</button>
       </div>
       <p class="muted small">Con la ubicación puesta, tu sala aparece en el mapa de Más Música para que los músicos la encuentren.</p>
-      <h3 class="sub">Equipamiento disponible</h3>
+        </div>
+      </details>
+      <details class="sala-sec">
+        <summary>🎛️ Equipamiento disponible</summary>
+        <div class="sala-sec-body">
       <div class="row2">
         <label>Instrumentos disponibles<input id="ps-eq-instrumentos" maxlength="300" placeholder="Ej.: Guitarra, Bajo, Batería"></label>
         <label>Batería<input id="ps-eq-bateria" maxlength="300" placeholder="Ej.: Pearl Export 5 piezas"></label>
@@ -309,16 +337,26 @@
         <label>Consola / sonido<input id="ps-eq-consola" maxlength="300" placeholder="Ej.: Allen&Heath 12 canales + 2 parlantes"></label>
         <label>Otros<input id="ps-eq-otros" maxlength="300" placeholder="Ej.: Aire acondicionado, placard, baño"></label>
       </div>
-      <h3 class="sub">Logo y fotografías</h3>
+        </div>
+      </details>
+      <details class="sala-sec" open>
+        <summary>🗺️ Foto horizontal del mapa</summary>
+        <div class="sala-sec-body">
+      <div class="portada-preview" id="ps-portada-preview"></div>
+      <label>Cambiar foto horizontal<input type="file" id="ps-portada" accept="image/*"></label>
+      <p class="muted small">Es la foto grande que se muestra al tocar el punto de tu sala en el mapa.</p>
+        </div>
+      </details>
+      <details class="sala-sec">
+        <summary>🖼️ Logo y fotografías</summary>
+        <div class="sala-sec-body">
       <div class="sala-foto-edit" id="ps-preview-logo"></div>
       <label>Logo de la sala<input type="file" id="ps-logo" accept="image/*"></label>
       <label>Fotografías de la sala<input type="file" id="ps-fotos" accept="image/*" multiple></label>
       <p class="muted small">El logo aparece al lado del logo de la app cuando eligen esa sala.</p>
       <div id="ps-fotos-grid" class="mini-fotos"></div>
-      <h3 class="sub">Foto horizontal (la que se ve en el mapa)</h3>
-      <div class="portada-preview" id="ps-portada-preview"></div>
-      <label>Cambiar foto horizontal<input type="file" id="ps-portada" accept="image/*"></label>
-      <p class="muted small">Es la foto grande que se muestra al tocar el punto de tu sala en el mapa.</p>
+        </div>
+      </details>
     </div>
   </section>
 
@@ -374,6 +412,13 @@
     </div>
   </section>
 
+  <section id="ptab-movimientos" class="tab" hidden>
+    <div class="panel">
+      <div class="panel-head"><h2>💰 Movimientos</h2></div>
+      <div id="panel-movimientos"></div>
+    </div>
+  </section>
+
   <section id="ptab-datos" class="tab" hidden>
     <div class="panel">
       <div class="panel-head">
@@ -404,57 +449,113 @@
 
 <!-- ============ PANEL DE ADMINISTRACIÓN ============ -->
 <main id="view-admin" hidden>
-  <header class="admin-head" style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding-bottom:14px;margin-bottom:18px">
-    <div style="display:flex;align-items:center;gap:12px">
-      <span class="admin-head-ico">👑</span>
-      <div class="admin-head-txt">
-        <h1 style="margin:0 0 2px">Administración Central</h1>
-        <p class="muted small" style="margin:0">Control total de Más Música · <span id="admin-head-user"></span></p>
-      </div>
+  <header class="admin-head">
+    <span class="admin-head-ico">👑</span>
+    <div class="admin-head-txt">
+      <h1>Administración central</h1>
+      <p class="muted small">Control total de Más Música · <span id="admin-head-user"></span></p>
     </div>
-    <button class="btn btn-sm" onclick="salirAdmin()">← Volver a la app</button>
   </header>
-  <nav class="admin-tabs">
-    <button class="admin-tab" data-tab="solicitudes">📥 Solicitudes <span class="pill" id="pill-solicitudes" hidden>0</span></button>
-    <button class="admin-tab" data-tab="usuarios">👥 Cuentas</button>
-    <button class="admin-tab" data-tab="reservas">📲 Reservas</button>
-    <button class="admin-tab" data-tab="historial">📋 Historial</button>
-    <button class="admin-tab" data-tab="salas">🎸 Salas</button>
-    <button class="admin-tab" data-tab="horarios">🕐 Horarios</button>
-    <button class="admin-tab" data-tab="bloqueos">🚫 Bloqueos</button>
-    <button class="admin-tab" data-tab="finanzas">💰 Finanzas (+MÚSICA)</button>
-    <button class="admin-tab" data-tab="estadisticas">📊 Estadísticas</button>
-    <button class="admin-tab" data-tab="ajustes">⚙️ Ajustes</button>
-    <button class="admin-tab" data-tab="lugar">📷 Lugar</button>
-    <button class="admin-tab" data-tab="bandas">🎭 Bandas</button>
-    <button class="admin-tab" data-tab="promociones">🎉 Promociones</button>
+  <nav class="admin-tabs" aria-label="Secciones de administración">
+    <button class="admin-tab admin-tab-inicio" data-tab="inicio">Inicio</button>
+    <span class="admin-tab-group">Reservas</span>
+    <button class="admin-tab" data-tab="solicitudes">Solicitudes <span class="pill" id="pill-solicitudes" hidden>0</span></button>
+    <button class="admin-tab" data-tab="reservas">Reservas del día</button>
+    <button class="admin-tab" data-tab="historial">Historial</button>
+    <span class="admin-tab-group">Salas</span>
+    <button class="admin-tab" data-tab="salas">Salas</button>
+    <button class="admin-tab" data-tab="horarios">Horarios</button>
+    <button class="admin-tab" data-tab="bloqueos">Bloqueos</button>
+    <button class="admin-tab" data-tab="lugar">Lugar</button>
+    <span class="admin-tab-group">Comunidad</span>
+    <button class="admin-tab" data-tab="usuarios">Cuentas</button>
+    <button class="admin-tab" data-tab="ayuda">Pedidos de ayuda <span class="pill" id="pill-ayuda" hidden>0</span></button>
+    <button class="admin-tab" data-tab="bandas">Bandas</button>
+    <span class="admin-tab-group">Negocio</span>
+    <button class="admin-tab" data-tab="estadisticas">Estadísticas</button>
+    <button class="admin-tab" data-tab="promociones">Promociones</button>
+    <button class="admin-tab" data-tab="pagos">Pagos y Señas</button>
+    <button class="admin-tab" data-tab="ajustes">Ajustes</button>
   </nav>
+
+  <section id="tab-inicio" class="tab" hidden>
+    <div id="inicio-admin"></div>
+  </section>
 
   <section id="tab-solicitudes" class="tab">
     <div class="panel">
-      <div class="panel-head">
-        <h2>📥 Solicitudes y Revisión de Salas</h2>
-        <div class="row wrap" id="solicitudes-filtro-btns" style="gap:6px;margin:0">
-          <button class="btn btn-sm" data-estado-sol="todas">Todas</button>
-          <button class="btn btn-sm btn-primary" data-estado-sol="pendiente">Pendientes</button>
-          <button class="btn btn-sm" data-estado-sol="aprobada">Aprobadas</button>
-          <button class="btn btn-sm" data-estado-sol="suspendida">Suspendidas</button>
-          <button class="btn btn-sm" data-estado-sol="rechazada">Rechazadas</button>
+      <div class="sol-hero">
+        <div class="sol-crown">👑</div>
+        <div>
+          <h2>Administración central</h2>
+          <p>Control total de Más Música · @admin</p>
         </div>
       </div>
-      <p class="muted small">Revisá las salas registradas por los dueños. Podés <strong>aprobarlas</strong>, <strong>pedir correcciones</strong>, <strong>suspenderlas</strong> temporalmente o <strong>rechazarlas</strong>.</p>
-      <div id="solicitudes-list"></div>
+
+      <div class="sol-stats" role="list">
+        <div class="sol-stat is-alert" role="listitem"><strong id="sol-stat-pend">0</strong><small>Pendientes</small></div>
+        <div class="sol-stat" role="listitem"><strong id="sol-stat-aprob">0</strong><small>Aprobadas</small></div>
+        <div class="sol-stat" role="listitem"><strong id="sol-stat-rech">0</strong><small>Rechazadas</small></div>
+      </div>
+
+      <div class="sol-section">
+        <div class="sol-section-head">
+          <h2>Solicitudes de salas</h2>
+          <span id="sol-contador">0 de 0</span>
+        </div>
+
+        <div class="sol-filters" role="tablist" aria-label="Filtrar solicitudes">
+          <button class="sol-chip" role="tab" aria-selected="true" data-estado-sol="todas">Todas <em id="sol-c-todas">0</em></button>
+          <button class="sol-chip" role="tab" aria-selected="false" data-estado-sol="pendiente">Pendientes <em id="sol-c-pend">0</em></button>
+          <button class="sol-chip" role="tab" aria-selected="false" data-estado-sol="aprobada">Aprobadas <em id="sol-c-aprob">0</em></button>
+          <button class="sol-chip" role="tab" aria-selected="false" data-estado-sol="rechazada">Rechazadas <em id="sol-c-rech">0</em></button>
+        </div>
+
+        <p class="sol-note">Las salas creadas por usuarios quedan <b>pendientes de aprobación</b> hasta que las revises.</p>
+
+        <div class="sol-list" id="solicitudes-list"></div>
+
+        <div class="sol-empty" id="sol-vacio" hidden>
+          <div class="sol-empty-art" aria-hidden="true">📭</div>
+          <h3>No hay salas con ese estado</h3>
+          <p>Cuando un usuario registre una sala, aparecerá aquí para revisarla.</p>
+        </div>
+      </div>
     </div>
   </section>
 
   <section id="tab-usuarios" class="tab" hidden>
     <div class="panel">
       <div class="panel-head">
-        <h2>👥 Cuentas registradas</h2>
-        <input type="search" id="usuarios-buscar" placeholder="Buscar por nombre, usuario o email">
+        <h2>Cuentas registradas</h2>
+        <span id="usuarios-contador" class="muted small"></span>
       </div>
-      <p class="muted small">Podés bloquear o desactivar cuentas y cambiar el rol. Los datos de las cuentas no se puede ver en la app pública.</p>
+      <p class="muted small">Podés bloquear o desactivar cuentas y cambiar el rol. Los datos no se muestran en la app pública.</p>
+
+      <label class="cuentas-buscar">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input id="usuarios-buscar" type="search" placeholder="Buscar por nombre, usuario o email" autocomplete="off">
+      </label>
+
+      <div class="cuentas-chips" id="usuarios-chips" role="group" aria-label="Filtrar por rol"></div>
+
       <div id="usuarios-list"></div>
+
+      <div class="cuentas-vacio" id="usuarios-vacio" hidden>
+        <div class="cuentas-vacio-art">📭</div>
+        <h3>No encontramos cuentas</h3>
+        <p>Probá con otro nombre o email.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="tab-ayuda" class="tab" hidden>
+    <div class="panel">
+      <div class="panel-head">
+        <h2>📥 Pedidos de ayuda</h2>
+      </div>
+      <p class="muted small">Los usuarios piden ayuda cuando olvidaron la contraseña o su cuenta quedó bloqueada o desactivada. También te llega un aviso en el timbre 🔔 y por mail si configuraste el correo en Ajustes. Puedo desbloquear la cuenta en el acto desde acá.</p>
+      <div id="ayuda-list"></div>
     </div>
   </section>
 
@@ -472,6 +573,7 @@
     <div class="admin-stats">
       <div class="stat"><span>Reservas</span><b id="res-count">0</b></div>
       <div class="stat"><span>Ingresos</span><b id="res-income">$0</b></div>
+      <div class="stat"><span>Pendientes de pago</span><b id="res-pend">0</b></div>
     </div>
 
     <div class="admin-chips" id="res-chips" role="group" aria-label="Filtrar por sala"></div>
@@ -500,7 +602,21 @@
         <h2>🎸 Salas</h2>
         <button class="btn btn-primary btn-sm" id="btn-new-room">＋ Nueva sala</button>
       </div>
-      <div id="salas-grid-admin" class="rooms-grid"></div>
+
+      <label class="salas-buscar">
+        <span aria-hidden="true">🔍</span>
+        <input id="salas-buscar" type="search" placeholder="Buscar sala por nombre" autocomplete="off">
+      </label>
+
+      <div class="salas-chips" id="salas-chips" role="group" aria-label="Filtrar salas"></div>
+
+      <div id="salas-grid-admin"></div>
+
+      <div class="salas-vacio" id="salas-vacio" hidden>
+        <div class="salas-vacio-art">🎸</div>
+        <h3>No hay salas con ese filtro</h3>
+        <p>Probá con otro nombre o filtro.</p>
+      </div>
     </div>
   </section>
 
@@ -508,10 +624,16 @@
     <div class="panel">
       <div class="panel-head">
         <h2>🕐 Horarios de atención</h2>
-        <button class="btn btn-primary btn-sm" id="btn-save-hours">Guardar</button>
+        <button class="btn btn-primary btn-sm" id="btn-save-hours">💾 Guardar</button>
       </div>
       <p class="muted">Aplican a todas las salas. Los turnos son de 1 hora, desde la apertura hasta el cierre.</p>
+      <div class="hours-chips">
+        <button class="chip" id="hours-copy-mon">Copiar lunes a todos</button>
+        <button class="chip" id="hours-open-all">Abrir todos</button>
+        <button class="chip" id="hours-close-weekend">Cerrar fin de semana</button>
+      </div>
       <div id="hours-container"></div>
+      <p class="muted small" style="margin-top:12px">💡 Los cambios se aplican de inmediato a las reservas nuevas. Las reservas ya confirmadas no se modifican.</p>
     </div>
   </section>
 
@@ -528,39 +650,6 @@
       </div>
       <h3 class="sub">Bloqueos activos</h3>
       <div id="blocks-list"></div>
-    </div>
-  </section>
-
-  
-  <section id="tab-finanzas" class="tab" hidden>
-    <div class="panel">
-      <div class="panel-head">
-        <h2>💰 Finanzas e Ingresos de la Plataforma (+MÚSICA)</h2>
-        <button class="btn btn-sm" id="btn-refresh-finanzas">🔄 Actualizar</button>
-      </div>
-      <p class="muted">Métricas consolidadas de facturación por comisiones de reservas (5%) y cobro recurrente de suscripciones a salas.</p>
-
-      <div class="stats-cards" id="finanzas-kpis">
-        <!-- Tarjetas dinámicas generadas en app.js -->
-      </div>
-
-      <h3 class="sub" style="margin-top:24px">Suscripciones activas de salas</h3>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Dueño / Establecimiento</th>
-              <th>Plan</th>
-              <th>Salas en uso</th>
-              <th>Abono Mensual</th>
-              <th>Estado</th>
-            </tr>
-          </thead>
-          <tbody id="finanzas-subs-tabla">
-            <!-- Filas dinámicas -->
-          </tbody>
-        </table>
-      </div>
     </div>
   </section>
 
@@ -608,6 +697,35 @@
         habilitando <em>Maps JavaScript API</em> y <em>Geocoding API</em>, y conviene restringirla por referrer.
         <span id="gmaps-estado"></span>
       </p>
+
+      <h3 class="sub">📬 Contacto y avisos</h3>
+      <p class="muted small">
+        Estos datos aparecen en la pantalla de acceso (botón <em>“¿Problemas para entrar? Pedí ayuda”</em>) para que los usuarios te escriban directo.
+        El <strong>email</strong> también recibe un aviso por cada registro y por cada pedido de ayuda.
+      </p>
+      <div class="row2">
+        <label>WhatsApp <span class="muted">(solo números, con código de país)</span>
+          <input id="set-whatsapp" maxlength="30" placeholder="Ej.: 5493514445566" autocomplete="off" spellcheck="false">
+        </label>
+        <label>Instagram
+          <input id="set-instagram" maxlength="60" placeholder="Ej.: mas.musica" autocomplete="off" spellcheck="false">
+        </label>
+      </div>
+      <div class="row2">
+        <label>Email de contacto / avisos
+          <input id="set-contact-email" type="email" maxlength="120" placeholder="Ej.: contacto@masmusica.com" autocomplete="off" spellcheck="false">
+        </label>
+        <label>Facebook
+          <input id="set-facebook" maxlength="60" placeholder="Ej.: masmusica" autocomplete="off" spellcheck="false">
+        </label>
+      </div>
+      <div class="row2">
+        <label>TikTok
+          <input id="set-tiktok" maxlength="60" placeholder="Ej.: mas.musica" autocomplete="off" spellcheck="false">
+        </label>
+        <label></label>
+      </div>
+      <p class="muted small" id="mail-estado"></p>
 
       <h3 class="sub">🔐 PIN de emergencia</h3>
       <label>Nuevo PIN <span class="muted">(dejar vacío para mantener el actual)</span><input type="password" id="set-pin" placeholder="Mínimo 4 caracteres"></label>
@@ -693,9 +811,8 @@
     <div class="panel">
       <div class="panel-head">
         <h2>🎭 Bandas registradas</h2>
-        <button class="btn btn-primary btn-sm" id="btn-new-band">＋ Agregar banda</button>
       </div>
-      <p class="muted small">Las bandas se registran solas al reservar; aquí puedes editarlas o eliminarlas.</p>
+      <p class="muted small">Las bandas se registran solas al reservar; acá podés editarlas o eliminarlas.</p>
       <div id="bands-admin"></div>
     </div>
   </section>
@@ -710,21 +827,73 @@
       <div id="promociones-admin"></div>
     </div>
   </section>
+
+  <section id="tab-pagos" class="tab" hidden>
+    <div class="panel">
+      <div class="panel-head">
+        <h2>💳 Pagos y Liquidaciones</h2>
+        <div id="pagos-modo-badge"></div>
+      </div>
+      <p class="muted small">
+        Control de señas abonadas con Mercado Pago, comisiones de la plataforma (+MÚSICA) y transferencias a cada sala.
+      </p>
+
+      <div id="pagos-cards" class="stats-cards"></div>
+
+      <!-- Configuración de reglas de seña -->
+      <div style="margin: 18px 0; background: var(--panel2); border: 1px solid var(--line); border-radius: 12px; padding: 16px;">
+        <h3 class="sub" style="margin-top: 0; margin-bottom: 8px;">⚙️ Configuración de Seña y Comisión</h3>
+        <p class="muted small" style="margin-top: 0; margin-bottom: 12px;">
+          Define los porcentajes aplicados automáticamente al momento de solicitar una reserva.
+        </p>
+        <div class="row3" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px;">
+          <label>Seña que paga la banda (%)
+            <input type="number" id="pagos-set-sena" min="1" max="100" value="30">
+          </label>
+          <label>Comisión de +Música (%)
+            <input type="number" id="pagos-set-comision" min="0" max="100" value="8">
+          </label>
+          <label>Tiempo para pagar (minutos)
+            <input type="number" id="pagos-set-minutos" min="5" max="60" value="15">
+          </label>
+        </div>
+        <div style="margin-top: 12px;">
+          <button class="btn btn-primary btn-sm" id="btn-save-pagos-reglas">💾 Guardar reglas de cobro</button>
+        </div>
+      </div>
+
+      <div class="panel-head" style="margin-top: 24px;">
+        <h3 class="sub" style="margin: 0;">🏢 Liquidaciones por Sala</h3>
+        <button class="btn btn-sm" id="btn-refresh-pagos">🔄 Actualizar</button>
+      </div>
+      <div id="pagos-tabla-salas" style="overflow-x: auto; margin-top: 8px;"></div>
+
+      <h3 class="sub" style="margin-top: 28px;">📋 Detalle de Reservas con Seña</h3>
+      <div id="pagos-tabla-reservas" style="overflow-x: auto; margin-top: 8px;"></div>
+    </div>
+  </section>
 </main>
 
 <!-- ============ PANEL DE NOTIFICACIONES (despliega desde arriba) ============ -->
 <div id="notif-drop" aria-hidden="true">
   <div id="notif-backdrop"></div>
-  <section class="notif-sheet" id="notif-sheet" role="dialog" aria-label="Notificaciones y reservas">
+  <section class="notif-sheet" id="notif-sheet" role="dialog" aria-label="Notificaciones">
     <div class="notif-sheet-head">
       <div>
         <h3>Notificaciones</h3>
-        <p class="muted small" id="notif-sheet-sub"></p>
+        <p class="notif-sub" id="notif-sheet-sub"></p>
       </div>
       <div class="notif-sheet-tools">
-        <button class="btn btn-sm" id="notif-panel-leer" hidden>✓ Marcar leídas</button>
         <button class="notif-cerrar" id="notif-panel-cerrar" aria-label="Cerrar">✕</button>
       </div>
+    </div>
+    <div class="notif-tabs" id="notif-tabs" role="tablist">
+      <button class="notif-tab active" role="tab" aria-selected="true" data-notif-tab="todas">Todas</button>
+      <button class="notif-tab" role="tab" aria-selected="false" data-notif-tab="sin-leer">Sin leer</button>
+    </div>
+    <div class="notif-actions" id="notif-actions">
+      <button class="notif-action primary" id="notif-panel-leer" hidden>Marcar todas como leídas</button>
+      <button class="notif-action danger" id="notif-panel-borrar-todas" hidden>Borrar</button>
     </div>
     <div class="notif-sheet-body" id="notif-sheet-body"></div>
   </section>
@@ -743,18 +912,33 @@
       </div>
     </div>
     <div class="notif-sheet-body" id="ajustes-sheet-body"></div>
+    <div class="aj-pie">
+      <a id="btn-ig" class="aj-enlace" href="#" target="_blank" rel="noopener" hidden><svg class="aj-ico" viewBox="0 0 24 24" aria-hidden="true">
+        <defs>
+          <linearGradient id="ig-grad" x1="0" y1="24" x2="24" y2="0" gradientUnits="userSpaceOnUse">
+            <stop offset="0" stop-color="#F9CE34"/>
+            <stop offset=".31" stop-color="#EE2A7B"/>
+            <stop offset=".62" stop-color="#6228D7"/>
+            <stop offset="1" stop-color="#2136A0"/>
+          </linearGradient>
+        </defs>
+        <rect x="1.1" y="1.1" width="21.8" height="21.8" rx="6.4" fill="url(#ig-grad)"/>
+        <circle cx="12" cy="12" r="4.5" fill="none" stroke="#fff" stroke-width="1.6"/>
+        <circle cx="17.2" cy="6.8" r="1.5" fill="#fff"/>
+      </svg> Seguinos en Instagram</a>
+      <button id="btn-install" class="aj-enlace" hidden>📲 Instalar la app en el celular</button>
+    </div>
   </section>
 </div>
 
 <div id="modal" class="modal"><div class="modal-box" id="modal-box"></div></div>
 <div id="toast"></div>
+<div id="mapa-tarjeta" class="mapa-tarjeta-overlay" hidden>
+  <div class="mapa-tarjeta-card" id="mapa-tarjeta-card"></div>
+</div>
 
-<!-- ============ NAVEGACIÓN INFERIOR (MÓVIL) / LATERAL (ESCRITORIO) ============ -->
-<div class="dock-container" id="dock-container" hidden>
-  <div class="dock-brand-desktop">
-    <img src="assets/musica_plus_logo_sinfondo.png" class="dock-logo-img logo-tema-o" alt="+MÚSICA">
-    <img src="assets/logo_musica_negro.png" class="dock-logo-img logo-tema-b" alt="+MÚSICA">
-  </div>
+<!-- ============ NAVEGACIÓN INFERIOR (5 opciones) ============ -->
+<div class="dock-container" id="dock-container">
   <nav class="bottom-nav">
     <button class="nav-btn active" id="nav-inicio" data-nav="inicio" title="Inicio">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
@@ -778,13 +962,14 @@
       </div>
       <span class="nav-center-label">Mapa</span>
     </button>
-    <button class="nav-btn" id="nav-instrumentos" data-nav="instrumentos" title="Instrumentos">
+    <button class="nav-btn" id="nav-comunidad" data-nav="comunidad" title="Comunidad de músicos" hidden>
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-        <path d="M9 18V6l11-2v12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        <circle cx="6.5" cy="18" r="2.8" stroke="currentColor" stroke-width="2" fill="none"/>
-        <circle cx="17.5" cy="16" r="2.8" stroke="currentColor" stroke-width="2" fill="none"/>
+        <circle cx="9" cy="8" r="3.2" stroke="currentColor" stroke-width="2"/>
+        <circle cx="17" cy="9.5" r="2.4" stroke="currentColor" stroke-width="2"/>
+        <path d="M3.5 19c0-3 2.7-5 5.5-5s5.5 2 5.5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <path d="M15.5 14.4c2.2.3 4 2 4 4.6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
       </svg>
-      <span>Instrumentos</span>
+      <span>Comunidad</span>
     </button>
     <button class="nav-btn" id="nav-mine" data-nav="perfil" title="Mi perfil">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
@@ -793,12 +978,43 @@
       </svg>
       <span>Perfil</span>
     </button>
+    <button class="nav-btn" id="nav-panel" data-nav="panel" title="Mi panel de sala" hidden>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+        <path d="M4 9h16M5 9l1-5h12l1 5" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+        <path d="M6 9v10h12V9" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+        <path d="M9.5 19v-4.5h5V19" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+      </svg>
+      <span class="nav-label-largo">Mi panel de sala</span><span class="nav-label-corto">Panel</span>
+    </button>
+    <button class="nav-btn" id="nav-admin" data-nav="admin" title="Panel de administración" hidden>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+        <path d="M12 8.5a3.5 3.5 0 100 7 3.5 3.5 0 000-7z" stroke="currentColor" stroke-width="2"/>
+        <path d="M19.4 13.5a7.6 7.6 0 000-3l2-1.6-2-3.4-2.4 1a7.4 7.4 0 00-2.6-1.5L14 3.5h-4l-.4 2.5a7.4 7.4 0 00-2.6 1.5l-2.4-1-2 3.4 2 1.6a7.6 7.6 0 000 3l-2 1.6 2 3.4 2.4-1a7.4 7.4 0 002.6 1.5l.4 2.5h4l.4-2.5a7.4 7.4 0 002.6-1.5l2.4 1 2-3.4-2-1.6z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+      </svg>
+      <span class="nav-label-largo">Administración</span><span class="nav-label-corto">Admin</span>
+    </button>
   </nav>
   <div class="home-indicator"></div>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-<script src="app.js?v=4.6"></script>
+<script src="app.js"></script>
+<script>
+  /* Fallback: si después de 2s no hay sesión y el auth-body está vacío, forzar login */
+  setTimeout(function() {
+    try {
+      if (!document.body.classList.contains('app-activa') && typeof verificarSesion === 'function') {
+        verificarSesion().then(function(ok) {
+          if (ok && typeof arrancarApp === 'function') {
+            arrancarApp();
+          } else if (typeof mostrarLogin === 'function') {
+            mostrarLogin();
+          }
+        });
+      }
+    } catch (e) {}
+  }, 1500);
+</script>
 </body>
 </html>

@@ -111,18 +111,30 @@ const esSuper = () => !!yo && yo.rol === 'SUPER_ADMIN';
 /* Cuentas de control (administrador y dueño de sala): solo control, sin integrantes, instrumentos ni favoritas */
 const esCuentaControl = () => esDueño() || esSuper();
 
+/* Días para adelante que se puede reservar: los músicos y las bandas, solo una semana;
+   las cuentas de control (dueño de sala y administración) mantienen los 60 días */
+const DIAS_RESERVA_MUSICO = 7;
+const DIAS_RESERVA_CONTROL = 60;
+const maxFechaReserva = () => addDaysStr(todayStr(), esCuentaControl() ? DIAS_RESERVA_CONTROL : DIAS_RESERVA_MUSICO);
+
 function guardarToken(t) {
   token = t || '';
   try { t ? localStorage.setItem(TOKEN_KEY, t) : localStorage.removeItem(TOKEN_KEY); } catch (e) { /* modo privado */ }
 }
 
-/* Salas que se publican: aprobadas y activas */
-const salasPublicas = () => (state.rooms || []).filter(r => r.activo !== false && r.estado === 'aprobada');
+/* Salas que se publican: aprobadas y activas.
+   El dueño de una sala (ROOM_ADMIN) ve únicamente su propia sala, en la lista,
+   el mapa, el calendario y las favoritas. */
+const salasPublicas = () => (state.rooms || []).filter(r => {
+  if (r.activo === false) return false;
+  if (esDueño()) return r.ownerId === yo.id;
+  return r.estado === 'aprobada';
+});
 const esFavorita = id => !!(yo && (yo.favoritos || []).includes(id));
 
 async function api(path, { method = 'GET', body, admin = false } = {}) {
   const headers = { 'Content-Type': 'application/json' };
-  if (admin && adminPin) headers['x-admin-pin'] = adminPin;
+  if (adminPin) headers['x-admin-pin'] = adminPin;
   if (token) headers['Authorization'] = 'Bearer ' + token;
   const res = await fetch(path, {
     method,
@@ -315,6 +327,8 @@ function renderPerfilMine() {
     if (banda) break;
   }
   if (!banda) {
+    /* Registrar banda es cosa de músicos: el administrador no ve esta tarjeta */
+    if (esCuentaControl()) { host.hidden = true; host.innerHTML = ''; return; }
     host.hidden = false;
     host.innerHTML = `
     <div class="perfil-mini">
@@ -336,7 +350,7 @@ function renderPerfilMine() {
     <div class="perfil-mini">
       ${banda.fotoGrupal ? `<img class="perfil-fondo" src="${esc(banda.fotoGrupal)}" alt="">` : ''}
       ${banda.foto
-        ? `<img class="perfil-avatar-circular" src="${esc(banda.foto)}" alt="${esc(banda.nombre)}" data-foto="${esc(banda.foto)}" data-foto-alt="${esc(banda.nombre)}" title="Toca para ver en grande">`
+        ? `<img class="perfil-avatar-circular" src="${esc(banda.foto)}" alt="${esc(banda.nombre)}" data-foto="${esc(banda.foto)}" data-foto-alt="${esc(banda.nombre)}" title="Tocá para ver en grande">`
         : '<div class="perfil-avatar-circular perfil-sin-foto">🎭</div>'}
       <div class="perfil-mini-info">
         <h3>${esc(banda.nombre)}</h3>
@@ -361,13 +375,13 @@ function renderPerfilSala() {
   if (!host || !miSala) return;
   const r = miSala;
   const etq = r.estado === 'aprobada' ? '✅ Aprobada' : r.estado === 'rechazada' ? '✖ Rechazada' : '⏳ En revisión';
-  const zona = [r.localidad, r.direccion].filter(Boolean).join(' · ');
+  const zona = [r.localidad, [r.direccion, r.numero].filter(Boolean).join(' ')].filter(Boolean).join(' · ');
   host.hidden = false;
   host.innerHTML = `
     <div class="perfil-mini">
       ${r.foto ? `<img class="perfil-fondo" src="${esc(r.foto)}" alt="">` : ''}
       ${r.foto
-        ? `<img class="perfil-avatar-circular" src="${esc(r.foto)}" alt="${esc(r.name)}" data-foto="${esc(r.foto)}" data-foto-alt="${esc(r.name)}" title="Toca para ver en grande">`
+        ? `<img class="perfil-avatar-circular" src="${esc(r.foto)}" alt="${esc(r.name)}" data-foto="${esc(r.foto)}" data-foto-alt="${esc(r.name)}" title="Tocá para ver en grande">`
         : '<div class="perfil-avatar-circular perfil-sin-foto">🎛️</div>'}
       <div class="perfil-mini-info">
         <h3>${esc(r.name)}</h3>
@@ -418,14 +432,26 @@ function renderIntegrantesBanda() {
 function renderCalendar() {
   const [y, m] = calCursor.split('-').map(Number);
   $('#cal-title').textContent = new Date(y, m - 1, 1).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+  /* Cada sala administra sus reservas: el dueño solo cuenta las de sus propias salas */
+  const salasPropias = esDueño() ? ((state && state.rooms) || []).filter(r => r.ownerId === (yo && yo.id)).map(r => r.id) : null;
+  /* Aviso de hasta cuándo se puede reservar, según la cuenta */
+  const hint = $('#cal-hint');
+  if (hint) hint.textContent = (esCuentaControl()
+    ? 'Podés reservar hasta con 60 días de anticipación.'
+    : 'Los músicos y las bandas pueden reservar hasta con 7 días de anticipación.')
+    + (salasPropias ? ' Los días con un número son las reservas de tu sala.' : ' Los días con reservas muestran un número.');
   const grid = $('#cal-grid');
   grid.innerHTML = ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá'].map(d => `<div class="cal-h">${d}</div>`).join('');
   const first = new Date(y, m - 1, 1).getDay();
   const days = new Date(y, m, 0).getDate();
   const today = todayStr();
-  const max = addDaysStr(today, 60);
+  const max = maxFechaReserva();
   const counts = {};
-  state.reservations.forEach(r => { counts[r.date] = (counts[r.date] || 0) + 1; });
+  state.reservations.forEach(r => {
+    if (r.estado === 'cancelada') return;                       /* una reserva cancelada no cuenta */
+    if (salasPropias && !salasPropias.includes(r.roomId)) return;
+    counts[r.date] = (counts[r.date] || 0) + 1;
+  });
   for (let i = 0; i < first; i++) grid.insertAdjacentHTML('beforeend', '<div></div>');
   for (let d = 1; d <= days; d++) {
     const ds = `${calCursor}-${pad2(d)}`;
@@ -435,6 +461,38 @@ function renderCalendar() {
     grid.insertAdjacentHTML('beforeend',
       `<button class="${cls}" data-date="${ds}" ${dis ? 'disabled' : ''}>${d}${badge}</button>`);
   }
+  renderCalReservasDia();
+}
+
+/* Reservas del día seleccionado en el calendario, ordenadas por hora */
+function renderCalReservasDia() {
+  const caja = $('#cal-reservas-dia');
+  if (!caja) return;
+  const fecha = sel && sel.date;
+  if (!fecha) { caja.innerHTML = ''; return; }
+  const salasPropias = esDueño() ? ((state && state.rooms) || []).filter(r => r.ownerId === (yo && yo.id)).map(r => r.id) : null;
+  let lista = (state && state.reservations || []).filter(r => r.date === fecha && r.estado !== 'cancelada');
+  if (salasPropias) lista = lista.filter(r => salasPropias.includes(r.roomId));
+  lista = lista.slice().sort((a, b) => String(a.start).localeCompare(String(b.start)));
+  if (!lista.length) {
+    caja.innerHTML = `<p class="muted small cal-res-dia-vacio">Sin reservas para el ${esc(fmtDate(fecha, { weekday: 'long', day: 'numeric', month: 'long' }))}.</p>`;
+    return;
+  }
+  const nombreSala = id => { const s = (state && state.rooms || []).find(x => x.id === id); return s ? s.name : 'Sala'; };
+  caja.innerHTML = `
+    <div class="cal-res-dia-head">
+      <strong>Reservas del ${esc(fmtDate(fecha, { weekday: 'long', day: 'numeric', month: 'long' }))}</strong>
+      <span class="muted small">${lista.length} reserva(s), ordenadas por hora</span>
+    </div>
+    <ul class="cal-res-dia-lista">
+      ${lista.map(r => `
+        <li class="cal-res-dia-item">
+          <span class="cal-res-dia-hora">${esc(r.start)} – ${esc(r.end)}</span>
+          <span class="cal-res-dia-sala">${esc(nombreSala(r.roomId))}</span>
+          <span class="cal-res-dia-nom">${esc(r.name || '')}</span>
+          ${r.estado === 'pendiente_pago' ? '<span class="badge badge-next">Pendiente de pago</span>' : ''}
+        </li>`).join('')}
+    </ul>`;
 }
 
 function renderRooms() {
@@ -467,9 +525,8 @@ function renderRooms() {
       </div>
       <div class="room-info">
         <h3>${esc(r.name)}</h3>
-        ${r.localidad || r.direccion ? `<div class="room-ubic">📍 ${esc([r.localidad, r.direccion].filter(Boolean).join(' · '))}</div>` : ''}
+        ${r.localidad || r.direccion ? `<div class="room-ubic">📍 ${esc([r.localidad, [r.direccion, r.numero].filter(Boolean).join(' ')].filter(Boolean).join(' · '))}</div>` : ''}
         <div class="price">${fmtMoney(r.price)}<span> /hora</span></div>
-        <div class="cap">👥 Hasta ${r.capacity} ${r.capacity === 1 ? 'persona' : 'personas'}</div>
       </div>
     </article>`;
   }).join('');
@@ -499,14 +556,15 @@ function fichaSala(id) {
   }).join('');
   openModal(`
     <h3>${esc(r.name)}</h3>
-    ${r.foto ? `<img class="ficha-logo" src="${esc(r.foto)}" alt="${esc(r.name)}">` : ''}
+    ${r.fotoPortada ? `<div class="ficha-cover"><img src="${esc(r.fotoPortada)}" alt="Portada de ${esc(r.name)}"></div>` : ''}
+    ${r.foto ? `<div class="ficha-avatar"><img src="${esc(r.foto)}" alt="${esc(r.name)}"></div>` : ''}
+    ${(r.fotos || []).length ? `<h4 class="sub">📸 Fotos de la sala</h4><div class="ficha-fotos">${(r.fotos || []).map(f => `<figure class="ficha-foto">${f.foto ? `<img src="${esc(f.foto)}" alt="${esc(f.titulo || r.name)}" onclick="verFoto('${esc(f.foto)}', 'Foto de la sala')" title="Ver en grande">` : ''}${f.titulo ? `<figcaption>${esc(f.titulo)}</figcaption>` : ''}</figure>`).join('')}</div>` : ''}
     <div class="ficha-grid">
       <div><span class="muted">Precio</span><strong>${fmtMoney(r.price)} /hora</strong></div>
-      <div><span class="muted">Capacidad</span><strong>Hasta ${r.capacity}</strong></div>
       ${r.telefono ? `<div><span class="muted">Teléfono</span><strong>${esc(r.telefono)}</strong></div>` : ''}
       ${r.localidad ? `<div><span class="muted">Zona</span><strong>${esc(r.localidad)}</strong></div>` : ''}
     </div>
-    ${r.direccion ? `<p class="ficha-dir">📍 ${esc(r.direccion)}${linkMapaSala(r) ? ` · <a href="${linkMapaSala(r)}" target="_blank" rel="noopener">ver en el mapa</a>` : ''}</p>` : ''}
+    ${r.direccion ? `<p class="ficha-dir">📍 ${esc([r.direccion, r.numero].filter(Boolean).join(' '))}${linkMapaSala(r) ? ` · <a href="${linkMapaSala(r)}" target="_blank" rel="noopener">ver en el mapa</a>` : ''}</p>` : ''}
     ${r.descripcion ? `<p class="ficha-desc">${esc(r.descripcion)}</p>` : ''}
     ${(r.features || []).length ? `<div class="ficha-chips">${r.features.map(f => `<span class="chip">${esc(f)}</span>`).join('')}</div>` : ''}
     <h4 class="sub">Equipamiento</h4>
@@ -572,7 +630,7 @@ function linkMapaSala(r) {
   if (!r) return '';
   if (tieneUbicacion(r)) return `https://www.google.com/maps/search/?api=1&query=${Number(r.lat)},${Number(r.lng)}`;
   if (urlSegura(r.mapa)) return urlSegura(r.mapa);
-  const dir = [r.direccion, r.localidad].filter(Boolean).join(', ');
+  const dir = [[r.direccion, r.numero].filter(Boolean).join(' '), r.localidad].filter(Boolean).join(', ');
   return dir ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(dir)}` : '';
 }
 
@@ -717,7 +775,7 @@ function fotoPortadaSala(r) {
 function popupSala(r) {
   const dist = miUbicacion ? ` · a ${distKm(miUbicacion[0], miUbicacion[1], Number(r.lat), Number(r.lng)).toFixed(1)} km` : '';
   const eq = Object.values(r.equipos || {}).filter(Boolean).length;
-  const dir = [r.direccion, r.localidad].filter(Boolean).join(' · ');
+  const dir = [[r.direccion, r.numero].filter(Boolean).join(' '), r.localidad].filter(Boolean).join(' · ');
   const tel = String(r.telefono || '').trim();
   const telHref = tel.replace(/[^0-9+]/g, '');
   const portada = fotoPortadaSala(r);
@@ -740,7 +798,7 @@ function popupSala(r) {
         <span class="muted small">${fmtMoney(r.price)}/hora · 👥 ${r.capacity}${dist}${eq ? ` · 🎚 ${eq} elemento(s)` : ''}</span>
         <div class="row pop-acciones">
           <button class="btn btn-primary btn-sm" data-mapa-sala="${r.id}">Ver horarios</button>
-          <button class="btn btn-sm" data-mapa-ficha="${r.id}">ℹ️ Ficha</button>
+          <button class="btn btn-primary btn-sm" data-mapa-ficha="${r.id}">ℹ️ Ficha</button>
           ${urlSegura(gmaps) ? `<a class="btn btn-sm" href="${urlSegura(gmaps)}" target="_blank" rel="noopener">📍 Google Maps</a>` : ''}
           ${tel ? `<a class="btn btn-sm" href="tel:${esc(telHref)}">📞 Llamar</a>` : ''}
           ${yo ? `<button class="btn btn-sm" data-mapa-fav="${r.id}">${esFavorita(r.id) ? '♥' : '♡'}</button>` : ''}
@@ -789,7 +847,7 @@ function renderSalasSinUbicacion() {
   const sinUbic = salasPublicas().filter(r => !tieneUbicacion(r));
   caja.innerHTML = sinUbic.length ? `
       <h3 class="sub">Salas sin ubicación en el mapa</h3>
-      <p class="muted small">${sinUbic.length} sala(s) todavía no tienen punto en el mapa. El dueño lo ubica desde su panel (Mi sala → 🗺 Ubicar en el mapa).</p>
+      <p class="muted small">${sinUbic.length} sala(s) todavía no tienen punto en el mapa. El dueño lo ubica desde su panel (Información → 🗺 Ubicar en el mapa).</p>
       <div class="ficha-chips">${sinUbic.map(r => `<span class="chip">${esc(r.name)}</span>`).join('')}</div>`
     : '';
 }
@@ -797,7 +855,8 @@ function renderSalasSinUbicacion() {
 /* ---------- Lista de salas del mapa (ordenada por cercanía si hay ubicación) ---------- */
 function salasOrdenadasParaMapa() {
   if (!state) return [];
-  const lista = salasPublicas().slice();
+  let lista = salasPublicas().slice();
+  if (filtroSalas === 'favoritas') lista = lista.filter(r => esFavorita(r.id));
   const dist = r => (miUbicacion && tieneUbicacion(r))
     ? distKm(miUbicacion[0], miUbicacion[1], Number(r.lat), Number(r.lng))
     : Infinity;
@@ -840,7 +899,7 @@ function renderMapaLista() {
         const km = (miUbicacion && ubic)
           ? distKm(miUbicacion[0], miUbicacion[1], Number(r.lat), Number(r.lng))
           : null;
-        const dir = [r.direccion, r.localidad].filter(Boolean).join(' · ');
+        const dir = [[r.direccion, r.numero].filter(Boolean).join(' '), r.localidad].filter(Boolean).join(' · ');
         const enlace = linkMapaSala(r);
         return `
         <article class="mapa-item${ubic ? '' : ' sin-punto'}"${ubic ? ` data-mapa-item="${esc(r.id)}"` : ''}>
@@ -859,7 +918,7 @@ function renderMapaLista() {
           </div>
           <div class="mapa-item-acciones">
             ${ubic ? `<button class="btn btn-sm btn-primary" data-mapa-ver="${esc(r.id)}">🗺 Ver en el mapa</button>` : ''}
-            <button class="btn btn-sm" data-mapa-ficha="${esc(r.id)}">ℹ️ Ficha</button>
+            <button class="btn btn-primary btn-sm" data-mapa-ficha="${esc(r.id)}">ℹ️ Ficha</button>
             ${enlace ? `<a class="btn btn-sm" href="${enlace}" target="_blank" rel="noopener">📍 Google Maps</a>` : ''}
           </div>
         </article>`;
@@ -1081,6 +1140,67 @@ function cerrarPopupMapa() {
   if (mapa && mapa.closePopup) { try { mapa.closePopup(); } catch (e) {} }
 }
 
+/* Tarjeta centrada (popup-sala) sobre el mapa */
+function abrirTarjetaSala(id) {
+  const r = (state.rooms || []).find(x => x.id === id);
+  if (!r) return;
+  const equ = r.equipos || {};
+  const filas = [
+    ['🎸 Instrumentos', equ.instrumentos],
+    ['🥁 Batería', equ.bateria],
+    ['🔊 Amplificadores', equ.amplificadores],
+    ['🎤 Micrófonos', equ.microfonos],
+    ['🎛️ Consola / sonido', equ.consola],
+    ['✨ Otros', equ.otros],
+  ].filter(f => f[1]);
+  const dias = [1, 2, 3, 4, 5, 6, 0].map(d => {
+    const h = horarioSalaDe(r)[String(d)];
+    return `<div class="dia-fila"><strong>${['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'][d]}</strong><span>${h ? `${h.open} – ${h.close}` : 'Cerrado'}</span></div>`;
+  }).join('');
+  const card = $('#mapa-tarjeta-card');
+  if (card) {
+    const dir = [r.direccion, r.numero].filter(Boolean).join(' ');
+    card.innerHTML = `
+      <button type="button" class="mapa-tarjeta-close" onclick="cerrarTarjetaSala()" aria-label="Cerrar tarjeta">×</button>
+      <div class="mt">
+        <div class="mt-cover ${r.fotoPortada ? '' : 'sin-foto'}">
+          ${r.fotoPortada ? `<img src="${esc(r.fotoPortada)}" alt="Portada de ${esc(r.name)}">` : '<img src="/assets/marca-agua-negro.png" alt="Más Música">'}
+        </div>
+        <div class="mt-cuerpo">
+          ${r.foto ? `<img class="mt-logo" src="${esc(r.foto)}" alt="${esc(r.name)}">` : `<div class="mt-logo mt-logo-ico">🎸</div>`}
+          <h3 class="mt-nombre">${esc(r.name)}</h3>
+          <div class="mt-chips">
+            <span class="mt-chip">💵 ${fmtMoney(r.price)}<em>/hora</em></span>
+            ${r.localidad ? `<span class="mt-chip">📍 ${esc(r.localidad)}</span>` : ''}
+          </div>
+          ${dir ? `<p class="mt-dir">${esc(dir)}${linkMapaSala(r) ? ` · <a href="${linkMapaSala(r)}" target="_blank" rel="noopener">ver en el mapa</a>` : ''}</p>` : ''}
+          ${r.telefono ? `<a class="mt-tel" href="tel:${esc(String(r.telefono).replace(/[^0-9+]/g, ''))}">📞 ${esc(r.telefono)}</a>` : ''}
+          <div class="mt-acciones">
+            <button class="btn btn-primary" id="tarjeta-reservar">Ver horarios →</button>
+            <button class="btn" id="tarjeta-ficha">ℹ️ Ficha</button>
+            <button class="btn mt-fav ${esFavorita(r.id) ? 'on' : ''}" id="tarjeta-fav" title="${esFavorita(r.id) ? 'Quitar de favoritas' : 'Guardar como favorita'}" aria-label="${esFavorita(r.id) ? 'Quitar de favoritas' : 'Guardar como favorita'}">${esFavorita(r.id) ? '♥' : '♡'}</button>
+          </div>
+        </div>
+      </div>`;
+    card.onclick = accionesMapa;
+    const tc = $('#tarjeta-cerrar'); if (tc) tc.onclick = cerrarTarjetaSala;
+    const tclose = document.querySelector('.mapa-tarjeta-close'); if (tclose) tclose.onclick = cerrarTarjetaSala;
+    const tr = $('#tarjeta-reservar'); if (tr) tr.onclick = () => { cerrarTarjetaSala(); elegirSala(r.id); };
+    const tf = $('#tarjeta-ficha'); if (tf) tf.onclick = () => { cerrarTarjetaSala(); fichaSala(r.id); };
+    const tfv = $('#tarjeta-fav'); if (tfv) tfv.onclick = () => { alternarFavorita(r.id); abrirTarjetaSala(r.id); };
+  }
+  const overlay = $('#mapa-tarjeta');
+  if (overlay) overlay.hidden = false;
+  if (mapa) { try { mapa.panTo([Number(r.lat), Number(r.lng)], { animate: true }); } catch (e) {} }
+}
+function cerrarTarjetaSala() {
+  const overlay = $('#mapa-tarjeta');
+  if (overlay) overlay.hidden = true;
+  const card = $('#mapa-tarjeta-card');
+  if (card) card.innerHTML = '';
+}
+
+
 /* Acciones dentro de los popups (tanto Leaflet como Google) */
 function accionesMapa(e) {
   const lista = e.target.closest('[data-ir-lista]');
@@ -1092,12 +1212,12 @@ function accionesMapa(e) {
   /* Tocar una sala de la lista la muestra en el mapa (salvo que toquen un botón o enlace) */
   if (!e.target.closest('button') && !e.target.closest('a')) {
     const item = e.target.closest('[data-mapa-item]');
-    if (item) return verSalaEnMapa(item.dataset.mapaItem);
+    if (item) { verSalaEnMapa(item.dataset.mapaItem); abrirTarjetaSala(item.dataset.mapaItem); }
   }
   const s = e.target.closest('[data-mapa-sala]');
   if (s) { cerrarPopupMapa(); return elegirSala(s.dataset.mapaSala); }
   const fch = e.target.closest('[data-mapa-ficha]');
-  if (fch) { cerrarPopupMapa(); return fichaSala(fch.dataset.mapaFicha); }
+  if (fch) { cerrarPopupMapa(); cerrarTarjetaSala(); return fichaSala(fch.dataset.mapaFicha); }
   const fav = e.target.closest('[data-mapa-fav]');
   if (fav) return alternarFavorita(fav.dataset.mapaFav);
   const cx = e.target.closest('[data-mapa-cancelar]');
@@ -1137,7 +1257,8 @@ function renderMapaLeaflet() {
   marcasSala = {};
 
   /* 1. Salas publicadas */
-  const salas = salasPublicas().filter(tieneUbicacion);
+  let salas = salasPublicas().filter(tieneUbicacion);
+  if (filtroSalas === 'favoritas') salas = salas.filter(r => esFavorita(r.id));
   salas.forEach(r => {
     const icono = L.divIcon({
       className: 'mk-wrap',
@@ -1146,15 +1267,10 @@ function renderMapaLeaflet() {
     });
     marcasSala[r.id] = L.marker([Number(r.lat), Number(r.lng)], { icon: icono, title: r.name })
       .addTo(capaMarcas)
-      .bindPopup(popupSala(r), {
-        closeButton: true,
-        autoPan: true,
-        autoPanPadding: [50, 50],
-        className: 'popup-centrado',
-      })
       .on('click', () => {
         irACarruselSala(r.id);
         if (mapa) mapa.panTo([Number(r.lat), Number(r.lng)], { animate: true });
+        abrirTarjetaSala(r.id);
       });
   });
 
@@ -1372,39 +1488,17 @@ function promosBloqueHTML(lista, vacio) {
     </article>`).join('')}</div>`;
 }
 
-/* Inicio público: promociones activas, visibles para todos (con o sin sesión) */
-function promosInicioHTML() {
-  const lista = promosActivas();
-  if (!lista.length) return '';
-  return `<div class="promos-publico">
-    <h3 class="promos-tit">🎉 Promociones y novedades</h3>
-    ${promosBloqueHTML(lista)}
-  </div>`;
-}
-
+/* El Inicio del músico ya no muestra el bloque "🛎 Resumen" (estadísticas)
+   ni "🎉 Promociones y novedades". Solo queda el ingreso si no hay sesión. */
 function renderResumenInicio() {
   const box = $('#inicio-resumen');
   if (!box || !state) return;
-  const hoy = todayStr();
-  const salas = salasPublicas();
-  const todas = state.reservations.filter(r => r.estado !== 'cancelada');
-  const hoyCount = todas.filter(r => r.date === hoy).length;
-  const semana = todas.filter(r => r.date > hoy && r.date <= addDaysStr(hoy, 7)).length;
-  const proximas = misReservas().filter(r => r.date >= hoy && r.estado !== 'cancelada').length;
-
-  box.innerHTML = `
-    <div class="panel-head"><h2>🛎 Resumen</h2></div>
-
-    <div class="stats-cards resumen-stats">
-      <div class="stat"><span>Salas publicadas</span><strong>${salas.length}</strong></div>
-      <div class="stat"><span>Reservas hoy</span><strong>${hoyCount}</strong></div>
-      <div class="stat"><span>Próximos 7 días</span><strong>${semana}</strong></div>
-      <div class="stat"><span>Mis reservas</span><strong>${proximas}</strong></div>
-    </div>
-
-    ${promosInicioHTML()}
-
-    ${!yo ? `<div class="row wrap"><button class="btn btn-sm" id="sum-login">👤 Iniciar sesión</button></div>` : ''}`;
+  const contenido = !yo
+    ? `<div class="row wrap"><button class="btn btn-sm" id="sum-login">👤 Iniciar sesión</button></div>`
+    : '';
+  /* Sin novedades ni botón, se oculta el panel para no dejar una tarjeta vacía */
+  box.hidden = !contenido.trim();
+  box.innerHTML = contenido;
 }
 
 /* Mi ubicación y vista general */
@@ -1424,10 +1518,22 @@ function pedirMiUbicacion() {
   );
 }
 
+/* Estado del botón "Favoritas" del mapa */
+function pintarBotonFavMapa() {
+  const b = $('#btn-mapa-fav');
+  if (!b) return;
+  const on = filtroSalas === 'favoritas';
+  b.classList.toggle('on', on);
+  b.innerHTML = `${on ? '♥' : '♡'}<span class="mapa-btn-txt"> Favoritas</span>`;
+}
+
 /* Acciones dentro de los popups del mapa */
 function wireMapa() {
   $('#btn-mi-ubicacion').onclick = pedirMiUbicacion;
-  $('#btn-ver-todas').onclick = () => { renderMapa(); encuadrarMapa(); };
+  $('#btn-ver-todas').onclick = () => { filtroSalas = 'todas'; renderMapa(); encuadrarMapa(); pintarBotonFavMapa(); };
+  const bmf = $('#btn-mapa-fav');
+  if (bmf) bmf.onclick = () => { filtroSalas = filtroSalas === 'favoritas' ? 'todas' : 'favoritas'; renderMapa(); encuadrarMapa(); pintarBotonFavMapa(); };
+  pintarBotonFavMapa();
   $('#btn-ver-mapa').onclick = irMapa;
   const bvi = $('#btn-ver-instrumentos');
   if (bvi) bvi.onclick = irInstrumentos;
@@ -1630,7 +1736,9 @@ async function buscarDireccion(direccion) {
 
   /* 2. OpenStreetMap (Nominatim) */
   try {
-    const res = await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + encodeURIComponent(q));
+    /* countrycodes=ar: igual que con Google, el mapa es argentino. Evita que una
+       dirección rara o incompleta caiga en otro país. */
+    const res = await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=ar&q=' + encodeURIComponent(q));
     const lista = await res.json();
     if (!lista || !lista.length) { toast('No encontré esa dirección', 'warn'); return null; }
     return { lat: Number(lista[0].lat), lng: Number(lista[0].lon), nombre: lista[0].display_name };
@@ -1791,7 +1899,7 @@ function montarRecortador(host, opciones = {}) {
     <div class="crop-frame ${formato === 'horizontal' ? 'ancho' : ''} ${formato === 'cuadrado' ? 'circulo' : ''}" style="aspect-ratio:${ratio}">
       <canvas class="crop-canvas"></canvas>
       <div class="crop-grid"></div>
-      <div class="crop-empty">📷<br>Elige una imagen</div>
+      <div class="crop-empty">📷<br>Elegí una imagen</div>
     </div>
     <div class="crop-controls">
       <button class="btn btn-sm" data-crop="out" title="Achicar">➖</button>
@@ -1905,6 +2013,8 @@ function montarRecortador(host, opciones = {}) {
 
 /* ---------- Registrar / editar banda ---------- */
 function formularioBanda(id, alGuardar) {
+  /* Registrar una banda es solo para músicos; el administrador solo edita o elimina */
+  if (!id && esCuentaControl()) { toast('Registrar una banda es solo para músicos', 'warn'); return; }
   const b = id ? bandas().find(x => x.id === id) : { nombre: '', telefono: '', foto: '' };
   if (id && !b) return;
   const fotoActual = b.foto || '';
@@ -1997,7 +2107,7 @@ function formularioBanda(id, alGuardar) {
 
   $('#bd-save').onclick = async () => {
     const nombre = $('#bd-name').value.trim();
-    if (!nombre) { toast('Escribe el nombre de la banda', 'warn'); return; }
+    if (!nombre) { toast('Escribí el nombre de la banda', 'warn'); return; }
     const integrantes = Array.from($('#bd-miembros').children).map(fila => ({
       nombre: fila.querySelector('[data-m-nombre]').value.trim(),
       instrumento: fila.querySelector('[data-m-instrumento]').value.trim(),
@@ -2065,7 +2175,7 @@ function verPerfilBanda(id) {
     <div class="perfil">
       ${b.fotoGrupal ? `<img class="perfil-fondo" src="${esc(b.fotoGrupal)}" alt="">` : ''}
       ${b.foto
-        ? `<img class="perfil-avatar-circular grande" src="${esc(b.foto)}" alt="${esc(b.nombre)}" data-foto="${esc(b.foto)}" data-foto-alt="${esc(b.nombre)}" title="Toca para ver en grande">`
+        ? `<img class="perfil-avatar-circular grande" src="${esc(b.foto)}" alt="${esc(b.nombre)}" data-foto="${esc(b.foto)}" data-foto-alt="${esc(b.nombre)}" title="Tocá para ver en grande">`
         : '<div class="perfil-avatar-circular grande perfil-sin-foto">🎭</div>'}
       <h3>${esc(b.nombre)}</h3>
       <div class="perfil-tags">
@@ -2134,11 +2244,11 @@ function renderConfirm() {
       </div>
       <label class="lbl-band">Banda registrada (opcional)
         <select id="bk-band">
-          <option value="">— Escribe tu nombre —</option>
+          <option value="">— Escribí tu nombre —</option>
           ${listaBandas.map(b => `<option value="${esc(b.nombre)}" ${elegida && b.id === elegida.id ? 'selected' : ''}>${esc(b.nombre)}</option>`).join('')}
         </select>
       </label>
-      <button class="btn btn-sm" id="bk-register-band">🎭 Registrar mi banda</button>
+      ${esCuentaControl() ? '' : '<button class="btn btn-sm" id="bk-register-band">🎭 Registrar mi banda</button>'}
     </div>
     <label>Nombre o banda *<input id="bk-name" maxlength="60" placeholder="Ej.: Banda Luna" autocomplete="name" value="${yo ? esc(yo.nombre) : ''}"></label>
     <label>Teléfono (opcional)${yo ? '' : ' <span class="muted small">(creá una cuenta para no escribirlo cada vez)</span>'}<input id="bk-phone" type="tel" maxlength="20" placeholder="Ej.: +56 9 1234 5678" value="${yo ? esc(yo.telefono || '') : ''}"></label>
@@ -2169,8 +2279,9 @@ function renderConfirm() {
   selBand.onchange = pintarBanda;
   if (elegida) pintarBanda();
 
-  /* Registrar una banda nueva y seleccionarla */
-  $('#bk-register-band').onclick = () => formularioBanda(null, creada => {
+  /* Registrar una banda nueva y seleccionarla (solo músicos) */
+  const btnRegBanda = $('#bk-register-band');
+  if (btnRegBanda) btnRegBanda.onclick = () => formularioBanda(null, creada => {
     if (!creada) return;
     renderConfirm();                       /* recarga el selector */
     const nuevoSel = $('#bk-band');
@@ -2201,10 +2312,10 @@ function renderConfirm() {
 async function confirmBooking() {
   const name = $('#bk-name').value.trim();
   const phone = $('#bk-phone').value.trim();
-  if (!name) { toast('Escribe tu nombre o el de tu banda', 'warn'); return; }
+  if (!name) { toast('Escribí tu nombre o el de tu banda', 'warn'); return; }
   const startMin = toMin(sel.slot.start), endMin = toMin(sel.slot.end);
   if (!rangoDisponible(sel.date, sel.roomId, startMin, endMin)) {
-    toast('Ese horario ya no está disponible. Elige otro.', 'error');
+    toast('Ese horario ya no está disponible. Elegí otro.', 'error');
     sel.range = null;
     renderSlots();
     goStep(3);
@@ -2311,6 +2422,12 @@ function mostrarLugar() {
 function setNav(nav) {
   navActual = nav;
   document.body.classList.toggle('modo-control', esCuentaControl());
+  /* Al dejar el panel de administración, la barra inferior vuelve a mostrarse.
+     (También cuando se sale con el botón Atrás del navegador, que no pasa por salirAdmin) */
+  if (nav !== 'admin') {
+    document.body.classList.remove('admin-abierto');
+    $('#btn-exit-admin').hidden = true;
+  }
   /* En el Mapa la barra inferior va transparente (solo en celular) */
   document.body.classList.toggle('nav-mapa', nav === 'mapa');
   $$('#dock-container [data-nav]').forEach(b => b.classList.toggle('active', b.dataset.nav === nav));
@@ -2323,63 +2440,22 @@ function scrollMainArriba() {
   if (m) m.scrollTop = 0;
 }
 
-/* Swipe horizontal para cambiar de página en celular (funciona en todas las secciones) */
+/* Swipe horizontal para cambiar de pestañas en Administración central (celular)
+   Las barras de las pestañas acompañan el deslizamiento */
 function prepararSwipeNavegacion() {
   if (window._swipeNavOk) return;
   window._swipeNavOk = true;
 
-  /* Orden de las páginas principales (incluye admin/panel si el rol los tiene) */
-  function paginasVisibles() {
-    const base = ['inicio', 'salas', 'mapa', 'comunidad', 'perfil'];
-    if (esSuper()) base.push('admin');
-    else if (esDueño()) base.push('panel');
-    return base;
-  }
-
-  /* Encontrar la página actual */
-  function paginaActual() {
-    if (!document.getElementById('view-admin') && !document.getElementById('view-admin').hidden) return 'admin';
-    if (!document.getElementById('view-panel') && !document.getElementById('view-panel').hidden) return 'panel';
-    if (!document.getElementById('view-mapa') && !document.getElementById('view-mapa').hidden) return 'mapa';
-    if (!document.getElementById('view-comunidad') && !document.getElementById('view-comunidad').hidden) return 'comunidad';
-    if (!document.getElementById('view-mine') && !document.getElementById('view-mine').hidden) return 'perfil';
-    if (!document.getElementById('view-public').hidden) {
-      return document.body.classList.contains('nav-mapa') ? 'mapa' : 'salas';
-    }
-    return 'inicio';
-  }
-
-  /* Navegar a una página */
-  function irAPagina(pagina) {
-    const ACCIONES = {
-      inicio: () => { const b = document.getElementById('nav-inicio'); if (b) b.click(); },
-      salas: () => { const b = document.getElementById('nav-salas'); if (b) b.click(); },
-      mapa: () => { const b = document.getElementById('nav-reservar'); if (b) b.click(); },
-      comunidad: () => { const b = document.getElementById('nav-comunidad'); if (b) b.click(); },
-      perfil: () => { const b = document.getElementById('nav-mine'); if (b) b.click(); },
-      admin: () => { const b = document.getElementById('nav-admin'); if (b) b.click(); },
-      panel: () => { const b = document.getElementById('nav-panel'); if (b) b.click(); },
-    };
-    if (ACCIONES[pagina]) ACCIONES[pagina]();
-  }
-
-  /* En el admin: swipe entre pestañas */
-  function tabsAdmin() {
-    return [...document.querySelectorAll('.admin-tab')].map(t => t.dataset.tab).filter(Boolean);
-  }
-
-  function irATabAdmin(tab) {
-    const btn = [...document.querySelectorAll('.admin-tab')].find(t => t.dataset.tab === tab);
-    if (btn) btn.click();
-  }
-
-  /* Detectar swipe horizontal */
+  /* Detectar swipe horizontal SOLO en el panel de administración */
   let touchStartX = 0, touchStartY = 0, touchEndX = 0, touchEndY = 0;
   let swipando = false;
 
   document.addEventListener('touchstart', e => {
     const target = e.target;
-    if (target.closest('#dock-container, .modal, .notif-drop, .ajustes-drop, .comu-form, input, textarea, .hour-times, .chat-global-form, select')) return;
+    /* Solo en el panel de admin, no en inputs/modales/la app principal */
+    if (target.closest('#dock-container, .modal, .notif-drop, .ajustes-drop, input, textarea, select, .hour-times, .chat-global-form')) return;
+    const admin = document.getElementById('view-admin');
+    if (!admin || admin.hidden) return;
     touchStartX = e.touches[0].clientX;
     touchStartY = e.touches[0].clientY;
     touchEndX = touchStartX;
@@ -2403,52 +2479,21 @@ function prepararSwipeNavegacion() {
     /* Solo swipe horizontal */
     if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.2) return;
 
-    /* ¿Estamos en el panel de admin? → swipe entre pestañas */
-    const adminVisible = document.getElementById('view-admin') && !document.getElementById('view-admin').hidden;
-    if (adminVisible) {
-      const tabs = tabsAdmin();
-      const btnActivo = [...document.querySelectorAll('.admin-tab.active, .admin-tab')].find(t => t.classList.contains('active')) || document.querySelector('.admin-tab.active');
-      const tabActual = btnActivo ? btnActivo.dataset.tab : null;
-      const idx = tabs.indexOf(tabActual);
-      if (idx < 0) return;
-      if (dx < 0 && idx < tabs.length - 1) {
-        irATabAdmin(tabs[idx + 1]);
-      } else if (dx > 0 && idx > 0) {
-        irATabAdmin(tabs[idx - 1]);
-      }
-      return;
-    }
-
-    /* En el panel del dueño → swipe entre pestañas */
-    const panelVisible = document.getElementById('view-panel') && !document.getElementById('view-panel').hidden;
-    if (panelVisible) {
-      const tabs = [...document.querySelectorAll('[data-ptab], .ptab-btn')].map(t => t.dataset.ptab).filter(Boolean);
-      const btnActivo = [...document.querySelectorAll('.ptab-btn.active, .ptab-btn')].find(t => t.classList.contains('active'));
-      const tabActual = btnActivo ? btnActivo.dataset.ptab : null;
-      const idx = tabs.indexOf(tabActual);
-      if (idx < 0) return;
-      if (dx < 0 && idx < tabs.length - 1) {
-        const btn = [...document.querySelectorAll('.ptab-btn')].find(t => t.dataset.ptab === tabs[idx + 1]);
-        if (btn) btn.click();
-      } else if (dx > 0 && idx > 0) {
-        const btn = [...document.querySelectorAll('.ptab-btn')].find(t => t.dataset.ptab === tabs[idx - 1]);
-        if (btn) btn.click();
-      }
-      return;
-    }
-
-    /* En la app principal → swipe entre páginas del nav */
-    const paginas = paginasVisibles();
-    const actual = paginaActual();
-    const idx = paginas.indexOf(actual);
+    /* Pestañas del admin */
+    const tabs = [...document.querySelectorAll('.admin-tab')].map(t => t.dataset.tab).filter(Boolean);
+    const btnActivo = document.querySelector('.admin-tab.active');
+    const tabActual = btnActivo ? btnActivo.dataset.tab : null;
+    const idx = tabs.indexOf(tabActual);
     if (idx < 0) return;
 
-    if (dx < 0 && idx < paginas.length - 1) {
-      /* Swipe IZQUIERDA → siguiente página */
-      irAPagina(paginas[idx + 1]);
+    if (dx < 0 && idx < tabs.length - 1) {
+      /* Swipe IZQUIERDA → siguiente pestaña */
+      const btn = [...document.querySelectorAll('.admin-tab')].find(t => t.dataset.tab === tabs[idx + 1]);
+      if (btn) btn.click();
     } else if (dx > 0 && idx > 0) {
-      /* Swipe DERECHA → página anterior */
-      irAPagina(paginas[idx - 1]);
+      /* Swipe DERECHA → pestaña anterior */
+      const btn = [...document.querySelectorAll('.admin-tab')].find(t => t.dataset.tab === tabs[idx - 1]);
+      if (btn) btn.click();
     }
   }, { passive: true });
 }
@@ -2484,12 +2529,34 @@ function irSalas(vista) {
   scrollMainArriba();
 }
 
+/* La vista "Salas" del menú muestra el mapa (con todas las salas) */
+function irSalasMapa(filtro) {
+  /* El dueño de sala no tiene mapa de salas públicas: ve su lista */
+  if (esDueño()) { irSalas(); return; }
+  filtroSalas = filtro === 'favoritas' ? 'favoritas' : 'todas';
+  ocultarVistas();
+  $('#view-mapa').hidden = false;
+  setNav('salas');
+  renderMapa();
+  pintarBotonFavMapa();
+  scrollMainArriba();
+  if (timerEncuadre) clearTimeout(timerEncuadre);
+  timerEncuadre = setTimeout(() => {
+    if (mapa) mapa.invalidateSize();
+    if (gmap) { try { google.maps.event.trigger(gmap, 'resize'); } catch (e) {} }
+    encuadrarMapa();
+  }, 220);
+}
+
 /* El mapa tiene su propia pantalla */
 function irMapa() {
+  /* El dueño de sala no tiene mapa de salas: lo llevamos a su lista de salas */
+  if (esDueño()) { irSalas(); return; }
   ocultarVistas();
   $('#view-mapa').hidden = false;
   setNav('mapa');
   renderMapa();
+  pintarBotonFavMapa();
   scrollMainArriba();
   if (timerEncuadre) clearTimeout(timerEncuadre);
   timerEncuadre = setTimeout(() => {
@@ -2509,26 +2576,7 @@ function irInstrumentos() { mostrarLugar(); }
 function irMisReservas() { mostrarMisReservas(); }
 
 /* ================= Comunidad (solo músicos) ================= */
-let comuTab = 'musicos';
-let comuBusqueda = '';
-let comuSoloZona = false;
-let comuLista = [];
-let comuChatCon = null;
-let comuPollTimer = null;
-let comuBuscarTimer = null;
-let comuConvFirma = '';
-let comuHiloFirma = '';
-
-const comuAvatar = m => {
-  const inicial = esc(String((m && m.nombre) || '?').trim().charAt(0).toUpperCase() || '?');
-  return m && m.foto
-    ? `<span class="comu-avatar"><img src="${esc(m.foto)}" alt=""></span>`
-    : `<span class="comu-avatar comu-avatar-letra">${inicial}</span>`;
-};
-
-const horaCorta = ts => new Date(ts).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
-
-function irComunidad(tab) {
+function irComunidad() {
   /* Solo los músicos (rol USER) tienen comunidad; admin y dueños van al Perfil */
   if (!esMúsico()) {
     const navPerfil = document.getElementById('nav-mine');
@@ -2539,22 +2587,22 @@ function irComunidad(tab) {
   $('#view-comunidad').hidden = false;
   setNav('comunidad');
   scrollMainArriba();
+  /* El chat va a pantalla completa: el estado se aplica ya (síncrono) y el
+     contenido viejo se limpia, para que no aparezca un instante antes del chat.
+     Si hace falta suscribirse, se deshace y vuelven las 5 opciones de abajo. */
+  document.body.classList.add('chat-abierto');
+  $('#dock-container').hidden = true;
+  $('#comu-chats').innerHTML = '<p class="muted small comu-cargando">Cargando chat…</p>';
   /* Verificar acceso al chat y mostrar chat o suscripción */
   verificarAccesoChat().then(tieneAcceso => {
     if (tieneAcceso) {
       cargarChatGlobal();
     } else {
+      document.body.classList.remove('chat-abierto');
+      $('#dock-container').hidden = false;
       mostrarSuscripcionChat();
     }
   });
-}
-
-function activarComuPane(tab) {
-  /* Ya no hay pestañas, solo el chat global */
-}
-
-function cambiarComuTab(tab) {
-  /* Ya no hay pestañas, el chat se carga directamente desde irComunidad */
 }
 
 /* Verificar si el usuario tiene acceso al chat global */
@@ -2567,95 +2615,66 @@ async function verificarAccesoChat() {
   }
 }
 
-/* Mostrar el modal de suscripción al chat global */
+/* Mostrar la pantalla de suscripción al chat global */
 function mostrarSuscripcionChat() {
   const host = $('#comu-chats');
   if (!host) return;
 
+  const tick = '<span class="sus-tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>';
+
   host.innerHTML = `
     <div class="suscripcion-wrap">
-      <section class="suscripcion-hero">
-        <div class="suscripcion-icono"><svg width="46" height="52" viewBox="280 210 510 580" xmlns="http://www.w3.org/2000/svg"><g stroke="#00A13E" stroke-width="96" stroke-linecap="round" fill="none"><line x1="424" y1="402" x2="349" y2="720"/><line x1="600" y1="278" x2="497" y2="720"/><line x1="720" y1="397" x2="647" y2="720"/></g></svg></div>
-        <h1>Más Músicos</h1>
-        <p>Charlá con músicos de todo el país que, como vos, usan Más Música.</p>
+      <section class="sus-hero">
+        <div class="sus-mark" aria-hidden="true"><i></i><i></i><i></i></div>
+        <h1>Más músicos</h1>
+        <p class="sus-lede">Charlá con músicos de todo el país que, como vos, usan Más Música.</p>
       </section>
 
-      <div class="suscripcion-perks">
-        <ul>
-          <li><span class="check">✓</span>Chat con otros músicos suscritos</li>
-          <li><span class="check">✓</span>Salas y consejos de la comunidad</li>
-          <li><span class="check">✓</span>Cancelá cuando quieras</li>
-        </ul>
-      </div>
+      <ul class="sus-benefits">
+        <li>${tick}Chat con otros músicos suscritos</li>
+        <li>${tick}Salas y consejos de la comunidad</li>
+        <li>${tick}Cancelá cuando quieras</li>
+      </ul>
 
-      <div class="suscripcion-section-title">Incluido en tu suscripción</div>
-      <div class="suscripcion-features">
-        <div class="suscripcion-feature">
-          <div class="f-icon">📍</div>
-          <h3>Músicos cerca</h3>
-          <p>Chateá con músicos de tu zona y armá tu banda.</p>
+      <section class="sus-plan" aria-labelledby="sus-plan-name">
+        <div class="sus-plan-row">
+          <span class="sus-plan-name" id="sus-plan-name">Plan mensual</span>
+          <span class="sus-plan-price">$2.000<small>/ mes</small></span>
         </div>
-        <div class="suscripcion-feature">
-          <div class="f-icon">🎶</div>
-          <h3>Encontrá integrantes</h3>
-          <p>Buscá bajista, baterista o cantante para tu banda.</p>
+        <button class="sus-btn" id="suscribirse-chat" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+          Suscribirme ahora
+        </button>
+        <p class="sus-fine">Pago seguro. Podés cancelar en cualquier momento desde tu perfil.</p>
+      </section>
+
+      <section class="sus-teaser">
+        <div class="sus-teaser-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
         </div>
-      </div>
-
-      <div class="suscripcion-section-title">Elegí tu plan</div>
-      <div class="suscripcion-plans" id="suscripcion-plans">
-        <button class="suscripcion-plan" data-plan="mensual">
-          <div class="plan-left"><span class="plan-radio"></span>
-            <div><div class="plan-name">Mensual</div><div class="plan-sub">Se renueva cada mes</div></div>
-          </div>
-          <div class="plan-price">$2.000<small>por mes</small></div>
-        </button>
-        <button class="suscripcion-plan selected" data-plan="trimestral">
-          <span class="plan-badge">AHORRÁS 17%</span>
-          <div class="plan-left"><span class="plan-radio"></span>
-            <div><div class="plan-name">Trimestral</div><div class="plan-sub">$1.667 por mes</div></div>
-          </div>
-          <div class="plan-price">$5.000<small>cada 3 meses</small></div>
-        </button>
-        <button class="suscripcion-plan" data-plan="anual">
-          <span class="plan-badge">MEJOR PRECIO</span>
-          <div class="plan-left"><span class="plan-radio"></span>
-            <div><div class="plan-name">Anual</div><div class="plan-sub">$1.250 por mes</div></div>
-          </div>
-          <div class="plan-price">$15.000<small>por año</small></div>
-        </button>
-      </div>
-
-      <div class="suscripcion-cta-box">
-        <div class="suscripcion-summary"><span id="plan-label">Trimestral</span><strong id="plan-price">$5.000</strong></div>
-        <button class="suscripcion-cta" id="suscribirse-chat">🎸 Suscribirme ahora</button>
-        <p class="suscripcion-fine">Pago seguro. Podés cancelar en cualquier momento desde tu perfil.</p>
-      </div>
+        <p><strong>Mirá las salas de tu zona</strong> y armá tu banda. Buscá bajista.</p>
+      </section>
     </div>`;
-
-  const planes = host.querySelectorAll('.suscripcion-plan');
-  const planLabel = host.querySelector('#plan-label');
-  const planPrice = host.querySelector('#plan-price');
-  let planSeleccionado = 'trimestral';
-
-  planes.forEach(p => {
-    p.onclick = () => {
-      planes.forEach(x => x.classList.remove('selected'));
-      p.classList.add('selected');
-      planSeleccionado = p.dataset.plan;
-      if (planLabel) planLabel.textContent = p.querySelector('.plan-name').textContent;
-      if (planPrice) planPrice.textContent = p.querySelector('.plan-price').childNodes[0].textContent.trim();
-    };
-  });
 
   const btnSuscribir = host.querySelector('#suscribirse-chat');
   if (btnSuscribir) {
     btnSuscribir.onclick = async () => {
+      if (btnSuscribir.disabled) return;
+      const htmlOriginal = btnSuscribir.innerHTML;
+      btnSuscribir.disabled = true;
+      btnSuscribir.textContent = '⏳ Procesando…';
       try {
-        await api('/api/comunidad/chat-suscribirse', { method: 'POST', body: { plan: planSeleccionado } });
+        await api('/api/comunidad/chat-suscribirse', { method: 'POST', body: { plan: 'mensual' } });
         toast('¡Suscripción activada! Ya podés chatear.', 'ok');
-        cargarChatGlobal();
-      } catch (e) { toast(e.message, 'error'); }
+        await cargarChatGlobal();
+      } catch (e) {
+        toast(e.message, 'error');
+      } finally {
+        if (btnSuscribir.isConnected && !host.querySelector('.chat-global')) {
+          btnSuscribir.disabled = false;
+          btnSuscribir.innerHTML = htmlOriginal;
+        }
+      }
     };
   }
 }
@@ -2670,12 +2689,11 @@ async function cargarChatGlobal() {
   const host = $('#comu-chats');
   if (!host) return;
 
-  // Mostrar el chat global
+  // Mostrar el chat global (a pantalla completa)
   host.innerHTML = `
     <div class="chat-global">
       <div class="chat-global-head">
-        <h3>💬 Chat Global</h3>
-        <span class="muted small">Todos los músicos suscritos</span>
+        <button class="chat-global-volver" id="chat-global-volver" type="button" title="Volver" aria-label="Volver a Inicio">←</button>
       </div>
       <div class="chat-global-hilo" id="chat-global-hilo"></div>
       <div class="chat-global-form">
@@ -2684,7 +2702,14 @@ async function cargarChatGlobal() {
       </div>
     </div>`;
 
-  // Cargar mensajes
+  /* Se ocultan las 5 opciones de abajo: mientras se chatea el chat ocupa toda la pantalla */
+  document.body.classList.add('chat-abierto');
+  $('#dock-container').hidden = true;
+  const btnVolver = $('#chat-global-volver');
+  if (btnVolver) btnVolver.onclick = irInicio;
+
+  // Cargar mensajes (desde cero: el hilo se acaba de crear de nuevo)
+  chatGlobalUltimoFecha = 0;
   await cargarMensajesGlobal();
 
   // Configurar envío
@@ -2765,211 +2790,6 @@ function fechaChat(ts) {
   const d = new Date(ts);
   const hm = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
   return d.toDateString() === new Date().toDateString() ? `hoy · ${hm}` : `${d.toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })} · ${hm}`;
-}
-
-function pararComuPoll() { if (comuPollTimer) { clearInterval(comuPollTimer); comuPollTimer = null; } }
-function iniciarComuPoll() {
-  pararComuPoll();
-  comuPollTimer = setInterval(() => {
-    const v = $('#view-comunidad');
-    if (!v || v.hidden) return;
-    if (comuTab === 'mensajes') {
-      if (comuChatCon) cargarComuChat(comuChatCon, true);
-      else cargarComuConversaciones(true);
-    }
-  }, 5000);
-}
-
-/* ----- Directorio de músicos ----- */
-async function cargarComuMusicos() {
-  const host = $('#comu-lista');
-  if (!host) return;
-  host.innerHTML = '<p class="muted small">Cargando músicos…</p>';
-  try {
-    const q = new URLSearchParams();
-    if (comuBusqueda.trim()) q.set('q', comuBusqueda.trim());
-    if (comuSoloZona && yo && yo.localidad) q.set('zona', yo.localidad);
-    const r = await api('/api/comunidad/musicos?' + q.toString());
-    comuLista = r.musicos || [];
-    const nota = $('#comu-zona-nota');
-    if (nota) nota.textContent = (yo && yo.localidad) ? `Tu zona: ${yo.localidad}` : 'Cargá tu localidad en el Perfil';
-    renderComuLista();
-  } catch (e) { host.innerHTML = `<p class="muted">${esc(e.message)}</p>`; }
-}
-
-const comuTags = instrumentos => (instrumentos && instrumentos.length)
-  ? `<div class="comu-tags">${instrumentos.map(i => `<span class="comu-tag">${esc(i)}</span>`).join('')}</div>`
-  : '';
-
-const comuBotones = (m, conSeg) => `<div class="comu-acciones">
-    ${conSeg ? `<button type="button" class="btn btn-sm ${m.siguiendo ? 'btn-primary' : ''}" data-comu-seguir="${m.id}">${m.siguiendo ? 'Siguiendo ✓' : 'Seguir'}</button>` : ''}
-    <button type="button" class="btn btn-sm btn-primary" data-comu-msg="${m.id}">💬 Mensaje</button>
-  </div>`;
-
-function renderComuLista() {
-  const host = $('#comu-lista');
-  if (!comuLista.length) {
-    host.innerHTML = '<p class="muted">No se encontraron músicos con ese filtro.</p>';
-    return;
-  }
-  host.innerHTML = comuLista.map(m => `
-    <div class="comu-card" data-id="${m.id}">
-      ${comuAvatar(m)}
-      <div class="comu-info">
-        <strong>${esc(m.nombre)} <span class="comu-user">@${esc(m.usuario)}</span></strong>
-        <span class="muted small">📍 ${m.localidad ? esc(m.localidad) : 'Sin localidad'}</span>
-        ${comuTags(m.instrumentos)}
-        ${m.meSigue ? '<span class="comu-me-sigue">Te sigue</span>' : ''}
-        ${comuBotones(m, true)}
-      </div>
-    </div>`).join('');
-}
-
-/* ----- Seguir / dejar de seguir ----- */
-async function comuSeguir(id, btn) {
-  if (btn) btn.disabled = true;
-  try {
-    const r = await api('/api/comunidad/seguir', { method: 'POST', body: { userId: id } });
-    const item = comuLista.find(m => m.id === id);
-    if (item) item.siguiendo = r.siguiendo;
-    $$(`[data-comu-seguir="${id}"]`).forEach(b => {
-      b.disabled = false;
-      b.classList.toggle('btn-primary', r.siguiendo);
-      b.textContent = r.siguiendo ? 'Siguiendo ✓' : 'Seguir';
-    });
-    toast(r.siguiendo ? 'Ahora seguís a este músico' : 'Dejaste de seguir', 'ok');
-  } catch (e) { if (btn) btn.disabled = false; toast(e.message, 'error'); }
-}
-
-/* ----- Mensajes ----- */
-function actualizarComuBadge(n) {
-  const b = $('#comu-msg-badge');
-  if (!b) return;
-  b.hidden = !n;
-  b.textContent = n > 9 ? '9+' : String(n || 0);
-}
-
-async function cargarComuConversaciones(silent) {
-  const host = $('#comu-chats');
-  if (!host) return;
-  if (!silent) host.innerHTML = '<p class="muted small">Cargando…</p>';
-  try {
-    const r = await api('/api/comunidad/conversaciones');
-    actualizarComuBadge(r.sinLeer);
-    const firma = JSON.stringify(r.conversaciones);
-    if (silent && firma === comuConvFirma) return;
-    comuConvFirma = firma;
-    if (!r.conversaciones.length) { host.innerHTML = '<p class="muted">Todavía no tenés conversaciones. Entrá a «Músicos» y escribile a alguien.</p>'; return; }
-    host.innerHTML = r.conversaciones.map(c => `
-      <button type="button" class="comu-chat-item" data-comu-open="${c.id}">
-        ${comuAvatar(c)}
-        <span class="comu-chat-info">
-          <strong>${esc(c.nombre)} <span class="comu-user">@${esc(c.usuario)}</span></strong>
-          <span class="muted small">${c.ultimo ? (c.ultimo.mio ? 'Vos: ' : '') + esc(c.ultimo.texto) : 'Decile algo 👋'}</span>
-        </span>
-        ${c.sinLeer ? `<span class="comu-badge">${c.sinLeer}</span>` : ''}
-      </button>`).join('');
-  } catch (e) { if (!silent) host.innerHTML = `<p class="muted">${esc(e.message)}</p>`; }
-}
-
-function cerrarComuChat() {
-  comuChatCon = null;
-  comuHiloFirma = '';
-  const chat = $('#comu-chat'), chats = $('#comu-chats');
-  if (chat) { chat.hidden = true; chat.innerHTML = ''; }
-  if (chats) chats.hidden = false;
-}
-
-async function abrirComuChat(userId) {
-  if (!esMúsico()) return;
-  activarComuPane('mensajes');
-  comuChatCon = userId;
-  comuHiloFirma = '';
-  $('#comu-chats').hidden = true;
-  $('#comu-chat').hidden = false;
-  $('#comu-chat').innerHTML = '<p class="muted small">Cargando…</p>';
-  await cargarComuChat(userId, false);
-  iniciarComuPoll();
-}
-
-async function cargarComuChat(userId, silent) {
-  try {
-    const r = await api('/api/comunidad/mensajes?con=' + encodeURIComponent(userId));
-    if (comuChatCon !== userId) return;
-    const v = $('#view-comunidad');
-    if (!v || v.hidden) return;
-    if (silent) pintarComuHilo(r.mensajes);
-    else renderComuChat(r);
-  } catch (e) { /* en silencio durante el refresco automático */ }
-}
-
-function renderComuChat(r) {
-  const m = r.musico;
-  $('#comu-chat').innerHTML = `
-    <div class="comu-chat-head">
-      <button type="button" class="btn btn-sm btn-ghost" id="comu-chat-volver" title="Volver">←</button>
-      ${comuAvatar(m)}
-      <span class="comu-chat-nombre"><strong>${esc(m.nombre)}</strong><span class="comu-user">@${esc(m.usuario)}</span></span>
-      <button type="button" class="btn btn-sm ${r.siguiendo ? 'btn-primary' : ''}" data-comu-seguir="${m.id}">${r.siguiendo ? 'Siguiendo ✓' : 'Seguir'}</button>
-    </div>
-    <div class="comu-hilo" id="comu-hilo"></div>
-    <form class="comu-form" id="comu-form" autocomplete="off">
-      <input id="comu-input" type="text" maxlength="600" placeholder="Escribí un mensaje…" autocomplete="off">
-      <button class="btn btn-sm btn-primary" type="submit">Enviar</button>
-    </form>`;
-  comuHiloFirma = '';
-  pintarComuHilo(r.mensajes);
-  const input = $('#comu-input');
-  if (input) input.focus();
-}
-
-function pintarComuHilo(msgs) {
-  const host = $('#comu-hilo');
-  if (!host) return;
-  const firma = (msgs.length || 0) + ':' + (msgs.length ? msgs[msgs.length - 1].id : '');
-  if (firma === comuHiloFirma) return;
-  comuHiloFirma = firma;
-  host.innerHTML = msgs.length
-    ? msgs.map(m => `<div class="comu-burbuja ${m.mio ? 'mio' : 'otro'}">
-        <span class="comu-texto">${esc(m.texto)}</span>
-        <span class="comu-hora">${horaCorta(m.fecha)}</span>
-      </div>`).join('')
-    : '<p class="muted small">Escribile para arrancar la charla 👋</p>';
-  host.scrollTop = host.scrollHeight;
-}
-
-async function enviarComuMensaje(texto) {
-  if (!comuChatCon || !texto.trim()) return;
-  const input = $('#comu-input');
-  if (input) input.value = '';
-  try {
-    await api('/api/comunidad/mensajes', { method: 'POST', body: { para: comuChatCon, texto: texto.trim() } });
-    await cargarComuChat(comuChatCon, true);
-  } catch (e) { if (input) { input.value = texto; input.focus(); } toast(e.message, 'error'); }
-}
-
-/* ----- Siguiendo ----- */
-async function cargarComuSiguiendo(silent) {
-  const host = $('#comu-siguiendo');
-  if (!host) return;
-  if (!silent) host.innerHTML = '<p class="muted small">Cargando…</p>';
-  try {
-    const r = await api('/api/comunidad/siguiendo');
-    const bloque = (titulo, lista, vacio, conSeg) => `
-      <h3 class="comu-sub">${titulo}</h3>
-      ${lista.length ? lista.map(m => `
-        <div class="comu-card" data-id="${m.id}">
-          ${comuAvatar(m)}
-          <div class="comu-info">
-            <strong>${esc(m.nombre)} <span class="comu-user">@${esc(m.usuario)}</span></strong>
-            <span class="muted small">📍 ${m.localidad ? esc(m.localidad) : 'Sin localidad'}</span>
-            ${comuTags(m.instrumentos)}
-            ${comuBotones(m, conSeg)}
-          </div>
-        </div>`).join('') : `<p class="muted small">${vacio}</p>`}`;
-    host.innerHTML = bloque('⭐ A quiénes seguís', r.sigo.map(x => Object.assign({ siguiendo: true }, x)), 'Todavía no seguís a nadie.', true)
-      + bloque('👥 Quiénes te siguen', r.meSiguen, 'Nadie te sigue todavía.', false);
-  } catch (e) { if (!silent) host.innerHTML = `<p class="muted">${esc(e.message)}</p>`; }
 }
 
 function renderMine() {
@@ -3055,7 +2875,9 @@ function mostrarAcceso() {
 
 /* Cierra todas las vistas menos la que se vaya a mostrar */
 function ocultarVistas() {
-  pararComuPoll();
+  clearInterval(chatGlobalTimer);
+  chatGlobalTimer = null;
+  document.body.classList.remove('chat-abierto');
   ['view-public', 'view-mine', 'view-lugar', 'view-panel', 'view-admin', 'view-mapa', 'view-comunidad', 'view-auth']
     .forEach(v => { const el = $('#' + v); if (el) el.hidden = true; });
 }
@@ -3069,14 +2891,23 @@ function actualizarBarraSesion() {
   if (naPanel) naPanel.hidden = !esDueño();
   const naComunidad = $('#nav-comunidad');
   if (naComunidad) naComunidad.hidden = !esMúsico();
+  /* El dueño de sala no tiene mapa de salas (ni la pestaña ni el botón de la lista) */
+  const naMapa = $('#nav-reservar');
+  if (naMapa) naMapa.hidden = esDueño();
+  const bVerMapa = $('#btn-ver-mapa');
+  if (bVerMapa) bVerMapa.hidden = esDueño();
   /* Si es admin o dueño, el botón de Comunidad se oculta (ya venía hidden) */
   if (!yo) {
-    $('#btn-panel').hidden = true;
     $('#btn-notif').hidden = true;
     $('#btn-ajustes').hidden = true;
+    const bPanel = $('#btn-panel');
+    if (bPanel) bPanel.hidden = true;
+    const chipSala = $('#btn-sala-logo');
+    if (chipSala) chipSala.hidden = true;
     return;
   }
-  $('#btn-panel').hidden = !esDueño();
+  const bPanel = $('#btn-panel');
+  if (bPanel) bPanel.hidden = !esDueño();
   actualizarAccionesHeader();
 }
 
@@ -3085,6 +2916,18 @@ function actualizarAccionesHeader() {
   $('#btn-ajustes').hidden = !yo || $('#view-mine').hidden;
   $('#btn-notif').hidden = !yo || !$('#view-mine').hidden;
   if (yo && $('#view-mine').hidden) pintarBadgeNotif();
+  renderHeaderSalaLogo();
+}
+
+/* Mi sala: su logo arriba en la barra, al lado del de Instagram (solo el dueño, si subió logo) */
+function renderHeaderSalaLogo() {
+  const b = $('#btn-sala-logo');
+  if (!b) return;
+  const sala = miSala || ((esDueño() && state) ? (state.rooms || []).find(r => r.ownerId === yo.id) : null);
+  if (!sala || !sala.foto) { b.hidden = true; b.innerHTML = ''; return; }
+  b.hidden = false;
+  b.title = 'Mi sala: ' + (sala.name || '');
+  b.innerHTML = `<img src="${esc(sala.foto)}" alt="${esc(sala.name || 'Mi sala')}">`;
 }
 
 function pintarBadgeNotif() {
@@ -3249,8 +3092,6 @@ function pantallaAuth(vista = 'inicio') {
   const vol = '<button class="btn btn-sm btn-ghost auth-volver" data-vista="inicio">← Volver</button>';
 
   if (vista === 'inicio') {
-    const cIni = (state && state.settings && state.settings.contacto) || {};
-    const igIni = cIni.instagram ? limpiarIdentRed(cIni.instagram) : '';
     b.innerHTML = `
       <div class="auth-card">
         <div class="auth-titulo">
@@ -3293,7 +3134,6 @@ function pantallaAuth(vista = 'inicio') {
         <p class="auth-cuenta">¿Ya tenés cuenta?
           <button type="button" class="auth-link" data-vista="login">Iniciar sesión</button>
         </p>
-        ${igIni ? `<p class="auth-redes"><a class="auth-link" target="_blank" rel="noopener" href="https://www.instagram.com/${esc(igIni)}">📸 Seguinos en Instagram ${esc('@' + igIni)}</a></p>` : ''}
       </div>`;
     return;
   }
@@ -3390,6 +3230,9 @@ function pantallaAuth(vista = 'inicio') {
           ${campoAuth('mu-inst', '¿Qué instrumento tocás?', { ph: 'Ej.: Bajo, Guitarra (separados por coma)', max: 200 })}
           <button class="btn btn-primary btn-block btn-lg" type="submit">Crear mi cuenta</button>
         </form>
+        <p class="auth-cuenta">¿Olvidaste tu contraseña o tu cuenta está bloqueada?
+          <button type="button" class="auth-link" data-vista="ayuda">Pedí ayuda</button>
+        </p>
       </div>`;
     return;
   }
@@ -3411,7 +3254,10 @@ function pantallaAuth(vista = 'inicio') {
             ${campoPassword('sg-pass', 'Contraseña', { fuerza: true, ph: 'Mínimo 6 caracteres' })}
             <label class="check"><input type="checkbox" id="sg-soy"> Soy responsable de esta sala</label>
             <button class="btn btn-primary btn-block btn-lg" type="submit">Continuar →</button>
-          </form>` : `
+          </form>
+          <p class="auth-cuenta">¿Olvidaste tu contraseña o tu cuenta está bloqueada?
+            <button type="button" class="auth-link" data-vista="ayuda">Pedí ayuda</button>
+          </p>` : `
           <p class="auth-sub">Paso 2 de 2 · Los datos de la sala. La administración de Más Música la revisa antes de publicarla.</p>
           <form id="f-sala" class="auth-form" novalidate>
             ${campoAuth('sa-name', 'Nombre de la sala', { req: true, valida: 'obligatorio', ph: 'Ej.: Estudio Sur' })}
@@ -3763,49 +3609,64 @@ function cerrarPanelNotif() {
   drop.setAttribute('aria-hidden', 'true');
 }
 
+/* ---------- Notificaciones (panel) ---------- */
+let notifFiltro = 'todas'; /* 'todas' | 'sin-leer' */
+
 function renderPanelNotif() {
   const bod = $('#notif-sheet-body');
   const sub = $('#notif-sheet-sub');
   if (!bod) return;
+
+  /* Subtítulo */
   sub.textContent = notificaciones.length
     ? (sinLeer ? `${sinLeer} sin leer · ${notificaciones.length} en total` : `${notificaciones.length} aviso(s)`)
     : 'Nada por acá todavía';
+
+  /* Tabs */
+  const tabs = document.querySelectorAll('#notif-tabs .notif-tab');
+  tabs.forEach(t => {
+    t.classList.toggle('active', t.dataset.notifTab === notifFiltro);
+    t.setAttribute('aria-selected', t.dataset.notifTab === notifFiltro ? 'true' : 'false');
+  });
+
+  /* Botones de acción */
   $('#notif-panel-leer').hidden = !sinLeer;
   $('#notif-panel-borrar-todas').hidden = !notificaciones.length;
 
-  /* Las promos de bienvenida solo se muestran una vez */
-  const bienvenidaVista = localStorage.getItem('mm-bienvenida-vista') === '1';
-  const promos = promosActivas().filter(p => {
-    if (/bienvenido/i.test(p.titulo || '') && bienvenidaVista) return false;
-    return true;
-  });
-  const promosHtml = promos.length ? promos.map(itemPromo).join('') : '';
+  /* Filtrar */
+  const lista = notificaciones.filter(n => notifFiltro !== 'sin-leer' || !n.leida);
 
-  bod.innerHTML = promosHtml + (notificaciones.length
-    ? notificaciones.map(itemNotif).join('')
-    : `<div class="notif-vacio"><b>No tenés notificaciones</b>Te avisamos cuando confirmes, modifiquen o cancelen una reserva tuya.</div>`);
+  /* Renderizar: la campana ya no muestra promociones, solo avisos */
+  bod.innerHTML = (lista.length
+    ? lista.map(itemNotif).join('')
+    : `<div class="notif-vacio"><div class="notif-vacio-icon">🔔</div><h3>Todo al día</h3><p>Aquí aparecerán tus nuevas reservas y avisos.</p></div>`);
 }
 
-/* Promociones y novedades de la administración → también viven en la campana */
+function itemNotif(n) {
+  const icono = n.tipo === 'ok' ? '✓' : n.tipo === 'warn' ? '⚠' : '📬';
+  const cls = n.leida ? '' : 'unread';
+  return `
+  <article class="notif-card ${cls}" data-notif-id="${n.id}" role="button" tabindex="0">
+    <div class="notif-icon" aria-hidden="true">${icono}</div>
+    <div class="notif-content">
+      <div class="notif-row-top">
+        <h4 class="notif-title">${esc(n.titulo)}</h4>
+        <span class="notif-time">${fechaNotif(n.fecha)}</span>
+      </div>
+      <p class="notif-detail">${esc(n.texto)}</p>
+      <div class="notif-card-actions">
+        ${n.leida ? '' : `<button class="notif-link" data-leer-notif="${n.id}">Marcar como leída</button>`}
+      </div>
+    </div>
+    <button class="notif-dismiss" aria-label="Borrar aviso" data-borrar-notif="${n.id}">✕</button>
+  </article>`;
+}
+
+/* Promociones y novedades de la administración (se gestionan en sus paneles) */
 function promosActivas() {
   const ahora = Date.now();
   return (state.promociones || []).filter(p => p.activa !== false
     && (!p.desde || p.desde <= ahora) && (!p.hasta || p.hasta >= ahora));
-}
-
-function itemPromo(p) {
-  const rango = [p.desde, p.hasta].filter(Boolean)
-    .map(ts => new Date(ts).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' }))
-    .join(' → ');
-  return `<div class="notif-item promo-item" data-promo-id="${p.id}" role="button" tabindex="0" title="Ver promoción">
-    <span class="notif-chip info">🎉</span>
-    <div class="notif-txt">
-      <strong>${esc(p.titulo)}</strong>
-      <span>${esc(p.texto)}</span>
-      <small class="muted">${rango ? 'Vigencia ' + rango : 'Promoción de las salas'}</small>
-    </div>
-    <svg class="notif-flecha" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg>
-  </div>`;
 }
 
 function abrirPromo(id) {
@@ -3861,16 +3722,18 @@ async function marcarLeidasPanel() {
   } catch (e) { toast(e.message, 'error'); }
 }
 
-/* Borrar una notificación individual (con animación de cierre) */
+/* Marcar una notificación como leída */
+async function marcarUnaNotif(id) {
+  const n = notificaciones.find(x => x.id === id);
+  if (!n || n.leida) return;
+  n.leida = true;
+  sinLeer = notificaciones.filter(x => !x.leida).length;
+  renderPanelNotif();
+  pintarBadgeNotif();
+}
+
+/* Borrar una notificación individual (sin confirmar, con animación de cierre) */
 async function borrarNotificacion(id, itemEl) {
-  const okBorrar = await confirmarAccion(
-    '¿Borrar este aviso?',
-    '¿Borrar aviso?',
-    'Sí, borrar',
-    'No',
-    'peligro'
-  );
-  if (!okBorrar) return;
   try {
     await api('/api/notificaciones/' + id, { method: 'DELETE' });
     notificaciones = notificaciones.filter(n => n.id !== id);
@@ -4004,6 +3867,14 @@ async function irANotificacion(id) {
   if (r) {
     irReservasFiltradas(/cancelada/i.test(n.titulo || '') ? 'historial' : 'proximas');
     setTimeout(() => resaltarReserva(r.id, '#home-mine-body'), 180);
+    return;
+  }
+
+  /* Avisos de pedido de ayuda → panel de administración, pestaña Ayuda */
+  if (/pedido de ayuda/i.test(n.titulo || '') && esSuper()) {
+    window.__ayuda = null;      /* fuerza recargar los pedidos */
+    showAdmin();
+    renderAdminTab('ayuda');
     return;
   }
 
@@ -4175,7 +4046,7 @@ function renderPerfilCuenta() {
   box.innerHTML = `
     <div class="panel-head"><h2>Mis datos</h2></div>
     <div class="aj-cuenta">
-      <div class="user-avatar aj-avatar">${yo.foto ? `<img src="${esc(yo.foto)}" alt="${esc(yo.nombre)}">` : esc((yo.nombre || '?').trim().charAt(0).toUpperCase())}</div>
+      <div class="user-avatar aj-avatar">${yo.foto ? `<img src="${esc(yo.foto)}" alt="${esc(yo.nombre)}">` : esDueño() && miSala && miSala.foto ? `<img src="${esc(miSala.foto)}" alt="${esc(miSala.name || yo.nombre)}">` : esc((yo.nombre || '?').trim().charAt(0).toUpperCase())}</div>
       <div class="aj-cuenta-txt">
         <strong>${esc(yo.nombre)}</strong>
         <span>@${esc(yo.usuario)}${yo.localidad ? ' · ' + esc(yo.localidad) : ''}</span>
@@ -4188,7 +4059,7 @@ function renderPerfilCuenta() {
 
     <div class="perfil-stats">
       <div class="perfil-stat"><strong>${nReservas}</strong><span>Reservas</span></div>
-      <div class="perfil-stat"><strong>${nFavoritas}</strong><span>Favoritas</span></div>
+      ${esCuentaControl() ? '' : `<div class="perfil-stat"><strong>${nFavoritas}</strong><span>Favoritas</span></div>`}
       <div class="perfil-stat"><strong>${nBandas}</strong><span>Bandas</span></div>
     </div>
 
@@ -4207,17 +4078,21 @@ function renderPerfilCuenta() {
       <div class="aj-row aj-dato">${svgAj(ICO_AJ.pin)}
         <span class="aj-txt">Localidad<small>${esc(yo.localidad || 'Sin definir')}</small></span>
       </div>
-      <div class="aj-row aj-dato">${svgAj(ICO_AJ.nota)}
+      ${esCuentaControl() ? '' : `<div class="aj-row aj-dato">${svgAj(ICO_AJ.nota)}
         <span class="aj-txt">Instrumentos<small>${instrumentos || 'No agregaste ninguno'}</small></span>
-      </div>
+      </div>`}
       <div class="aj-row aj-dato">${svgAj(ICO_AJ.cal)}
         <span class="aj-txt">Cuenta creada<small>${yo.creado ? fechaCorta(yo.creado) : '—'}</small></span>
       </div>
     </div>`;
 
-  const salones = salasPublicas().filter(r => (yo.favoritos || []).includes(r.id));
-  fav.hidden = false;
-  fav.innerHTML = `
+  if (esCuentaControl()) {
+    fav.hidden = true;
+    fav.innerHTML = '';
+  } else {
+    const salones = salasPublicas().filter(r => (yo.favoritos || []).includes(r.id));
+    fav.hidden = false;
+    fav.innerHTML = `
     <div class="panel-head"><h2>♥️ Mis salas favoritas</h2>
       <button class="btn btn-sm" id="fav-ver">Ver salas</button>
     </div>
@@ -4226,6 +4101,7 @@ function renderPerfilCuenta() {
           ${r.foto ? `<img src="${esc(r.foto)}" alt="">` : '<span class="sala-chip-foto">🎸</span>'}
           <span>${esc(r.name)}<small>${fmtMoney(r.price)}/h</small></span></button>`).join('')}</div>`
       : '<p class="muted small">Todavía no guardaste ninguna sala. Tocá el ♡ en una sala para guardarla acá.</p>'}`;
+  }
 
   /* Los avisos viven en la campana y en el panel de Ajustes del engranaje */
   notif.hidden = true;
@@ -4454,11 +4330,22 @@ async function cargarPanel() {
   }
 }
 
+/* El logo de la sala, arriba en el encabezado del panel (si no hay, queda el ícono 🎛️) */
+function renderPanelLogo() {
+  const box = $('#panel-head-logo');
+  if (!box) return;
+  const sala = (panelDatos && panelDatos.room) || miSala || {};
+  box.innerHTML = sala.foto
+    ? `<img src="${esc(sala.foto)}" alt="${esc(sala.name || 'Mi sala')}">`
+    : '🎛️';
+}
+
 function renderPanelTab(tab) {
   panelTab = tab;
   $$('.admin-tab[data-ptab]').forEach(b => b.classList.toggle('active', b.dataset.ptab === tab));
   ['inicio', 'sala', 'disponibilidad', 'reservas', 'movimientos', 'datos'].forEach(t => { $('#ptab-' + t).hidden = t !== tab; });
   if (!panelDatos) return;
+  renderPanelLogo();
   renderPanelEstado();
   ({ inicio: renderPanelInicio, sala: renderPanelSala, disponibilidad: renderPanelDisponibilidad, reservas: renderPanelReservas, movimientos: renderPanelMovimientos, datos: renderPanelDatos }[tab])();
 }
@@ -4473,7 +4360,6 @@ function renderPanelInicio() {
   const ingresos = lista.reduce((s, r) => s + precioReserva(r), 0);
   const pendPago = lista.filter(r => r.estado === 'pendiente_pago').length;
   const semana = todas.filter(r => r.date > hoy && r.date <= addDaysStr(hoy, 7)).length;
-  const promos = promosActivas();
   const fechaTxt = new Date().toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' });
 
   cont.innerHTML = `
@@ -4497,29 +4383,11 @@ function renderPanelInicio() {
           : '<p class="muted small">No hay reservas para hoy.</p>'}
         <div class="inicio-pie"><button class="btn btn-sm" data-goto-ptab="reservas">Ver todas las reservas</button></div>
       </section>
-
-      <section class="inicio-card">
-        <h3>Accesos rápidos</h3>
-        <div class="inicio-links">
-          <button class="inicio-link" data-goto-ptab="sala"><span>Mi sala</span><i>›</i></button>
-          <button class="inicio-link" data-goto-ptab="disponibilidad"><span>Disponibilidad</span><i>›</i></button>
-          <button class="inicio-link" data-goto-ptab="reservas"><span>Reservas</span><i>›</i></button>
-          <button class="inicio-link" data-goto-ptab="movimientos"><span>Movimientos</span><i>›</i></button>
-          <button class="inicio-link" data-goto-ptab="datos"><span>Mis datos</span><i>›</i></button>
-        </div>
-      </section>
-
-      <section class="inicio-card ancha">
-        <h3>🎉 Promociones activas <span class="muted small">(${promos.length})</span></h3>
-        ${promosBloqueHTML(promos, 'No hay promociones activas en este momento.')}
-      </section>
     </div>`;
 
   cont.onclick = e => {
     const g = e.target.closest('[data-goto-ptab]');
     if (g) return renderPanelTab(g.dataset.gotoPtab);
-    const pp = e.target.closest('[data-promo-id]');
-    if (pp && !e.target.closest('a')) abrirPromo(pp.dataset.promoId);
   };
 }
 
@@ -4672,10 +4540,13 @@ function renderPanelEstado() {
 /* --- Mi sala --- */
 function renderPanelSala() {
   const r = panelDatos.room;
+  ubicacionManual = false;
+  ubicacionIntentada = '';
   $('#ps-name').value = r.name || '';
   $('#ps-price').value = r.price || 0;
   $('#ps-descripcion').value = r.descripcion || '';
   $('#ps-direccion').value = r.direccion || '';
+  $('#ps-numero').value = r.numero || '';
   $('#ps-localidad').value = r.localidad || '';
   $('#ps-telefono').value = r.telefono || '';
   $('#ps-capacity').value = r.capacity || 4;
@@ -4697,6 +4568,8 @@ function renderPanelSala() {
     ? `<img src="${esc(r.fotoPortada)}" alt="Foto horizontal de ${esc(r.name)}">`
     : '<span>Sin foto horizontal</span>';
   renderFotosPanel();
+  /* Si escribió la dirección pero todavía no está en el mapa, la ubicamos sola */
+  autoUbicarSala();
 }
 
 function renderFotosPanel() {
@@ -4706,7 +4579,88 @@ function renderFotosPanel() {
       <button class="btn btn-sm btn-danger" data-quitar-foto="${i}">Quitar</button></div>`).join('');
 }
 
+/* ---------- Ubicación de la sala en el mapa ----------
+   Con la dirección escrita alcanza: buscamos el punto (Google si hay clave, si no
+   OpenStreetMap) y guardamos latitud/longitud, así la sala ya figura en el mapa
+   sin tener que ubicarla a mano. */
+let ubicacionManual = false;   /* el dueño ubicó el punto a mano en esta edición */
+let ubicacionIntentada = '';   /* sala ya intentada (evita reintentos en bucle) */
+
+function direccionDeLaSala() {
+  const calle = [$('#ps-direccion').value.trim(), $('#ps-numero').value.trim()].filter(Boolean).join(' ');
+  const completa = [calle, $('#ps-localidad').value.trim()].filter(Boolean).join(', ');
+  return completa || $('#ps-mapa').value.trim();
+}
+
+/* Dirección completa de una sala (calle + número + localidad) para mostrar y buscar */
+function salaDireccionCompleta(r) {
+  if (!r) return '';
+  const calle = [r.direccion, r.numero].filter(Boolean).join(' ');
+  return [calle, r.localidad].filter(Boolean).join(', ');
+}
+
+/* Busca la dirección y deja el punto en el formulario (no guarda).
+   Devuelve 'exacta' si encontró la dirección, 'aprox' si solo se ubicó por la
+   localidad y false si no se pudo ubicar. */
+async function resolverUbicacionSala() {
+  const dir = direccionDeLaSala();
+  if (dir.length < 4) return false;
+  const p = await buscarDireccion(dir);
+  if (p) {
+    $('#ps-lat').value = p.lat.toFixed(5);
+    $('#ps-lng').value = p.lng.toFixed(5);
+    return 'exacta';
+  }
+  /* Si no aparece la calle (nombre raro o sin altura), la ubicamos al menos
+     en la localidad: así la sala aparece en el mapa y el dueño ajusta el punto. */
+  const loc = $('#ps-localidad').value.trim();
+  if (loc.length >= 3 && loc.toLowerCase() !== dir.toLowerCase()) {
+    const q = await buscarDireccion(loc);
+    if (q) {
+      $('#ps-lat').value = q.lat.toFixed(5);
+      $('#ps-lng').value = q.lng.toFixed(5);
+      return 'aprox';
+    }
+  }
+  return false;
+}
+const AVISO_UBICACION_APROX = 'Quedó en el centro de tu localidad 📍 Ajustala con "Ubicar en el mapa".';
+
+/* Al abrir la ficha de la sala: si ya hay dirección pero todavía no hay punto, la
+   ubicamos y la guardamos, así aparece en el mapa sin hacer nada más. */
+function autoUbicarSala() {
+  const r = panelDatos && panelDatos.room;
+  if (!r || ubicacionManual || tieneUbicacion(r)) return;
+  if (ubicacionIntentada === r.id) return;
+  if (direccionDeLaSala().length < 4) return;
+  ubicacionIntentada = r.id;
+  (async () => {
+    if (!await resolverUbicacionSala()) return;
+    try {
+      const data = await api('/api/panel/sala', {
+        method: 'PUT',
+        body: { roomId: r.id, lat: $('#ps-lat').value, lng: $('#ps-lng').value },
+      });
+      state = data.state;
+      r.lat = Number($('#ps-lat').value);
+      r.lng = Number($('#ps-lng').value);
+      miSala = state.rooms.find(x => x.id === r.id) || miSala;
+      renderPanelEstado();
+      toast('Listo: tu sala ya figura en el mapa 📍', 'ok');
+    } catch (e) { /* si falla, queda para cuando toque Guardar */ }
+  })();
+}
+
 async function guardarPanelSala() {
+  /* Con la dirección escrita y sin punto (o si cambió la dirección) ubicamos la
+     sala antes de guardar, para que quede en el mapa. */
+  const _r = panelDatos && panelDatos.room;
+  const _dir = direccionDeLaSala();
+  const _hayPunto = $('#ps-lat').value.trim() !== '' && $('#ps-lng').value.trim() !== '';
+  const _dirPrevia = _r ? salaDireccionCompleta(_r) : '';
+  if (!ubicacionManual && _dir.length >= 4 && (!_hayPunto || _dir !== _dirPrevia)) {
+    await resolverUbicacionSala();
+  }
   const fotos = (panelDatos.room.fotos || []).map(f => ({ titulo: f.titulo, foto: f.foto }));
   fotos.push(...panelFotosTmp);
   const body = {
@@ -4716,6 +4670,7 @@ async function guardarPanelSala() {
     capacity: Number($('#ps-capacity').value),
     descripcion: $('#ps-descripcion').value.trim(),
     direccion: $('#ps-direccion').value.trim(),
+    numero: $('#ps-numero').value.trim(),
     localidad: $('#ps-localidad').value.trim(),
     telefono: $('#ps-telefono').value.trim(),
     mapa: $('#ps-mapa').value.trim(),
@@ -4740,6 +4695,7 @@ async function guardarPanelSala() {
     await cargarPanel();
     renderPanelTab('sala');
     renderSalasStrip();
+    renderHeaderSalaLogo();
     toast('Sala guardada ✓', 'ok');
   } catch (e) { toast(e.message, 'error'); }
 }
@@ -4872,10 +4828,14 @@ function wirePanel() {
   $('#ps-ubicar').onclick = async () => {
     const p = await abrirSelectorUbicacion($('#ps-lat').value, $('#ps-lng').value, 'Ubicá tu sala');
     if (!p) return;
+    ubicacionManual = true;
     $('#ps-lat').value = p.lat.toFixed(5);
     $('#ps-lng').value = p.lng.toFixed(5);
     toast('Ubicación puesta. Guardá los cambios para publicarla en el mapa.', 'ok');
   };
+  /* Si el dueño escribe las coordenadas a mano, se respeta su punto */
+  $('#ps-lat').oninput = () => { ubicacionManual = true; };
+  $('#ps-lng').oninput = () => { ubicacionManual = true; };
   $('#ps-buscar-direccion').onclick = async () => {
     const dir = $('#ps-direccion').value.trim() + ' ' + $('#ps-localidad').value.trim();
     const p = await buscarDireccion(dir);
@@ -5190,35 +5150,6 @@ function wirePublic() {
   $$('#dock-container [data-nav]').forEach(b => {
     b.onclick = () => ACCIONES_NAV[b.dataset.nav]();
   });
-  /* Comunidad (solo músicos) */
-  if ($('#view-comunidad')) {
-    $$('#view-comunidad .comu-tab').forEach(b => { b.onclick = () => cambiarComuTab(b.dataset.comuTab); });
-    const comuBuscar = $('#comu-buscar');
-    if (comuBuscar) comuBuscar.oninput = e => {
-      comuBusqueda = e.target.value;
-      clearTimeout(comuBuscarTimer);
-      comuBuscarTimer = setTimeout(cargarComuMusicos, 300);
-    };
-    const comuZona = $('#comu-zona');
-    if (comuZona) comuZona.onclick = () => {
-      if (!yo || !yo.localidad) { toast('Cargá tu localidad en el Perfil para filtrar por zona', 'warn'); return; }
-      comuSoloZona = !comuSoloZona;
-      comuZona.classList.toggle('btn-primary', comuSoloZona);
-      cargarComuMusicos();
-    };
-    $('#view-comunidad').onclick = e => {
-      const sg = e.target.closest('[data-comu-seguir]');
-      if (sg) return comuSeguir(sg.dataset.comuSeguir, sg);
-      const msg = e.target.closest('[data-comu-msg]');
-      if (msg) return abrirComuChat(msg.dataset.comuMsg);
-      const op = e.target.closest('[data-comu-open]');
-      if (op) return abrirComuChat(op.dataset.comuOpen);
-      if (e.target.closest('#comu-chat-volver')) return cambiarComuTab('mensajes');
-    };
-    $('#view-comunidad').addEventListener('submit', e => {
-      if (e.target.id === 'comu-form') { e.preventDefault(); enviarComuMensaje($('#comu-input').value); }
-    });
-  }
   $('#home-search').oninput = e => { busquedaMine = e.target.value; renderMineRapido(); };
   /* Perfil / Ajustes: filas, apariencia, avisos y accesos */
   $('#mine-user').onclick = e => {
@@ -5272,20 +5203,33 @@ function wirePublic() {
     const borrar = e.target.closest('[data-borrar-notif]');
     if (borrar) {
       e.stopPropagation();
-      const item = borrar.closest('.notif-item');
-      return borrarNotificacion(borrar.dataset.borrarNotif, item);
+      const card = borrar.closest('.notif-item');
+      return borrarNotificacion(borrar.dataset.borrarNotif, card);
+    }
+    const leer = e.target.closest('[data-leer-notif]');
+    if (leer) {
+      e.stopPropagation();
+      return marcarUnaNotif(leer.dataset.leerNotif);
     }
     const pr = e.target.closest('[data-promo-id]');
     if (pr) return abrirPromo(pr.dataset.promoId);
-    const it = e.target.closest('.notif-item');
+    const it = e.target.closest('.notif-item[data-notif-id]');
     if (it) irANotificacion(it.dataset.notifId);
   };
   $('#notif-sheet-body').onkeydown = e => {
     if (e.key !== 'Enter' && e.key !== ' ') return;
     const pr = e.target.closest('[data-promo-id]');
     if (pr) { e.preventDefault(); return abrirPromo(pr.dataset.promoId); }
-    const it = e.target.closest('.notif-item');
+    const it = e.target.closest('.notif-item[data-notif-id]');
     if (it) { e.preventDefault(); irANotificacion(it.dataset.notifId); }
+  };
+  /* Tabs de notificaciones (Todas / Sin leer) */
+  $('#notif-tabs').onclick = e => {
+    const tab = e.target.closest('.notif-tab');
+    if (!tab) return;
+    notifFiltro = tab.dataset.notifTab;
+    renderPanelNotif();
+    prepararSwipeNotif();
   };
   document.addEventListener('keydown', e => {
     if (e.key !== 'Escape') return;
@@ -5308,20 +5252,11 @@ function wirePublic() {
     toast(e.target.checked ? 'Vas a ver un aviso en pantalla cuando llegue una novedad'
          : 'Avisos en pantalla desactivados (igual los encontrás en la campana)', 'ok');
   };
-  $('#btn-panel').onclick = mostrarPanel;
-  /* Resumen del Inicio: accesos */
+  const btnSalaLogo = $('#btn-sala-logo');
+  if (btnSalaLogo) btnSalaLogo.onclick = mostrarPanel;
+  /* Resumen del Inicio: solo el acceso para iniciar sesión */
   $('#inicio-resumen').onclick = e => {
     if (e.target.closest('#sum-login')) return pantallaAuth('login');
-    if (e.target.closest('a')) return;
-    const pp = e.target.closest('[data-promo-id]');
-    if (pp) return abrirPromo(pp.dataset.promoId);
-    const promo = e.target.closest('[data-promo]');
-    if (promo) {
-      const p = (state.promociones || []).find(x => x.id === promo.dataset.promo);
-      if (!p) return;
-      return openModal(`<h3>${esc(p.titulo)}</h3><p>${esc(p.texto)}</p>
-        <div class="row"><button class="btn" onclick="closeModal()">Cerrar</button></div>`);
-    }
   };
   $('#home-mine-body').onclick = async e => {
     if (e.target.closest('#filtro-mine-clear')) {
@@ -5425,6 +5360,7 @@ function showAdmin() {
   ocultarVistas();
   $('#view-admin').hidden = false;
   $('#btn-exit-admin').hidden = false;
+  document.body.classList.add('admin-abierto');
   setNav('admin');
   /* Arranca en las solicitudes pendientes si hay alguna */
   currentAdminTab = 'inicio';
@@ -5441,6 +5377,7 @@ function actualizarAdminHead() {
 function salirAdmin() {
   adminMode = false;
   adminPin = '';
+  document.body.classList.remove('admin-abierto');
   ocultarVistas();
   $('#view-public').hidden = false;
   $('#btn-exit-admin').hidden = true;
@@ -5451,7 +5388,7 @@ function salirAdmin() {
   goStep(1);
 }
 
-const TABS_ADMIN = ['inicio', 'solicitudes', 'usuarios', 'ayuda', 'reservas', 'historial', 'salas', 'horarios', 'bloqueos', 'estadisticas', 'ajustes', 'lugar', 'bandas', 'promociones'];
+const TABS_ADMIN = ['inicio', 'solicitudes', 'usuarios', 'ayuda', 'reservas', 'historial', 'salas', 'horarios', 'bloqueos', 'estadisticas', 'promociones', 'pagos', 'ajustes', 'lugar', 'bandas'];
 
 function renderAdminTab(tab) {
   currentAdminTab = tab;
@@ -5468,10 +5405,11 @@ function renderAdminTab(tab) {
     horarios: renderHorariosAdmin,
     bloqueos: renderBloqueosAdmin,
     estadisticas: renderStats,
+    promociones: renderPromocionesAdmin,
+    pagos: renderPagosAdmin,
     ajustes: renderAjustes,
     lugar: renderLugarAdmin,
     bandas: renderBandasAdmin,
-    promociones: renderPromocionesAdmin,
   }[tab])();
   const pend = (state.rooms || []).filter(r => r.estado === 'pendiente').length;
   const pill = $('#pill-solicitudes');
@@ -5479,6 +5417,30 @@ function renderAdminTab(tab) {
   const pendAyuda = (window.__ayuda || []).filter(a => a.estado === 'pendiente').length;
   const pillAy = $('#pill-ayuda');
   if (pillAy) { pillAy.hidden = !pendAyuda; pillAy.textContent = pendAyuda; }
+  actualizarIndicadorAdmin(tab);
+}
+
+/* Indicador deslizante bajo las pestañas del admin */
+function actualizarIndicadorAdmin(tab) {
+  const cont = document.querySelector('.admin-tabs');
+  if (!cont) return;
+  let indicator = cont.querySelector('.admin-tab-indicator');
+  if (!indicator) {
+    indicator = document.createElement('div');
+    indicator.className = 'admin-tab-indicator';
+    cont.style.position = 'relative';
+    cont.appendChild(indicator);
+  }
+  const btn = [...cont.querySelectorAll('.admin-tab')].find(t => t.dataset.tab === tab);
+  if (!btn) return;
+  const r = btn.getBoundingClientRect();
+  const rc = cont.getBoundingClientRect();
+  indicator.style.width = r.width + 'px';
+  indicator.style.transform = `translateX(${r.left - rc.left + cont.scrollLeft}px)`;
+
+  /* Centrar la pestaña activa en la barra (auto-scroll) */
+  const scrollObjetivo = btn.offsetLeft - (cont.clientWidth - btn.offsetWidth) / 2;
+  cont.scrollTo({ left: Math.max(0, scrollObjetivo), behavior: 'smooth' });
 }
 
 /* ---------- Solicitudes de salas (aprobación) ---------- */
@@ -5495,35 +5457,51 @@ function renderSolicitudes() {
       .catch(e => { cont.innerHTML = `<p class="muted">${esc(e.message)}</p>`; });
     return;
   }
+
+  /* Estadísticas */
+  const nPend = listaSolicitudes.filter(r => r.estado === 'pendiente').length;
+  const nAprob = listaSolicitudes.filter(r => r.estado === 'aprobada').length;
+  const nRech = listaSolicitudes.filter(r => r.estado === 'rechazada' || r.estado === 'suspendida').length;
+  const elP = $('#sol-stat-pend'); if (elP) elP.textContent = nPend;
+  const elA = $('#sol-stat-aprob'); if (elA) elA.textContent = nAprob;
+  const elR = $('#sol-stat-rech'); if (elR) elR.textContent = nRech;
+  const elT = $('#sol-c-todas'); if (elT) elT.textContent = listaSolicitudes.length;
+  const elCP = $('#sol-c-pend'); if (elCP) elCP.textContent = nPend;
+  const elCA = $('#sol-c-aprob'); if (elCA) elCA.textContent = nAprob;
+  const elCR = $('#sol-c-rech'); if (elCR) elCR.textContent = nRech;
+
   const lista = listaSolicitudes.filter(r => filtroSolicitudes === 'todas' || r.estado === filtroSolicitudes);
   const orden = { pendiente: 0, rechazada: 1, suspendida: 2, aprobada: 3 };
   lista.sort((a, b) => (orden[a.estado] - orden[b.estado]) || ((b.solicitud && b.solicitud.fecha) - (a.solicitud && a.solicitud.fecha)));
-  const ETIQUETA = { pendiente: '🕒 Pendiente', aprobada: '🟢 Aprobada', rechazada: '⛔ Rechazada', suspendida: '⏸ Suspendida' };
+
+  /* Contador */
+  const elCont = $('#sol-contador');
+  if (elCont) elCont.textContent = `${lista.length} de ${listaSolicitudes.length}`;
+
+  /* Estado vacío */
+  const elVacio = $('#sol-vacio');
+  if (elVacio) elVacio.hidden = lista.length > 0;
+
+  const CLASE_ESTADO = { pendiente: 'sol-pendiente', aprobada: 'sol-aprobada', rechazada: 'sol-rechazada', suspendida: 'sol-rechazada' };
+  const PILL_ESTADO = { pendiente: 'Pendiente', aprobada: 'Aprobada', rechazada: 'Rechazada', suspendida: 'Suspendida' };
+
   cont.innerHTML = lista.length ? lista.map(r => `
-    <div class="sol-card ${r.estado}">
-      <div class="sol-top">
-        ${r.foto ? `<img class="sol-logo" src="${esc(r.foto)}" alt="">` : '<span class="sol-logo sin-foto">🎸</span>'}
-        <div class="sol-info">
-          <strong>${esc(r.name)}</strong>
-          <span class="muted small">${esc([r.localidad, r.direccion].filter(Boolean).join(' · '))}</span>
-          <span class="muted small">👤 ${r.duenio ? esc(r.duenio.nombre + ' (@' + r.duenio.usuario + ')') : 'Sin dueño asignado'}${r.duenio && r.duenio.telefono ? ' · 📞 ' + esc(r.duenio.telefono) : ''}</span>
-          <span class="muted small">${fmtMoney(r.price)}/h · 👥 ${r.capacity} · enviada ${r.solicitud && r.solicitud.fecha ? fechaCorta(r.solicitud.fecha) : '—'}</span>
+    <article class="sol-req ${CLASE_ESTADO[r.estado] || ''}">
+      <div class="sol-req-top">
+        <div>
+          <h3>${esc(r.name)}</h3>
+          <p class="sol-req-meta">${esc([r.localidad, [r.direccion, r.numero].filter(Boolean).join(' ')].filter(Boolean).join(' · '))} · 👥 ${r.capacity}</p>
+          <p class="sol-req-meta">Enviada por ${r.duenio ? '@' + esc(r.duenio.usuario) : '—'}${r.solicitud && r.solicitud.fecha ? ' · ' + fechaCorta(r.solicitud.fecha) : ''}</p>
+          ${r.descripcion ? `<p class="sol-req-desc">${esc(r.descripcion)}</p>` : ''}
         </div>
-        <span class="badge ${r.estado === 'aprobada' ? '' : 'badge-next'}">${ETIQUETA[r.estado]}</span>
+        <span class="sol-pill">${PILL_ESTADO[r.estado] || r.estado}</span>
       </div>
-      ${r.descripcion ? `<p class="sol-desc">${esc(r.descripcion)}</p>` : ''}
-      ${Object.values(r.equipos || {}).filter(Boolean).length ? `<div class="ficha-chips">${Object.entries(r.equipos).filter(([, v]) => v).map(([, v]) => `<span class="chip">${esc(v.slice(0, 28))}</span>`).join('')}</div>` : ''}
-      ${r.solicitud && r.solicitud.motivo ? `<p class="muted small">📝 ${esc(r.solicitud.motivo)}</p>` : ''}
-      <div class="row wrap">
-        ${r.estado === 'pendiente' ? `
-          <button class="btn btn-primary btn-sm" data-sol-ok="${r.id}">✅ Aprobar</button>
-          <button class="btn btn-sm" data-sol-corr="${r.id}">✏️ Pedir correcciones</button>
-          <button class="btn btn-sm btn-danger" data-sol-no="${r.id}">⛔ Rechazar</button>` : `
-          <button class="btn btn-sm" data-sol-ok="${r.id}">🟢 Activar / aprobar</button>
-          <button class="btn btn-sm btn-danger" data-sol-no="${r.id}">${r.estado === 'suspendida' ? '⛔ Rechazar' : '⏸ Suspender'}</button>`}
-        <button class="btn btn-sm" data-sol-editar="${r.id}">✏️ Editar datos</button>
-      </div>
-    </div>`).join('') : '<p class="muted">No hay salas con ese estado.</p>';
+      ${r.estado === 'pendiente' ? `
+      <div class="sol-req-actions">
+        <button class="btn ghost" data-sol-no="${r.id}">Rechazar</button>
+        <button class="btn ok" data-sol-ok="${r.id}">Aprobar</button>
+      </div>` : ''}
+    </article>`).join('') : '';
 }
 
 async function accionSolicitud(id, accion, motivo) {
@@ -5544,28 +5522,79 @@ async function accionSolicitud(id, accion, motivo) {
 
 /* ---------- Cuentas registradas ---------- */
 let filtroUsuarios = '';
+
 function renderUsuarios() {
   const cont = $('#usuarios-list');
   if (!cont) return;
   if (!window.__usuarios) { cont.innerHTML = '<p class="muted">Cargando cuentas…</p>'; cargarUsuarios(); return; }
-  const q = filtroUsuarios.trim().toLowerCase();
-  const lista = window.__usuarios.filter(u => !q ||
-    (u.nombre + ' ' + u.usuario + ' ' + u.email).toLowerCase().includes(q));
-  const ROL = { USER: '🎸 Músico', ROOM_ADMIN: '🎛️ Dueño de sala', SUPER_ADMIN: '👑 Administración general' };
-  cont.innerHTML = lista.length ? `<table class="tabla">
-    <thead><tr><th>Cuenta</th><th>Rol</th><th>Salas</th><th>Reservas</th><th>Estado</th><th></th></tr></thead>
-    <tbody>${lista.map(u => `<tr>
-      <td><strong>${esc(u.nombre)}</strong><br><span class="muted small">@${esc(u.usuario)} · ${esc(u.email)}${u.telefono ? ' · 📞 ' + esc(u.telefono) : ''}</span></td>
-      <td>${ROL[u.rol] || esc(u.rol)}${u.localidad ? `<br><span class="muted small">📍 ${esc(u.localidad)}</span>` : ''}</td>
-      <td>${(u.salas || []).map(s => `<span class="chip ${s.estado === 'aprobada' ? '' : 'chip-alt'}">${esc(s.name)}</span>`).join(' ') || '<span class="muted small">—</span>'}</td>
-      <td>${u.reservas || 0}</td>
-      <td>${u.bloqueado ? '<span class="badge badge-past">🚫 Bloqueada</span>' : u.activo === false ? '<span class="badge badge-past">⏸ Desactivada</span>' : '<span class="badge">🟢 Activa</span>'}</td>
-      <td class="acciones-td">
-        <button class="btn btn-sm" data-user-bloquear="${u.id}">${u.bloqueado ? 'Desbloquear' : 'Bloquear'}</button>
-        <button class="btn btn-sm" data-user-rol="${u.id}">Cambiar rol</button>
-        <button class="btn btn-sm btn-danger" data-user-borrar="${u.id}">Eliminar</button>
-      </td>
-    </tr>`).join('')}</tbody></table>` : '<p class="muted">No hay cuentas con ese criterio.</p>';
+
+  const ROL = { USER: { label: 'Músico', emoji: '🎸', cls: 'musico' }, ROOM_ADMIN: { label: 'Dueño de sala', emoji: '🎛️', cls: 'sala' }, SUPER_ADMIN: { label: 'Admin', emoji: '👑', cls: 'admin' } };
+
+  /* Contadores por rol */
+  const counts = { '': window.__usuarios.length };
+  window.__usuarios.forEach(u => { counts[u.rol] = (counts[u.rol] || 0) + 1; });
+
+  /* Chips de filtro */
+  const chips = $('#usuarios-chips');
+  if (chips) {
+    const items = [['', 'Todos'], ['USER', 'Músicos'], ['ROOM_ADMIN', 'Dueños'], ['SUPER_ADMIN', 'Admin']];
+    chips.innerHTML = items.map(([k, label]) =>
+      `<button class="cuentas-chip${filtroUsuarios === k ? ' active' : ''}" data-filtro-usuarios="${k}">${label} ${counts[k] || 0}</button>`
+    ).join('');
+  }
+
+  /* Filtrar y buscar */
+  const q = ($('#usuarios-buscar') || {}).value || '';
+  const qNorm = q.trim().toLowerCase();
+  const lista = window.__usuarios.filter(u =>
+    (!filtroUsuarios || u.rol === filtroUsuarios) &&
+    (!qNorm || (u.nombre + ' ' + u.usuario + ' ' + u.email).toLowerCase().includes(qNorm))
+  );
+
+  /* Contador */
+  const elCont = $('#usuarios-contador');
+  if (elCont) elCont.textContent = `${lista.length} de ${window.__usuarios.length}`;
+
+  /* Vacío */
+  const elVacio = $('#usuarios-vacio');
+  if (elVacio) elVacio.hidden = lista.length > 0;
+
+  /* Renderizar tarjetas */
+  cont.innerHTML = lista.length ? lista.map(u => {
+    const r = ROL[u.rol] || { label: u.rol, emoji: '🎸', cls: '' };
+    const isAdmin = u.rol === 'SUPER_ADMIN';
+    const blocked = u.bloqueado;
+    const off = u.activo === false;
+    const statusPill = blocked ? '<span class="cuentas-pill off">Bloqueada</span>'
+      : off ? '<span class="cuentas-pill off">Desactivada</span>'
+      : `<span class="cuentas-pill ${r.cls}">${r.emoji} ${r.label}</span>`;
+    const meta = [
+      u.email && `<span>📧 ${esc(u.email)}</span>`,
+      u.telefono && `<span>📞 ${esc(u.telefono)}</span>`,
+      u.localidad && `<span>📍 ${esc(u.localidad)}</span>`,
+    ].filter(Boolean).join(' ');
+
+    return `
+      <article class="cuentas-card" data-id="${u.id}">
+        <div class="cuentas-card-top">
+          <div class="cuentas-avatar ${r.cls}">${esc((u.nombre||'?')[0].toUpperCase())}</div>
+          <div class="cuentas-who">
+            <h3>${esc(u.nombre)}</h3>
+            <p>@${esc(u.usuario)}</p>
+          </div>
+          ${statusPill}
+        </div>
+        ${meta ? `<div class="cuentas-meta">${meta}</div>` : ''}
+        <div class="cuentas-actions">
+          <select class="cuentas-rol" aria-label="Cambiar rol de ${esc(u.nombre)}" data-user-rol="${u.id}" ${isAdmin ? 'disabled' : ''}>
+            ${Object.entries(ROL).filter(([k]) => k !== 'SUPER_ADMIN').map(([k, v]) =>
+              `<option value="${k}" ${u.rol === k ? 'selected' : ''}>${v.label}</option>`).join('')}
+          </select>
+          <button class="btn btn-sm" data-user-bloquear="${u.id}" ${isAdmin ? 'disabled' : ''}>${blocked ? 'Desbloquear' : 'Bloquear'}</button>
+          <button class="btn btn-sm btn-danger" data-user-borrar="${u.id}" ${isAdmin ? 'disabled' : ''}>Eliminar</button>
+        </div>
+      </article>`;
+  }).join('') : '';
 }
 
 async function cargarUsuarios() {
@@ -5578,7 +5607,7 @@ async function cargarUsuarios() {
   }
 }
 
-async function accionUsuario(id, accion) {
+async function accionUsuario(id, accion, nuevoRol) {
   const u = (window.__usuarios || []).find(x => x.id === id);
   if (!u) return;
   try {
@@ -5597,11 +5626,8 @@ async function accionUsuario(id, accion) {
       const data = await api(`/api/admin/usuarios/${id}`, { method: 'PUT', admin: true, body: { bloqueado: !u.bloqueado } });
       state = data.state;
     } else if (accion === 'rol') {
-      const nuevo = prompt(
-        `Rol de ${u.nombre}:\n1) USER — músico\n2) ROOM_ADMIN — dueño de sala\n3) SUPER_ADMIN — administración general`,
-        u.rol === 'USER' ? '1' : u.rol === 'ROOM_ADMIN' ? '2' : '3');
-      if (nuevo === null) return;
-      const rol = { 1: 'USER', 2: 'ROOM_ADMIN', 3: 'SUPER_ADMIN' }[nuevo.trim()] || u.rol;
+      const rol = nuevoRol || u.rol;
+      if (rol === u.rol) return;
       const data = await api(`/api/admin/usuarios/${id}`, { method: 'PUT', admin: true, body: { rol } });
       state = data.state;
     }
@@ -5636,6 +5662,8 @@ function renderAyuda() {
     <div class="row wrap">
       ${a.estado === 'pendiente' && a.cuenta && (a.cuenta.bloqueado || a.cuenta.activo === false) && a.cuenta.rol !== 'SUPER_ADMIN'
         ? `<button class="btn btn-sm" data-ayuda-desbloquear="${a.id}">🔓 Desbloquear cuenta</button>` : ''}
+      ${a.estado === 'pendiente' && a.cuenta && a.cuenta.rol !== 'SUPER_ADMIN'
+        ? `<button class="btn btn-sm" data-ayuda-clave="${a.id}">🔑 Dar contraseña nueva</button>` : ''}
       ${a.estado === 'pendiente' ? `<button class="btn btn-sm btn-ghost" data-ayuda-resolver="${a.id}">✓ Marcar resuelto</button>` : ''}
       ${a.estado === 'resuelta' ? '<span class="muted small">✓ Resuelto' + (a.resuelta ? ' el ' + fechaCorta(a.resuelta) : '') + '</span>' : ''}
     </div>
@@ -5671,6 +5699,32 @@ async function resolverAyuda(id, desbloquear) {
     }
     await cargarAyuda();
   } catch (e) { toast(e.message, 'error'); }
+}
+
+/* Contraseña temporal legible para pasarle a quien no puede entrar */
+function claveTemporalUsuario() {
+  const abc = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+  let s = '';
+  for (let i = 0; i < 8; i++) s += abc[Math.floor(Math.random() * abc.length)];
+  return s;
+}
+
+/* La administración le da una contraseña nueva a la cuenta del pedido; el músico la cambia al entrar */
+async function darClaveDesdeAyuda(id) {
+  const a = (window.__ayuda || []).find(x => x.id === id);
+  if (!a || !a.cuenta || !a.cuenta.id) return toast('Ese pedido no tiene una cuenta asociada', 'error');
+  const nueva = prompt(`Contraseña nueva para @${a.cuenta.usuario} (mínimo 6 caracteres).\nSe la pasás a la persona para que entre:`, claveTemporalUsuario());
+  if (nueva === null) return;
+  const clave = String(nueva).trim();
+  if (clave.length < 6) return toast('La contraseña debe tener al menos 6 caracteres', 'error');
+  try {
+    await api('/api/admin/usuarios/' + a.cuenta.id, { method: 'PUT', admin: true, body: { password: clave } });
+  } catch (e) { return toast(e.message, 'error'); }
+  /* Al darle una clave nueva, el pedido queda resuelto */
+  try { await api('/api/admin/ayuda', { method: 'POST', admin: true, body: { id: a.id } }); } catch (e) {}
+  alert(`Contraseña nueva de @${a.cuenta.usuario}:\n\n${clave}\n\nPasásela y que la cambie al entrar.`);
+  toast('Contraseña actualizada y pedido resuelto ✓', 'ok');
+  await cargarAyuda();
 }
 
 /* ---------- Reservas del día ---------- */
@@ -5934,27 +5988,87 @@ function renderHistorial() {
 /* ---------- Salas ---------- */
 const ESTADO_SALA_TXT = { pendiente: 'Pendiente de aprobación', aprobada: 'Aprobada', rechazada: 'Rechazada', suspendida: 'Suspendida' };
 
+/* ---------- Salas del admin ---------- */
+let filtroSalasAdmin = '';
+let querySalasAdmin = '';
+
 function renderSalasAdmin() {
-  const grid = $('#salas-grid-admin');
-  grid.innerHTML = state.rooms.length ? state.rooms.map(r => `
-    <article class="room-card ${r.activo === false ? 'inactive' : ''}">
-      ${r.foto ? `<div class="room-foto"><img src="${esc(r.foto)}" alt="${esc(r.name)}"></div>` : ''}
-      <h3>${esc(r.name)} ${r.activo === false ? '<small class="muted">(inactiva)</small>' : ''}</h3>
-      <div class="row wrap">
-        <span class="badge ${r.estado === 'aprobada' ? '' : 'badge-next'}">${esc(ESTADO_SALA_TXT[r.estado] || r.estado)}</span>
-        ${r.ownerId ? '<span class="badge">👤 Con dueño</span>' : '<span class="badge badge-past">Sin dueño</span>'}
+  /* Chips de filtro */
+  const chips = $('#salas-chips');
+  if (chips) {
+    const nTodas = state.rooms.length;
+    const nAprob = state.rooms.filter(r => r.estado === 'aprobada').length;
+    const nPend = state.rooms.filter(r => r.estado === 'pendiente').length;
+    const nSinDueno = state.rooms.filter(r => !r.ownerId).length;
+    const filtros = [
+      ['', 'Todas', nTodas],
+      ['aprobada', 'Aprobadas', nAprob],
+      ['pendiente', 'Pendientes', nPend],
+      ['sin-dueno', 'Sin dueño', nSinDueno],
+    ];
+    chips.innerHTML = filtros.map(([k, label, count]) =>
+      `<button class="salas-chip${filtroSalasAdmin === k ? ' active' : ''}" data-filtro-salas-admin="${k}">${label} <span class="count">${count}</span></button>`
+    ).join('');
+  }
+
+  /* Filtrar y buscar */
+  const q = querySalasAdmin.trim().toLowerCase();
+  const lista = state.rooms.filter(r => {
+    if (filtroSalasAdmin === 'aprobada' && r.estado !== 'aprobada') return false;
+    if (filtroSalasAdmin === 'pendiente' && r.estado !== 'pendiente') return false;
+    if (filtroSalasAdmin === 'sin-dueno' && r.ownerId) return false;
+    if (q && !r.name.toLowerCase().includes(q)) return false;
+    return true;
+  });
+
+  /* Vacío */
+  const elVacio = $('#salas-vacio');
+  if (elVacio) elVacio.hidden = lista.length > 0;
+
+  /* Renderizar tarjetas */
+  const cont = $('#salas-grid-admin');
+  const ESTADO = { aprobada: { label: 'Aprobada', cls: 'ok' }, pendiente: { label: 'Pendiente', cls: 'wait' }, rechazada: { label: 'Rechazada', cls: 'off' } };
+
+  cont.innerHTML = lista.length ? lista.map(r => {
+    const st = ESTADO[r.estado] || { label: r.estado, cls: 'off' };
+    const owner = r.ownerId ? (state.users || []).find(u => u.id === r.ownerId) : null;
+    const dueño = owner ? esc(owner.nombre) : 'Sin dueño';
+    const dueñoNone = !owner;
+    const horas = r.horario ? Object.values(r.horario).filter(Boolean).map(h => h.open + ' – ' + h.close) : [];
+    const horasUniq = [...new Set(horas)];
+    const horasTxt = horasUniq.length ? horasUniq.join(', ') : 'Sin horario';
+
+    return `
+    <article class="sala-card">
+      <div class="sala-card-top">
+        ${r.foto
+          ? `<div class="sala-thumb"><img src="${esc(r.foto)}" alt="${esc(r.name)}"></div>`
+          : `<div class="sala-thumb sin-foto" style="background:${r.color || '#1e3350'}">${esc((r.name||'?')[0].toUpperCase())}</div>`}
+        <div class="sala-card-title">
+          <h3>${esc(r.name)}</h3>
+          <span class="sala-status st-${st.cls}">● ${st.label}</span>
+        </div>
       </div>
-      ${r.localidad || r.direccion ? `<div class="room-ubic">📍 ${esc([r.localidad, r.direccion].filter(Boolean).join(' · '))}</div>` : ''}
-      <div class="price">${fmtMoney(r.price)}<span> /hora</span></div>
-      <div class="cap">👥 Hasta ${r.capacity} ${r.capacity === 1 ? 'persona' : 'personas'}</div>
-      <ul class="feats">${r.features.length ? r.features.map(f => `<li>${esc(f)}</li>`).join('') : '<li>Sin características</li>'}</ul>
-      <div class="row wrap">
-        <button class="btn btn-sm" data-edit-room="${r.id}">Editar</button>
-        <button class="btn btn-sm" data-toggle-room="${r.id}">${r.activo === false ? 'Activar' : 'Desactivar'}</button>
-        <button class="btn btn-sm btn-danger" data-del-room="${r.id}">Eliminar</button>
+
+      <div class="sala-price"><strong>${fmtMoney(r.price)}</strong><span>/hora</span></div>
+
+      <div class="sala-grid">
+        <div class="sala-field"><small>Dueño</small><b class="${dueñoNone ? 'none' : ''}">${dueño}</b></div>
+        <div class="sala-field"><small>Capacidad</small><b>${r.capacity} persona${r.capacity === 1 ? '' : 's'}</b></div>
+        <div class="sala-field" style="grid-column: span 2"><small>Horario</small><b>${esc(horasTxt)}</b></div>
       </div>
-    </article>`).join('')
-    : '<p class="muted">Aún no hay salas. Crea la primera con el botón "Nueva sala".</p>';
+
+      <div class="sala-actions">
+        ${r.estado === 'pendiente'
+          ? `<button class="btn btn-sm ok" data-approve-room="${r.id}">Aprobar</button>`
+          : `<button class="btn btn-sm" data-edit-room="${r.id}">Editar</button>`}
+        ${owner
+          ? `<button class="btn btn-sm" data-change-owner="${r.id}">Cambiar dueño</button>`
+          : `<button class="btn btn-sm warn" data-assign-owner="${r.id}">Asignar dueño</button>`}
+        <button class="btn btn-sm" data-more-room="${r.id}" aria-label="Más opciones">⋮</button>
+      </div>
+    </article>`;
+  }).join('') : '';
 }
 
 function formularioSala(id) {
@@ -6345,7 +6459,6 @@ function renderInicioAdmin() {
   const ingresos = list.reduce((s, r) => s + precioReserva(r), 0);
   const pendPago = list.filter(r => r.estado === 'pendiente_pago').length;
   const solicitudes = (state.rooms || []).filter(r => r.estado === 'pendiente').length;
-  const promos = promosActivas();
   const nombreSala = id => { const s = (state.rooms || []).find(x => x.id === id); return s ? s.name : 'Sala eliminada'; };
 
   cont.innerHTML = `
@@ -6362,36 +6475,18 @@ function renderInicioAdmin() {
     </div>
 
     <div class="inicio-grid">
-      <section class="inicio-card">
+      <section class="inicio-card ancha">
         <h3>Próximas reservas de hoy</h3>
         ${list.length ? `<ul class="inicio-prox">${list.slice(0, 6).map(r => `
           <li><time>${esc(r.start)}–${esc(r.end)}</time><span class="nom">${esc(r.name)}</span><span class="sala">${esc(nombreSala(r.roomId))}</span></li>`).join('')}</ul>`
           : '<p class="muted small">No hay reservas para hoy.</p>'}
         <div class="inicio-pie"><button class="btn btn-sm" data-goto="reservas">Ver agenda completa</button></div>
       </section>
-
-      <section class="inicio-card">
-        <h3>Accesos rápidos</h3>
-        <div class="inicio-links">
-          <button class="inicio-link" data-goto="solicitudes"><span>Solicitudes</span>${solicitudes ? `<b class="n">${solicitudes}</b>` : ''}<i>›</i></button>
-          <button class="inicio-link" data-goto="promociones"><span>Promociones</span><i>›</i></button>
-          <button class="inicio-link" data-goto="estadisticas"><span>Estadísticas</span><i>›</i></button>
-          <button class="inicio-link" data-goto="ajustes"><span>Ajustes</span><i>›</i></button>
-        </div>
-      </section>
-
-      <section class="inicio-card ancha">
-        <h3>🎉 Promociones activas <span class="muted small">(${promos.length})</span></h3>
-        ${promosBloqueHTML(promos, 'No hay promociones activas. Cuando actives una, aparece acá.')}
-        <div class="inicio-pie"><button class="btn btn-sm" data-goto="promociones">Administrar promociones</button></div>
-      </section>
     </div>`;
 
   cont.onclick = e => {
     const g = e.target.closest('[data-goto]');
     if (g) return renderAdminTab(g.dataset.goto);
-    const pp = e.target.closest('[data-promo-id]');
-    if (pp && !e.target.closest('a')) abrirPromo(pp.dataset.promoId);
   };
 }
 
@@ -6693,6 +6788,224 @@ function renderStats() {
     </table>`;
 }
 
+/* ---------- Pagos y Liquidaciones ---------- */
+let cachePagos = null;
+
+async function renderPagosAdmin() {
+  const cards = $('#pagos-cards');
+  const badge = $('#pagos-modo-badge');
+  const tablaSalas = $('#pagos-tabla-salas');
+  const tablaRes = $('#pagos-tabla-reservas');
+  if (!cards || !tablaSalas || !tablaRes) return;
+
+  // Cargar inputs de reglas desde state.settings.reglas
+  const r = (state.settings && state.settings.reglas) || {};
+  const inSena = $('#pagos-set-sena');
+  const inCom = $('#pagos-set-comision');
+  const inMin = $('#pagos-set-minutos');
+  if (inSena && document.activeElement !== inSena) inSena.value = r.senaPorcentaje != null ? r.senaPorcentaje : 30;
+  if (inCom && document.activeElement !== inCom) inCom.value = r.comisionPorcentaje != null ? r.comisionPorcentaje : 8;
+  if (inMin && document.activeElement !== inMin) inMin.value = r.minutosPago != null ? r.minutosPago : 15;
+
+  cards.innerHTML = '<p class="muted">Cargando estado de pagos y señas...</p>';
+
+  try {
+    const data = await api('/api/admin/pagos', { admin: true });
+    cachePagos = data;
+
+    // Badge del modo de pagos
+    const modo = data.modo || 'apagado';
+    let modoHtml = '';
+    if (modo === 'mp') {
+      modoHtml = '<span class="pill" style="background: rgba(46,204,113,.15); color: #2ecc71; font-weight: 600;">🟢 Mercado Pago (Producción)</span>';
+    } else if (modo === 'simulado') {
+      modoHtml = '<span class="pill" style="background: rgba(241,196,15,.15); color: #f39c12; font-weight: 600;">🟡 Simulado (Pruebas)</span>';
+    } else {
+      modoHtml = '<span class="pill" style="background: rgba(149,165,166,.15); color: #7f8c8d; font-weight: 600;">⚪ Pagos desactivados (Reserva directa)</span>';
+    }
+    if (badge) badge.innerHTML = modoHtml;
+
+    // Métricas
+    let totalCobrado = 0, totalComision = 0, totalParaSala = 0, totalLiquidado = 0, totalPorLiquidar = 0;
+    (data.salas || []).forEach(s => {
+      totalCobrado += (Number(s.cobrado) || 0);
+      totalComision += (Number(s.comision) || 0);
+      totalParaSala += (Number(s.paraSala) || 0);
+      totalLiquidado += (Number(s.liquidado) || 0);
+      totalPorLiquidar += (Number(s.porLiquidar) || 0);
+    });
+
+    cards.innerHTML = `
+      <div class="stat"><span>💳 Señas cobradas</span><strong>${fmtMoney(totalCobrado)}</strong></div>
+      <div class="stat"><span>💰 Comisión +Música</span><strong>${fmtMoney(totalComision)}</strong></div>
+      <div class="stat"><span>🏢 Asignado a salas</span><strong>${fmtMoney(totalParaSala)}</strong></div>
+      <div class="stat" style="${totalPorLiquidar > 0 ? 'border: 1px solid var(--warn, #e67e22);' : ''}">
+        <span>⏳ Por liquidar</span><strong style="${totalPorLiquidar > 0 ? 'color: var(--warn, #e67e22);' : ''}">${fmtMoney(totalPorLiquidar)}</strong>
+      </div>
+      <div class="stat"><span>✅ Ya transferido</span><strong>${fmtMoney(totalLiquidado)}</strong></div>
+    `;
+
+    // Tabla de liquidación por sala
+    if (!data.salas || data.salas.length === 0) {
+      tablaSalas.innerHTML = '<p class="muted small">Aún no hay señas registradas para liquidar a las salas.</p>';
+    } else {
+      tablaSalas.innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>Sala</th>
+              <th>Cobrado en señas</th>
+              <th>Comisión app</th>
+              <th>Para la sala</th>
+              <th>Ya transferido</th>
+              <th>Por liquidar</th>
+              <th>Acción</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${data.salas.map(s => {
+              const pendiente = Number(s.porLiquidar) || 0;
+              return `
+              <tr>
+                <td><strong>${esc(s.sala)}</strong></td>
+                <td>${fmtMoney(s.cobrado)}</td>
+                <td>${fmtMoney(s.comision)}</td>
+                <td><strong>${fmtMoney(s.paraSala)}</strong></td>
+                <td>${fmtMoney(s.liquidado)}</td>
+                <td>
+                  <span class="pill" style="${pendiente > 0 ? 'background: rgba(230,126,34,.15); color: #e67e22; font-weight: 600;' : ''}">
+                    ${fmtMoney(pendiente)}
+                  </span>
+                </td>
+                <td>
+                  ${pendiente > 0 ? `
+                    <button class="btn btn-primary btn-sm btn-liquidar-sala" data-room-id="${esc(s.roomId)}" data-room-name="${esc(s.sala)}" data-monto="${pendiente}">
+                      ✓ Marcar liquidado
+                    </button>
+                  ` : '<span class="muted small">Al día ✓</span>'}
+                </td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      `;
+
+      $$('.btn-liquidar-sala').forEach(btn => {
+        btn.onclick = async () => {
+          const rId = btn.dataset.roomId;
+          const rName = btn.dataset.roomName;
+          const rMonto = btn.dataset.monto;
+          const ok = await confirmarAccion(
+            `¿Confirmas que transferiste ${fmtMoney(rMonto)} a "${rName}"? Las señas correspondientes quedarán marcadas como liquidadas.`,
+            'Confirmar liquidación',
+            'Sí, marcar liquidado',
+            'Cancelar'
+          );
+          if (!ok) return;
+          try {
+            await api('/api/admin/pagos/liquidar', { method: 'POST', admin: true, body: { roomId: rId } });
+            toast(`Liquidación registrada para "${rName}" ✓`, 'ok');
+            renderPagosAdmin();
+          } catch (err) {
+            toast(err.message, 'error');
+          }
+        };
+      });
+    }
+
+    // Tabla de reservas con seña
+    if (!data.reservas || data.reservas.length === 0) {
+      tablaRes.innerHTML = '<p class="muted small">No hay reservas registradas en el historial de pagos.</p>';
+    } else {
+      tablaRes.innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>Fecha y hora</th>
+              <th>Sala</th>
+              <th>Banda / Cliente</th>
+              <th>Total reserva</th>
+              <th>Seña pagada</th>
+              <th>Saldo en sala</th>
+              <th>Estado pago</th>
+              <th>Liquidación</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${data.reservas.slice().reverse().map(res => {
+              const room = (state.rooms || []).find(x => x.id === res.roomId);
+              const salaNom = room ? room.name : res.roomId;
+              let pagoTag = `<span class="pill">${esc(res.pago || '—')}</span>`;
+              if (res.pago === 'aprobado') {
+                pagoTag = '<span class="pill" style="background: rgba(46,204,113,.15); color: #2ecc71; font-weight: 600;">✓ Aprobado</span>';
+              } else if (res.pago === 'pendiente') {
+                pagoTag = '<span class="pill" style="background: rgba(241,196,15,.15); color: #f39c12; font-weight: 600;">⏳ Pendiente</span>';
+              } else if (res.pago === 'reembolsado' || res.pago === 'reembolso_pendiente') {
+                pagoTag = '<span class="pill" style="background: rgba(231,76,60,.15); color: #e74c3c; font-weight: 600;">↩ Reembolso</span>';
+              }
+
+              let liqTag = '—';
+              if (res.pago === 'aprobado' && res.estado !== 'cancelada') {
+                if (res.liquidadoEn) {
+                  const d = new Date(res.liquidadoEn);
+                  liqTag = `<span class="muted small" title="${d.toLocaleString()}">✓ Transferido (${d.getDate()}/${d.getMonth()+1})</span>`;
+                } else {
+                  liqTag = '<span class="pill" style="background: rgba(230,126,34,.15); color: #e67e22; font-weight: 600;">Por transferir</span>';
+                }
+              }
+
+              return `
+                <tr>
+                  <td>${esc(res.date)} ${esc(res.start)} - ${esc(res.end)}</td>
+                  <td>${esc(salaNom)}</td>
+                  <td><strong>${esc(res.name || '—')}</strong></td>
+                  <td>${fmtMoney(res.total)}</td>
+                  <td><strong>${fmtMoney(res.sena)}</strong></td>
+                  <td>${fmtMoney(res.saldo)}</td>
+                  <td>${pagoTag}</td>
+                  <td>${liqTag}</td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+  } catch (err) {
+    cards.innerHTML = `<p class="muted" style="color: var(--danger, red);">Error al cargar pagos: ${esc(err.message)}</p>`;
+  }
+}
+
+async function guardarReglasPagos() {
+  const inSena = $('#pagos-set-sena');
+  const inCom = $('#pagos-set-comision');
+  const inMin = $('#pagos-set-minutos');
+  if (!inSena || !inCom || !inMin) return;
+
+  const sena = parseInt(inSena.value, 10);
+  const comision = parseInt(inCom.value, 10);
+  const minutos = parseInt(inMin.value, 10);
+
+  if (isNaN(sena) || sena < 1 || sena > 100) { toast('El porcentaje de seña debe ser entre 1 y 100', 'warn'); return; }
+  if (isNaN(comision) || comision < 0 || comision > 100) { toast('El porcentaje de comisión debe ser entre 0 y 100', 'warn'); return; }
+  if (isNaN(minutos) || minutos < 5 || minutos > 60) { toast('Los minutos de espera de pago deben ser entre 5 y 60', 'warn'); return; }
+
+  const reglas = Object.assign({}, (state.settings && state.settings.reglas) || {}, {
+    senaPorcentaje: sena,
+    comisionPorcentaje: comision,
+    minutosPago: minutos
+  });
+
+  try {
+    const res = await api('/api/settings', { method: 'PUT', admin: true, body: { reglas } });
+    state = res.state;
+    toast('Reglas de seña y pago guardadas ✓', 'ok');
+    renderPagosAdmin();
+  } catch (e) {
+    toast(e.message, 'error');
+  }
+}
+
 /* ---------- Ajustes ---------- */
 function renderAjustes() {
   $('#set-currency').value = state.settings.currency;
@@ -6737,7 +7050,7 @@ function renderAjustes() {
   if (resumen) {
     const fecha = t => t ? new Date(t).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
     resumen.innerHTML = yo
-      ? `<div class="cm-ava">${yo.foto ? `<img src="${esc(yo.foto)}" alt="">` : '<span>👑</span>'}</div>
+      ? `<div class="cm-ava">${yo.foto ? `<img src="${esc(yo.foto)}" alt="">` : esDueño() && miSala && miSala.foto ? `<img src="${esc(miSala.foto)}" alt="">` : '<span>👑</span>'}</div>
          <div class="cm-datos">
            <strong>${esc(yo.nombre)}</strong>
            <span class="cm-badge">Super administradora</span>
@@ -6972,7 +7285,11 @@ function wireAdmin() {
   });
   /* Solicitudes de salas: aprobar, rechazar o pedir correcciones */
   $$('[data-estado-sol]').forEach(b => {
-    b.onclick = () => { filtroSolicitudes = b.dataset.estadoSol; renderSolicitudes(); };
+    b.onclick = () => {
+      filtroSolicitudes = b.dataset.estadoSol;
+      $$('#tab-solicitudes .sol-chip').forEach(c => c.setAttribute('aria-selected', c === b ? 'true' : 'false'));
+      renderSolicitudes();
+    };
   });
   $('#solicitudes-list').onclick = e => {
     const ok = e.target.closest('[data-sol-ok]');
@@ -6995,19 +7312,29 @@ function wireAdmin() {
     if (ed) return formularioSala(ed.dataset.solEditar);
   };
   /* Cuentas registradas */
-  $('#usuarios-buscar').oninput = e => { filtroUsuarios = e.target.value; renderUsuarios(); };
+  $('#usuarios-buscar').oninput = () => renderUsuarios();
   $('#usuarios-list').onclick = e => {
     const b = e.target.closest('[data-user-bloquear]');
     if (b) return accionUsuario(b.dataset.userBloquear, 'bloquear');
-    const r = e.target.closest('[data-user-rol]');
-    if (r) return accionUsuario(r.dataset.userRol, 'rol');
     const d = e.target.closest('[data-user-borrar]');
     if (d) return accionUsuario(d.dataset.userBorrar, 'borrar');
+  };
+  $('#usuarios-list').onchange = e => {
+    const r = e.target.closest('[data-user-rol]');
+    if (r) return accionUsuario(r.dataset.userRol, 'rol', r.value);
+  };
+  $('#usuarios-chips').onclick = e => {
+    const chip = e.target.closest('[data-filtro-usuarios]');
+    if (!chip) return;
+    filtroUsuarios = chip.dataset.filtroUsuarios;
+    renderUsuarios();
   };
   /* Pedidos de ayuda */
   $('#ayuda-list').onclick = e => {
     const des = e.target.closest('[data-ayuda-desbloquear]');
     if (des) return resolverAyuda(des.dataset.ayudaDesbloquear, true);
+    const clv = e.target.closest('[data-ayuda-clave]');
+    if (clv) return darClaveDesdeAyuda(clv.dataset.ayudaClave);
     const res = e.target.closest('[data-ayuda-resolver]');
     if (res) return resolverAyuda(res.dataset.ayudaResolver, false);
   };
@@ -7037,18 +7364,51 @@ function wireAdmin() {
     if (cx) return cancelarReserva(cx.dataset.cancel, 'historial');
   };
   $('#btn-new-room').onclick = () => formularioSala(null);
-  $('#salas-grid-admin').onclick = e => {
+  $('#salas-buscar').oninput = e => { querySalasAdmin = e.target.value; renderSalasAdmin(); };
+  $('#salas-chips').onclick = e => {
+    const chip = e.target.closest('[data-filtro-salas-admin]');
+    if (!chip) return;
+    filtroSalasAdmin = chip.dataset.filtroSalasAdmin;
+    renderSalasAdmin();
+  };
+  $('#salas-grid-admin').onclick = async e => {
     const ed = e.target.closest('[data-edit-room]');
     if (ed) return formularioSala(ed.dataset.editRoom);
-    const tg = e.target.closest('[data-toggle-room]');
-    if (tg) {
-      const r = state.rooms.find(x => x.id === tg.dataset.toggleRoom);
-      if (!r) return;
-      api(`/api/rooms/${r.id}`, {
-        method: 'PUT', admin: true,
-        body: { name: r.name, price: r.price, capacity: r.capacity, features: r.features, active: r.activo === false, estado: r.estado, turnoMin: r.turnoMin, foto: r.foto },
-      }).then(data => { state = data.state; renderAdminTab('salas'); })
-        .catch(err => toast(err.message, 'error'));
+    const ap = e.target.closest('[data-approve-room]');
+    if (ap) {
+      try {
+        const data = await api(`/api/admin/solicitudes/${ap.dataset.approveRoom}`, { method: 'PUT', admin: true, body: { accion: 'aprobar' } });
+        state = data.state; renderAdminTab('salas'); toast('Sala aprobada ✓', 'ok');
+      } catch (err) { toast(err.message, 'error'); }
+      return;
+    }
+    const own = e.target.closest('[data-assign-owner]');
+    if (own) {
+      const name = prompt('Nombre del dueño para esta sala (usuario):');
+      if (!name || !name.trim()) return;
+      const u = (state.users || []).find(x => x.usuario === name.trim().toLowerCase());
+      if (!u) { toast('Usuario no encontrado', 'warn'); return; }
+      try {
+        const data = await api('/api/rooms/' + own.dataset.assignOwner, { method: 'PUT', admin: true, body: { ownerId: u.id } });
+        state = data.state; renderAdminTab('salas'); toast('Dueño asignado ✓', 'ok');
+      } catch (err) { toast(err.message, 'error'); }
+      return;
+    }
+    const chg = e.target.closest('[data-change-owner]');
+    if (chg) {
+      const name = prompt('Nuevo dueño para la sala (usuario):');
+      if (!name || !name.trim()) return;
+      const u = (state.users || []).find(x => x.usuario === name.trim().toLowerCase());
+      if (!u) { toast('Usuario no encontrado', 'warn'); return; }
+      try {
+        const data = await api('/api/rooms/' + chg.dataset.changeOwner, { method: 'PUT', admin: true, body: { ownerId: u.id } });
+        state = data.state; renderAdminTab('salas'); toast('Dueño cambiado ✓', 'ok');
+      } catch (err) { toast(err.message, 'error'); }
+      return;
+    }
+    const more = e.target.closest('[data-more-room]');
+    if (more) {
+      toast('Opciones: eliminar, desactivar, ver historial', 'ok');
       return;
     }
     const del = e.target.closest('[data-del-room]');
@@ -7103,6 +7463,10 @@ function wireAdmin() {
     } catch (err) { toast(err.message, 'error'); }
   };
   $('#btn-save-settings').onclick = guardarAjustes;
+  const btnSavePagos = $('#btn-save-pagos-reglas');
+  if (btnSavePagos) btnSavePagos.onclick = guardarReglasPagos;
+  const btnRefreshPagos = $('#btn-refresh-pagos');
+  if (btnRefreshPagos) btnRefreshPagos.onclick = renderPagosAdmin;
   $('#btn-save-cuenta').onclick = guardarCuentaMadre;
   $('#aj-apariencia-admin').onclick = e => {
     const t = e.target.closest('button[data-tema]');
@@ -7161,8 +7525,7 @@ function wireAdmin() {
     const del = e.target.closest('[data-del-photo]');
     if (del) return eliminarFotoLugar(del.dataset.delPhoto);
   };
-  /* Bandas registradas */
-  $('#btn-new-band').onclick = () => formularioBanda(null);
+  /* Bandas registradas: solo editar o eliminar (desde acá no se registran) */
   $('#bands-admin').onclick = e => {
     const ed = e.target.closest('[data-edit-band]');
     if (ed) return formularioBanda(ed.dataset.editBand);
