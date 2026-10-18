@@ -7294,16 +7294,26 @@ function wireAdmin() {
     }
     const own = e.target.closest('[data-assign-owner]');
     if (own) {
-      const name = prompt('Nombre del dueño para esta sala:');
+      const name = prompt('Nombre del dueño para esta sala (usuario):');
       if (!name || !name.trim()) return;
-      toast('Asignar dueño: pendiente de implementar', 'warn');
+      const u = (state.users || []).find(x => x.usuario === name.trim().toLowerCase());
+      if (!u) { toast('Usuario no encontrado', 'warn'); return; }
+      try {
+        const data = await api('/api/rooms/' + own.dataset.assignOwner, { method: 'PUT', admin: true, body: { ownerId: u.id } });
+        state = data.state; renderAdminTab('salas'); toast('Dueño asignado ✓', 'ok');
+      } catch (err) { toast(err.message, 'error'); }
       return;
     }
     const chg = e.target.closest('[data-change-owner]');
     if (chg) {
-      const name = prompt('Nuevo dueño para la sala:');
+      const name = prompt('Nuevo dueño para la sala (usuario):');
       if (!name || !name.trim()) return;
-      toast('Cambiar dueño: pendiente de implementar', 'warn');
+      const u = (state.users || []).find(x => x.usuario === name.trim().toLowerCase());
+      if (!u) { toast('Usuario no encontrado', 'warn'); return; }
+      try {
+        const data = await api('/api/rooms/' + chg.dataset.changeOwner, { method: 'PUT', admin: true, body: { ownerId: u.id } });
+        state = data.state; renderAdminTab('salas'); toast('Dueño cambiado ✓', 'ok');
+      } catch (err) { toast(err.message, 'error'); }
       return;
     }
     const more = e.target.closest('[data-more-room]');
