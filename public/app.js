@@ -558,6 +558,7 @@ function fichaSala(id) {
   openModal(`
     <h3>${esc(r.name)}</h3>
     ${r.foto ? `<img class="ficha-logo" src="${esc(r.foto)}" alt="${esc(r.name)}">` : ''}
+    ${(r.fotos || []).length ? `<div class="ficha-fotos">${(r.fotos || []).map(f => `<figure class="ficha-foto">${f.foto ? `<img src="${esc(f.foto)}" alt="${esc(f.titulo || r.name)}" onclick="verFoto('${esc(f.foto)}', 'Foto de la sala')" title="Ver en grande">` : ''}${f.titulo ? `<figcaption>${esc(f.titulo)}</figcaption>` : ''}</figure>`).join('')}</div>` : ''}
     <div class="ficha-grid">
       <div><span class="muted">Precio</span><strong>${fmtMoney(r.price)} /hora</strong></div>
       <div><span class="muted">Capacidad</span><strong>Hasta ${r.capacity}</strong></div>
