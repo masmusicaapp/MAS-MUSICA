@@ -51,7 +51,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@500;600;700&family=Barlow+Condensed:ital,wght@1,900&display=swap">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
       integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
-<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="styles.css?v=67">
 </head>
 <body>
 
@@ -191,6 +191,7 @@
       <div class="row">
         <button class="btn btn-sm" id="btn-mi-ubicacion" title="Mi ubicación" aria-label="Mi ubicación">📍<span class="mapa-btn-txt"> Mi ubicación</span></button>
         <button class="btn btn-sm" id="btn-ver-todas" title="Ver todas las salas" aria-label="Ver todas las salas">🔎<span class="mapa-btn-txt"> Ver todas</span></button>
+        <button class="btn btn-sm" id="btn-mapa-fav" title="Ver solo tus favoritas" aria-label="Ver solo tus favoritas">♡<span class="mapa-btn-txt"> Favoritas</span></button>
         <button class="btn btn-sm" id="mapa-lista-toggle" title="Ocultar la lista de salas" aria-label="Ocultar la lista de salas">✕<span class="mapa-btn-txt"> Salas</span></button>
       </div>
     </div>
@@ -998,7 +999,7 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-<script src="app.js"></script>
+<script src="app.js?v=67"></script>
 <script>
   /* Fallback: si después de 2s no hay sesión y el auth-body está vacío, forzar login */
   setTimeout(function() {
