@@ -100,7 +100,11 @@ function guardarImagen(id, dataUrl, sufijo, subcarpeta) {
   const idLimpio = String(id || 'x').replace(/[^a-zA-Z0-9._-]/g, '').slice(0, 80);
   const sufLimpio = String(sufijo || '').replace(/[^a-zA-Z0-9._-]/g, '').slice(0, 20);
   fs.mkdirSync(path.join(PUBLIC_DIR, 'assets', subcarpeta), { recursive: true });
-  const rel = `assets/${subcarpeta}/${idLimpio}${sufLimpio}.${ext}`;
+  /* Cada subida lleva un sello único en el nombre. Si el nombre fuera siempre el mismo
+     (por ejemplo assets/salas/<sala>.jpg), al cambiar la foto el navegador seguiría
+     mostrando la imagen vieja guardada en caché: la ruta no cambia y reusa la misma. */
+  const sello = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const rel = `assets/${subcarpeta}/${idLimpio}${sufLimpio}-${sello}.${ext}`;
   fs.writeFileSync(path.join(PUBLIC_DIR, rel), buf);
   return rel;
 }
@@ -294,6 +298,7 @@ function salaNueva(datos = {}) {
     name: '',
     descripcion: '',
     direccion: '',
+    numero: '',
     localidad: '',
     mapa: '',
     lat: null,
@@ -374,6 +379,7 @@ function migrarSala(r) {
   out.lat = r.lat === null || r.lat === '' || r.lat === undefined || !Number.isFinite(Number(r.lat)) ? null : Number(r.lat);
   out.lng = r.lng === null || r.lng === '' || r.lng === undefined || !Number.isFinite(Number(r.lng)) ? null : Number(r.lng);
   out.direccion = String(r.direccion || '').slice(0, 160);
+  out.numero = String(r.numero || '').slice(0, 12);
   out.localidad = String(r.localidad || '').slice(0, 80);
   return out;
 }
@@ -1163,9 +1169,12 @@ function serveStatic(req, res, url) {
   if (!file.startsWith(PUBLIC_DIR + path.sep)) { res.writeHead(403); return res.end(); }
   fs.readFile(file, (err, data) => {
     if (err) { res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' }); return res.end('No encontrado'); }
+    const ext = path.extname(file).toLowerCase();
     res.writeHead(200, {
-      'Content-Type': MIME[path.extname(file).toLowerCase()] || 'application/octet-stream',
-      'Cache-Control': 'no-cache',
+      'Content-Type': MIME[ext] || 'application/octet-stream',
+      /* El HTML nunca se guarda: así el celular siempre toma la última versión.
+         El CSS/JS llevan ?v=… en index.html para forzar la descarga cuando cambian. */
+      'Cache-Control': ext === '.html' ? 'no-store, no-cache, must-revalidate' : 'no-cache',
       'X-Content-Type-Options': 'nosniff',
       'X-Frame-Options': 'DENY',
       'Referrer-Policy': 'strict-origin-when-cross-origin',
@@ -1514,6 +1523,12 @@ async function handleApi(req, res, url, parts) {
     const phone = String(body.phone || (u && u.telefono) || '').trim();
     if (!date || !roomId || !start || !end) return sendJson(res, 400, { error: 'Faltan datos de la reserva' });
     if (!name) return sendJson(res, 400, { error: 'Escribe el nombre o el de la banda' });
+    /* Los músicos y las bandas reservan con un máximo de 7 días de anticipación */
+    if (u.rol === 'USER') {
+      const corte = new Date();
+      corte.setDate(corte.getDate() + 7);
+      if (date > dateStr(corte)) return sendJson(res, 403, { error: 'Los músicos y las bandas pueden reservar hasta 7 días para adelante' });
+    }
     const room = state.rooms.find(r => r.id === roomId && r.activo !== false && r.estado === 'aprobada');
     if (!room) return sendJson(res, 400, { error: 'La sala no existe o no está disponible' });
     const startMin = toMin(start), endMin = toMin(end);
@@ -2102,6 +2117,15 @@ async function handleApi(req, res, url, parts) {
       room.precio = room.price;
       if (active !== undefined) room.activo = active === true;
       if (estado && ['pendiente', 'aprobada', 'rechazada', 'suspendida'].includes(estado)) room.estado = estado;
+      if (body.ownerId !== undefined) {
+        if (body.ownerId === null || body.ownerId === '') room.ownerId = null;
+        else {
+          const uOwner = state.users.find(x => x.id === body.ownerId);
+          if (!uOwner) return sendJson(res, 400, { error: 'Usuario no encontrado' });
+          room.ownerId = uOwner.id;
+          if (uOwner.rol === 'USER') uOwner.rol = 'ROOM_ADMIN';
+        }
+      }
       if (foto !== undefined) {
         const guardada = guardarFotoSala(room.id, foto);
         if (guardada) { if (room.foto && room.foto !== guardada) borrarFotoSala(room.foto); room.foto = guardada; }
@@ -2337,83 +2361,6 @@ async function handleApi(req, res, url, parts) {
     const u = sesionActual(state, req);
     if (!u || u.rol !== 'USER') return sendJson(res, 403, { error: 'La comunidad es solo para cuentas de músico' });
     const txt = s => String(s == null ? '' : s).trim();
-    const low = s => txt(s).toLowerCase();
-    const musicoMini = x => ({
-      id: x.id, nombre: x.nombre, usuario: x.usuario, foto: x.foto || '',
-      localidad: x.localidad || '',
-      instrumentos: Array.isArray(x.instrumentos) ? x.instrumentos.slice(0, 12) : [],
-    });
-    const sigoA = (mi, id) => Array.isArray(mi.following) && mi.following.includes(id);
-    const seguidoresDe = id => (state.users || []).filter(x => Array.isArray(x.following) && x.following.includes(id)).length;
-    const musicosActivos = () => (state.users || []).filter(x => x.rol === 'USER' && x.id !== u.id && x.activo !== false && !x.bloqueado);
-
-    /* Directorio de músicos (con buscador y filtro por zona) */
-    if (method === 'GET' && url.pathname === '/api/comunidad/musicos') {
-      const q = low(url.searchParams.get('q'));
-      const zona = low(url.searchParams.get('zona'));
-      let lista = musicosActivos().map(x => Object.assign(musicoMini(x), {
-        siguiendo: sigoA(u, x.id),
-        seguidores: seguidoresDe(x.id),
-        meSigue: sigoA(x, u.id),
-      }));
-      if (q) lista = lista.filter(m => low(m.nombre).includes(q) || low(m.usuario).includes(q) || m.instrumentos.some(i => low(i).includes(q)));
-      if (zona) lista = lista.filter(m => low(m.localidad).includes(zona));
-      const miZona = low(u.localidad);
-      lista.sort((a, b) => {
-        const za = miZona && low(a.localidad) === miZona ? 0 : 1;
-        const zb = miZona && low(b.localidad) === miZona ? 0 : 1;
-        if (za !== zb) return za - zb;
-        return String(a.nombre).localeCompare(String(b.nombre));
-      });
-      return sendJson(res, 200, { musicos: lista.slice(0, 300), miLocalidad: u.localidad || '' });
-    }
-
-    /* Seguir / dejar de seguir */
-    if (method === 'POST' && url.pathname === '/api/comunidad/seguir') {
-      const otro = musicosActivos().find(x => x.id === txt(body.userId));
-      if (!otro) return sendJson(res, 404, { error: 'Músico no encontrado' });
-      if (!Array.isArray(u.following)) u.following = [];
-      const i = u.following.indexOf(otro.id);
-      let siguiendo;
-      if (i >= 0) { u.following.splice(i, 1); siguiendo = false; }
-      else {
-        u.following.push(otro.id); siguiendo = true;
-        avisar(state, otro.id, 'Nuevo seguidor', `@${u.usuario} empezó a seguirte.`, 'info');
-      }
-      persist(state);
-      return sendJson(res, 200, { siguiendo, seguidores: seguidoresDe(otro.id) });
-    }
-
-    /* Bandeja de conversaciones */
-    if (method === 'GET' && url.pathname === '/api/comunidad/conversaciones') {
-      const msgs = (state.mensajes || []).filter(m => m.de === u.id || m.para === u.id);
-      const por = {};
-      msgs.forEach(m => {
-        const otroId = m.de === u.id ? m.para : m.de;
-        const c = por[otroId] = por[otroId] || { userId: otroId, ultimo: null, sinLeer: 0 };
-        if (!c.ultimo || m.fecha > c.ultimo.fecha) c.ultimo = m;
-        if (m.para === u.id && !m.leido) c.sinLeer++;
-      });
-      const conversaciones = Object.keys(por).map(k => {
-        const c = por[k];
-        const otro = (state.users || []).find(x => x.id === c.userId) || {};
-        return {
-          userId: c.userId,
-          nombre: otro.nombre || 'Músico',
-          usuario: otro.usuario || '',
-          foto: otro.foto || '',
-          localidad: otro.localidad || '',
-          ultimo: c.ultimo ? { texto: c.ultimo.texto, fecha: c.ultimo.fecha, mio: c.ultimo.de === u.id } : null,
-          sinLeer: c.sinLeer,
-        };
-      }).sort((a, b) => ((b.ultimo && b.ultimo.fecha) || 0) - ((a.ultimo && a.ultimo.fecha) || 0));
-      return sendJson(res, 200, {
-        conversaciones,
-        sinLeer: msgs.filter(m => m.para === u.id && !m.leido).length,
-      });
-    }
-
-    /* Hilo de mensajes con un músico (marca como leídos los recibidos) */
     /* Verificar acceso al chat (suscripción) */
     if (method === 'GET' && url.pathname === '/api/comunidad/chat-acceso') {
       const tieneAcceso = tieneAccesoChat(state, u.id);
@@ -2488,54 +2435,6 @@ async function handleApi(req, res, url, parts) {
       return sendJson(res, 201, { ok: true, mensaje: { id: m.id, texto: m.texto, fecha: m.fecha } });
     }
 
-    /* ========== CHAT INDIVIDUAL (MANTENER POR COMPATIBILIDAD) ========== */
-
-    if (method === 'GET' && url.pathname === '/api/comunidad/mensajes') {
-      if (!tieneAccesoChat(state, u.id)) {
-        return sendJson(res, 403, { error: 'Necesitás una suscripción al Chat Global', requiereSuscripcion: true, planes: CHAT_PLAN_CONFIG });
-      }
-      const otro = musicosActivos().find(x => x.id === txt(url.searchParams.get('con')));
-      if (!otro) return sendJson(res, 404, { error: 'Músico no encontrado' });
-      let cambio = false;
-      (state.mensajes || []).forEach(m => {
-        if (m.de === otro.id && m.para === u.id && !m.leido) { m.leido = true; cambio = true; }
-      });
-      if (cambio) persist(state);
-      const hilo = (state.mensajes || [])
-        .filter(m => (m.de === u.id && m.para === otro.id) || (m.de === otro.id && m.para === u.id))
-        .sort((a, b) => a.fecha - b.fecha)
-        .map(m => ({ id: m.id, texto: m.texto, fecha: m.fecha, mio: m.de === u.id }));
-      return sendJson(res, 200, { musico: musicoMini(otro), mensajes: hilo, siguiendo: sigoA(u, otro.id) });
-    }
-
-    /* Enviar mensaje individual */
-    if (method === 'POST' && url.pathname === '/api/comunidad/mensajes') {
-      if (!tieneAccesoChat(state, u.id)) {
-        return sendJson(res, 403, { error: 'Necesitás una suscripción al Chat Global', requiereSuscripcion: true, planes: CHAT_PLAN_CONFIG });
-      }
-      const otro = musicosActivos().find(x => x.id === txt(body.para));
-      const texto = txt(body.texto).slice(0, 600);
-      if (!otro) return sendJson(res, 404, { error: 'Músico no encontrado' });
-      if (!texto) return sendJson(res, 400, { error: 'Escribí un mensaje' });
-      state.mensajes = state.mensajes || [];
-      const m = { id: uid(), de: u.id, para: otro.id, texto, fecha: Date.now(), leido: false };
-      state.mensajes.push(m);
-      avisar(state, otro.id, `Mensaje de @${u.usuario}`, texto.slice(0, 120), 'info');
-      persist(state);
-      return sendJson(res, 201, { mensaje: { id: m.id, texto: m.texto, fecha: m.fecha, mio: true } });
-    }
-
-    /* A quiénes sigo y quiénes me siguen */
-    if (method === 'GET' && url.pathname === '/api/comunidad/siguiendo') {
-      const sigo = (u.following || [])
-        .map(id => musicosActivos().find(x => x.id === id))
-        .filter(Boolean).map(musicoMini);
-      const meSiguen = (state.users || [])
-        .filter(x => x.rol === 'USER' && x.id !== u.id && x.activo !== false && !x.bloqueado && sigoA(x, u.id))
-        .map(musicoMini);
-      return sendJson(res, 200, { sigo, meSiguen });
-    }
-
     return sendJson(res, 404, { error: 'Endpoint de comunidad no encontrado' });
   }
 
@@ -2553,6 +2452,7 @@ function datosDeSala(body, prev = {}) {
   if (body.features !== undefined) out.features = listaTexto(body.features, 20, 60);
   if (body.descripcion !== undefined) out.descripcion = String(body.descripcion).slice(0, 600);
   if (body.direccion !== undefined) out.direccion = String(body.direccion).slice(0, 160);
+  if (body.numero !== undefined) out.numero = String(body.numero).slice(0, 12);
   if (body.localidad !== undefined) out.localidad = String(body.localidad).slice(0, 80);
   if (body.mapa !== undefined) out.mapa = String(body.mapa).slice(0, 300);
   if (body.lat !== undefined) {

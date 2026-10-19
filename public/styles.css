@@ -5557,3 +5557,16 @@ main#view-comunidad:has(.suscripcion-wrap) > .panel {
 .aj-enlace:hover { border-color: var(--accent); }
 .aj-ico { width: 22px; height: 22px; flex: 0 0 auto; }
 #btn-mapa-fav.on { border-color: var(--accent) !important; color: var(--accent) !important; background: color-mix(in srgb, var(--accent) 16%, transparent) !important; }
+
+/* ===== Tarjeta del mapa: ajustes para celular ===== */
+@media (max-width: 959px) {
+  .mapa-tarjeta-card { max-width: calc(100% - 24px) !important; }
+  .mt-cover { height: 120px; }
+  .mt-cuerpo { padding: 0 16px 16px; }
+  .mt-nombre { font-size: 1.05rem; }
+  /* En pantalla chica el botón principal ocupa todo el ancho y "Ficha" + ♥ van abajo */
+  .mt-acciones { flex-wrap: wrap; }
+  .mt-acciones #tarjeta-reservar { flex: 1 1 100%; }
+  .mt-acciones #tarjeta-ficha { flex: 1 1 auto; }
+  .mt-fav { flex: 0 0 46px !important; }
+}

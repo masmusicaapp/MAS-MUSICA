@@ -1119,7 +1119,7 @@ function verSalaEnMapa(id) {
   if (!r || !tieneUbicacion(r)) return;
   const punto = [Number(r.lat), Number(r.lng)];
   centrarMapa(punto, 15);
-  if (mapaEsGoogle()) { if (gmap) abrirVentanaInfo(popupSala(r)); return; }
+  if (mapaEsGoogle()) { if (gmap) abrirTarjetaSala(id); return; }
   if (marcasSala[id]) { try { marcasSala[id].openPopup(); } catch (e) {} }
   irACarruselSala(id);
 }
@@ -1184,6 +1184,7 @@ function abrirTarjetaSala(id) {
       </div>`;
     card.onclick = accionesMapa;
     const tc = $('#tarjeta-cerrar'); if (tc) tc.onclick = cerrarTarjetaSala;
+    const tclose = document.querySelector('.mapa-tarjeta-close'); if (tclose) tclose.onclick = cerrarTarjetaSala;
     const tr = $('#tarjeta-reservar'); if (tr) tr.onclick = () => { cerrarTarjetaSala(); elegirSala(r.id); };
     const tf = $('#tarjeta-ficha'); if (tf) tf.onclick = () => { cerrarTarjetaSala(); fichaSala(r.id); };
     const tfv = $('#tarjeta-fav'); if (tfv) tfv.onclick = () => { alternarFavorita(r.id); abrirTarjetaSala(r.id); };
@@ -1356,7 +1357,7 @@ async function renderMapaGoogle() {
           ? { url: iconos[i], scaledSize: new google.maps.Size(28, 28), anchor: new google.maps.Point(14, 14) }
           : undefined,
       });
-      m.addListener('click', () => abrirVentanaInfo(popupSala(r)));
+      m.addListener('click', () => abrirTarjetaSala(r.id));
       gmarcadores.push(m);
     });
 
