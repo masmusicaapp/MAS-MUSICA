@@ -5478,3 +5478,51 @@ main#view-comunidad:has(.suscripcion-wrap) > .panel {
 }
 .chat-msg-sticker { display: inline-block; width: 64px; height: 64px; color: var(--accent2); }
 .chat-msg-sticker svg { width: 100%; height: 100%; }
+
+/* ===== Chat global: menú de adjuntos, video e invitaciones ===== */
+.chat-adj-panel {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+  padding: 10px; background: var(--panel2); border: 1px solid var(--line);
+  border-radius: 12px; margin: 0 0 8px;
+}
+.chat-adj-panel[hidden] { display: none; }
+.chat-adj-op {
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
+  padding: 9px 4px; border-radius: 10px; cursor: pointer;
+  background: var(--panel); border: 1px solid var(--line); color: var(--text);
+  font-size: .72rem; line-height: 1;
+}
+.chat-adj-op svg { width: 22px; height: 22px; color: var(--accent2); }
+.chat-adj-op:hover { border-color: var(--accent); }
+.chat-sala-picker {
+  padding: 10px; background: var(--panel2); border: 1px solid var(--line);
+  border-radius: 12px; margin: 0 0 8px; max-height: 240px; overflow: auto;
+}
+.chat-sala-picker[hidden] { display: none; }
+.chat-sala-titulo { font-size: .78rem; color: var(--muted); margin: 0 0 6px; }
+.chat-sala-lista { display: flex; flex-direction: column; gap: 6px; }
+.chat-sala-item {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
+  padding: 8px 10px; border-radius: 10px; cursor: pointer; text-align: left;
+  background: var(--panel); border: 1px solid var(--line); color: var(--text);
+}
+.chat-sala-item:hover { border-color: var(--accent); }
+.cs-nombre { font-weight: 600; font-size: .86rem; }
+.cs-dir { font-size: .72rem; color: var(--muted); }
+.chat-msg-video { max-width: 240px; max-height: 260px; border-radius: 12px; display: block; margin: 4px 0; background: #000; }
+.chat-invitacion {
+  display: flex; flex-direction: column; gap: 4px; align-items: flex-start;
+  padding: 10px 12px; border-radius: 12px; margin: 4px 0; max-width: 260px;
+  background: var(--panel); border: 1px solid var(--accent);
+}
+.ci-encabezado { display: flex; align-items: center; gap: 6px; font-size: .72rem; color: var(--accent2); text-transform: uppercase; letter-spacing: .03em; }
+.ci-encabezado svg { width: 14px; height: 14px; }
+.ci-nombre { font-weight: 700; font-size: .95rem; }
+.ci-dir { font-size: .76rem; color: var(--muted); }
+.ci-btn {
+  margin-top: 4px; padding: 7px 14px; border-radius: 20px; cursor: pointer;
+  background: var(--accent); color: #fff; border: 1px solid var(--accent);
+  font-weight: 600; font-size: .82rem;
+}
+.ci-btn.on { background: transparent; color: var(--accent2); border-color: var(--accent2); }
+.ci-count { font-size: .72rem; color: var(--muted); }
