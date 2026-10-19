@@ -1200,6 +1200,48 @@ function cerrarTarjetaSala() {
   if (card) card.innerHTML = '';
 }
 
+/* ---------- Tarjeta de reserva: reemplaza al popup viejo de las reservas ---------- */
+function abrirTarjetaReserva(resId) {
+  const res = misReservas().find(x => x.id === resId);
+  const sala = res ? (state.rooms || []).find(x => x.id === res.roomId) : null;
+  if (!res || !sala) return;
+  const pasada = esPasada(res);
+  const dir = [sala.direccion, sala.localidad].filter(Boolean).join(' · ');
+  const portada = fotoPortadaSala(sala);
+  const card = $('#mapa-tarjeta-card');
+  if (card) {
+    card.innerHTML = `
+      <button type="button" class="mapa-tarjeta-close" onclick="cerrarTarjetaSala()" aria-label="Cerrar tarjeta">×</button>
+      <div class="mt">
+        <div class="mt-cover ${portada ? '' : 'sin-foto'}">
+          <img src="${esc(portada || '/assets/marca-agua-negro.png')}" alt="Portada de ${esc(sala.name)}"${portada ? ` data-pop-foto="${esc(portada)}"` : ''}>
+        </div>
+        <div class="mt-cuerpo">
+          ${sala.foto ? `<img class="mt-logo" src="${esc(sala.foto)}" alt="${esc(sala.name)}">` : '<div class="mt-logo mt-logo-ico">📍</div>'}
+          <h3 class="mt-nombre">${esc(sala.name)}</h3>
+          <div class="mt-chips">
+            <span class="mt-chip">📅 ${fmtDate(res.date)} · ${res.start}–${res.end}</span>
+            ${pasada ? '<span class="mt-chip badge badge-past">Pasada</span>' : '<span class="mt-chip badge badge-next">Tu reserva</span>'}
+          </div>
+          <p class="mt-dir">👤 ${esc(res.name)}${dir ? ` · ${esc(dir)}` : ''}</p>
+          ${sala.telefono ? `<a class="mt-tel" href="tel:${esc(String(sala.telefono).replace(/[^0-9+]/g, ''))}">📞 ${esc(sala.telefono)}</a>` : ''}
+          <div class="mt-acciones">
+            <button class="btn btn-primary" id="tarjeta-reservar">Ver horarios ➜</button>
+            <button class="btn" id="tarjeta-ficha">📋 Ficha</button>
+            ${!pasada && res.estado !== 'cancelada' ? '<button class="btn btn-danger" id="tarjeta-cancelar">❌ Cancelar</button>' : ''}
+          </div>
+        </div>
+      </div>`;
+    card.onclick = accionesMapa;
+    const tr = $('#tarjeta-reservar'); if (tr) tr.onclick = () => { cerrarTarjetaSala(); elegirSala(sala.id); };
+    const tf = $('#tarjeta-ficha'); if (tf) tf.onclick = () => { cerrarTarjetaSala(); fichaSala(sala.id); };
+    const tcx = $('#tarjeta-cancelar'); if (tcx) tcx.onclick = () => { cerrarTarjetaSala(); cancelarReservaMia(res.id); };
+  }
+  const overlay = $('#mapa-tarjeta');
+  if (overlay) overlay.hidden = false;
+  if (mapa) { try { mapa.panTo([Number(sala.lat), Number(sala.lng)], { animate: true }); } catch (e) {} }
+}
+
 
 /* Acciones dentro de los popups (tanto Leaflet como Google) */
 function accionesMapa(e) {
@@ -1285,7 +1327,7 @@ function renderMapaLeaflet() {
     });
     L.marker([Number(sala.lat), Number(sala.lng)], { icon: icono, title: 'Tu reserva' })
       .addTo(capaMarcas)
-      .bindPopup(popupReserva(res, sala));
+      .on('click', () => abrirTarjetaReserva(res.id));
   });
 
   /* 3. Dónde está el usuario: círculo verde con el logo negro */
@@ -1374,7 +1416,7 @@ async function renderMapaGoogle() {
         zIndex: 6,
         icon: { url: iconoRes, scaledSize: new google.maps.Size(24, 24), anchor: new google.maps.Point(12, 12) },
       });
-      m.addListener('click', () => abrirVentanaInfo(popupReserva(res, sala)));
+      m.addListener('click', () => abrirTarjetaReserva(res.id));
       gmarcadores.push(m);
     });
 
