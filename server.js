@@ -1064,6 +1064,9 @@ async function reembolsarSena(r) {
 /* Una reserva tentativa (armada desde el chat) se libera sola si la sala no la confirma */
 const HORAS_TENTATIVA = Number(process.env.TENTATIVA_HORAS) > 0 ? Number(process.env.TENTATIVA_HORAS) : 24;
 const MS_TENTATIVA = HORAS_TENTATIVA * 3600 * 1000;
+/* Si pasa la mitad del plazo y la sala todavía no respondió, se le manda un recordatorio (una sola vez) */
+const HORAS_RECORDATORIO = Number(process.env.RECORDATORIO_HORAS) > 0 ? Number(process.env.RECORDATORIO_HORAS) : Math.max(1, HORAS_TENTATIVA / 2);
+const MS_RECORDATORIO = HORAS_RECORDATORIO * 3600 * 1000;
 
 function expirarPendientes(state) {
   const ahora = Date.now();
@@ -1084,6 +1087,14 @@ function expirarPendientes(state) {
       const avisarIds = new Set([r.userId, ...(r.invitados || [])].filter(Boolean));
       avisarIds.forEach(id => avisar(state, id, 'La reserva tentativa venció', `${detalle} · la sala no la confirmó a tiempo`, 'warn', { reservaId: r.id, roomId: r.roomId }));
       if (room && room.ownerId) avisar(state, room.ownerId, 'Reserva tentativa vencida', `${r.name} · ${detalle} · se liberó el horario`, 'info', { reservaId: r.id, roomId: r.roomId, para: 'dueno' });
+      cambio = true;
+    } else if (r.estado === 'tentativa' && !r.recordado && (r.createdAt || 0) + MS_RECORDATORIO < ahora && (r.createdAt || 0) + MS_TENTATIVA >= ahora) {
+      /* Recordatorio a la sala: pasó la mitad del plazo y todavía no respondió */
+      const room = state.rooms.find(x => x.id === r.roomId);
+      const detalle = `${room ? room.name : 'Sala'} · ${fmtFechaCorta(r.date)} · ${r.start}–${r.end}`;
+      const horasRestantes = Math.max(1, Math.round(((r.createdAt || 0) + MS_TENTATIVA - ahora) / 3600000));
+      r.recordado = ahora;
+      if (room && room.ownerId) avisar(state, room.ownerId, 'Te falta responder una reserva tentativa', `${r.name} · ${detalle} · quedan ~${horasRestantes} h para confirmarla o rechazarla. Si no respondés, el horario se libera.`, 'warn', { reservaId: r.id, roomId: r.roomId, para: 'dueno' });
       cambio = true;
     }
   });
@@ -2612,6 +2623,32 @@ async function handleApi(req, res, url, parts) {
       invitados.forEach(id => avisar(state, id, 'Reserva tentativa pedida', `${room.name} · ${fmtFechaCorta(meta.date)} ${meta.start}–${meta.end}`, 'info', { reservaId: reserva.id, roomId: room.id }));
       persist(state);
       return sendJson(res, 201, { ok: true, reservaId: reserva.id, reserva });
+    }
+
+    /* El organizador desiste de la reserva tentativa que armó desde el chat */
+    if (method === 'POST' && url.pathname === '/api/comunidad/chat-global/invitacion/desistir') {
+      if (!tieneAccesoChat(state, u.id)) {
+        return sendJson(res, 403, { error: 'Necesitás una suscripción al Chat Global', requiereSuscripcion: true, planes: CHAT_PLAN_CONFIG });
+      }
+      const m = (state.chatGlobal || []).find(x => x.id === String(body.mensajeId || '') && x.tipo === 'invitacion');
+      if (!m) return sendJson(res, 404, { error: 'Invitación no encontrada' });
+      if (m.userId !== u.id) return sendJson(res, 403, { error: 'Solo quien armó la reserva puede desistir' });
+      if (!m.reservaId) return sendJson(res, 409, { error: 'Esta invitación no tiene una reserva pedida' });
+      const r = state.reservations.find(x => x.id === m.reservaId);
+      if (!r) return sendJson(res, 404, { error: 'Reserva no encontrada' });
+      if (r.estado !== 'tentativa') return sendJson(res, 409, { error: 'La sala ya respondió: ya no se puede desistir' });
+      r.estado = 'cancelada';
+      r.cancelada = Date.now();
+      r.motivoCancelacion = 'El organizador desistió (chat)';
+      const room = state.rooms.find(x => x.id === r.roomId);
+      const detalle = `${room ? room.name : 'Sala'} · ${fmtFechaCorta(r.date)} · ${r.start}–${r.end}`;
+      const avisarIds = new Set([...(r.invitados || [])].filter(Boolean));
+      avisarIds.forEach(id => avisar(state, id, 'El organizador desistió de la reserva', `${r.name} · ${detalle} · se liberó el horario`, 'warn', { reservaId: r.id, roomId: r.roomId }));
+      if (room && room.ownerId) avisar(state, room.ownerId, 'Reserva tentativa retirada', `${r.name} · ${detalle} · el organizador desistió, ya no hace falta responder`, 'info', { reservaId: r.id, roomId: r.roomId, para: 'dueno' });
+      /* La invitación vuelve a quedar disponible para armar otra reserva */
+      m.reservaId = null;
+      persist(state);
+      return sendJson(res, 200, { ok: true });
     }
 
     return sendJson(res, 404, { error: 'Endpoint de comunidad no encontrado' });
