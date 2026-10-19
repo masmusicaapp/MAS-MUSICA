@@ -2439,10 +2439,11 @@ function renderCuerpoChat(m) {
       : '';
     const icono = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-6-5.3-6-10a6 6 0 0 1 12 0c0 4.7-6 10-6 10z"/><circle cx="12" cy="11" r="2.2"/></svg>';
     const iconoCal = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/></svg>';
+    const grupo = m.reservaNombre ? ('«' + esc(m.reservaNombre) + '» · ') : '';
     let estado = '';
-    if (m.reservaEstado === 'tentativa') estado = '<span class="ci-estado espera">Reserva pedida · esperando que la sala confirme</span>';
-    else if (m.reservaEstado === 'confirmada') estado = '<span class="ci-estado ok">✓ Reserva confirmada por la sala</span>';
-    else if (m.reservaEstado === 'cancelada') estado = '<span class="ci-estado no">La sala no pudo confirmar</span>';
+    if (m.reservaEstado === 'tentativa') estado = '<span class="ci-estado espera">' + grupo + 'Reserva pedida · esperando que la sala confirme</span>';
+    else if (m.reservaEstado === 'confirmada') estado = '<span class="ci-estado ok">✓ ' + grupo + 'Reserva confirmada por la sala</span>';
+    else if (m.reservaEstado === 'cancelada') estado = '<span class="ci-estado no">' + grupo + 'La sala no pudo confirmar</span>';
     const boton = !m.reservaId
       ? '<button type="button" class="ci-btn' + (m.interesado ? ' on' : '') + '" data-invitacion="' + esc(m.id) + '">' + (m.interesado ? '✓ Anotado' : 'Anotarse') + '</button>'
       : '';
@@ -2563,7 +2564,16 @@ async function cargarChatGlobal() {
         if (conf.disabled) return;
         conf.disabled = true;
         try {
-          await api('/api/comunidad/chat-global/invitacion/confirmar', { method: 'POST', body: { mensajeId: conf.dataset.confirmarInvitacion } });
+          const sugerido = (yo && yo.nombre) ? ('Grupo de ' + yo.nombre) : '';
+          const nombre = await pedirTextoModal({
+            titulo: 'Nombre del grupo',
+            texto: 'Así lo ve la sala y los músicos que se anotaron.',
+            valor: sugerido,
+            placeholder: 'Ej: Trío del barrio',
+            aceptar: 'Armar reserva',
+          });
+          if (nombre === null) { conf.disabled = false; return; }
+          await api('/api/comunidad/chat-global/invitacion/confirmar', { method: 'POST', body: { mensajeId: conf.dataset.confirmarInvitacion, nombre: String(nombre || '').trim() } });
           toast('Reserva tentativa pedida. La sala la tiene que confirmar.', 'ok');
           await recargarChat();
         } catch (err) {
