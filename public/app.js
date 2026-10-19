@@ -2380,6 +2380,20 @@ function mostrarSuscripcionChat() {
 
 /* ========== CHAT GLOBAL GRUPAL ========== */
 
+const CHAT_STICKERS = [
+  { id:'s1', svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21.2l7.8-7.8 1-1a5.5 5.5 0 0 0 0-7.8z" fill="currentColor" stroke="none"/></svg>' },
+  { id:'s2', svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.1 8.2 22 9.3 17 14.1 18.2 21 12 17.8 5.8 21 7 14.1 2 9.3 8.9 8.2 12 2" fill="currentColor" stroke="none"/></svg>' },
+  { id:'s3', svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3" fill="currentColor" stroke="none"/><circle cx="18" cy="16" r="3" fill="currentColor" stroke="none"/></svg>' },
+  { id:'s4', svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z" fill="currentColor" stroke="none"/><circle cx="12" cy="9.5" r="2.5" fill="var(--panel)" stroke="none"/></svg>' },
+  { id:'s5', svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" fill="currentColor" stroke="none"/></svg>' },
+  { id:'s6', svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3 6.5 7 1-5 4.8 1.2 6.9L12 17.8 5.8 21.2 7 14.3 2 9.5l7-1L12 2z" fill="currentColor" stroke="none" opacity=".85"/></svg>' },
+  { id:'s7', svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><circle cx="9" cy="9.5" r="1.2" fill="currentColor" stroke="none"/><circle cx="15" cy="9.5" r="1.2" fill="currentColor" stroke="none"/></svg>' },
+  { id:'s8', svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21.5c4.6-4.4 7.5-8 7.5-11.5a7.5 7.5 0 1 0-15 0c0 3.5 2.9 7.1 7.5 11.5z" fill="currentColor" stroke="none"/><circle cx="12" cy="9.9" r="2.6" fill="var(--panel)" stroke="none"/></svg>' },
+  { id:'s9', svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3" fill="currentColor" stroke="none"/></svg>' },
+  { id:'s10', svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="currentColor" stroke-width="3"/></svg>' },
+  { id:'s11', svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8"/><circle cx="12" cy="12" r="3" fill="currentColor" stroke="none"/></svg>' },
+  { id:'s12', svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="currentColor" stroke="none"/></svg>' },
+];
 let chatGlobalTimer = null;
 let chatGlobalUltimoFecha = 0;
 
@@ -2395,11 +2409,14 @@ async function cargarChatGlobal() {
         <button class="chat-global-volver" id="chat-global-volver" type="button" title="Volver" aria-label="Volver a Inicio">←</button>
       </div>
       <div class="chat-global-hilo" id="chat-global-hilo"></div>
+      <div class="chat-sticker-picker" id="chat-sticker-picker" hidden></div>
       <div class="chat-global-form">
+        <button class="chat-adj-btn" id="chat-sticker-btn" type="button" title="Stickers" aria-label="Stickers"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><circle cx="9" cy="9.5" r="1.2" fill="currentColor" stroke="none"/><circle cx="15" cy="9.5" r="1.2" fill="currentColor" stroke="none"/></svg></button>
+        <button class="chat-adj-btn" id="chat-foto-btn" type="button" title="Foto" aria-label="Foto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="12" cy="12" r="3.5"/><circle cx="17.5" cy="8.5" r="1" fill="currentColor" stroke="none"/></svg></button>
+        <input type="file" id="chat-foto-input" accept="image/*" hidden>
         <input type="text" id="chat-global-input" placeholder="Escribí un mensaje..." maxlength="600">
         <button class="btn btn-primary btn-sm" id="chat-global-enviar">Enviar</button>
-      </div>
-    </div>`;
+      </div>`;
 
   /* Se ocultan las 5 opciones de abajo: mientras se chatea el chat ocupa toda la pantalla */
   document.body.classList.add('chat-abierto');
@@ -2428,6 +2445,28 @@ async function cargarChatGlobal() {
   };
 
   if (btnEnviar) btnEnviar.onclick = enviar;
+  const picker = $('#chat-sticker-picker');
+  const btnSticker = $('#chat-sticker-btn');
+  const btnFoto = $('#chat-foto-btn');
+  const fotoInput = $('#chat-foto-input');
+  if (picker && !picker._ok) {
+    picker._ok = true;
+    picker.innerHTML = CHAT_STICKERS.map(s => '<button type="button" class="chat-sticker-item" data-sticker="' + s.id + '">' + s.svg + '</button>').join('');
+    picker.addEventListener('click', e => {
+      const b = e.target.closest('[data-sticker]');
+      if (!b) return;
+      enviarSticker(b.dataset.sticker);
+    });
+  }
+  if (btnSticker) btnSticker.onclick = () => { if (picker) picker.hidden = !picker.hidden; };
+  if (btnFoto && fotoInput) {
+    btnFoto.onclick = () => fotoInput.click();
+    fotoInput.onchange = () => {
+      const f = fotoInput.files && fotoInput.files[0];
+      fotoInput.value = '';
+      if (f) enviarFoto(f);
+    };
+  }
   if (input) {
     input.onkeydown = e => {
       if (e.key === 'Enter' && !e.shiftKey) {
@@ -2437,6 +2476,22 @@ async function cargarChatGlobal() {
     };
   }
 
+  async function enviarFoto(file) {
+    if (!file || !/^image\//.test(file.type)) { toast('Ese archivo no es una imagen', 'error'); return; }
+    try {
+      const dataUrl = await comprimirImagen(file, 900);
+      await api('/api/comunidad/chat-global', { method: 'POST', body: { tipo: 'imagen', media: dataUrl } });
+      if (input) input.value = '';
+      await cargarMensajesGlobal();
+    } catch (e) { toast(e.message || 'No se pudo enviar la foto', 'error'); }
+  }
+  async function enviarSticker(id) {
+    try {
+      await api('/api/comunidad/chat-global', { method: 'POST', body: { tipo: 'sticker', media: id } });
+      if (picker) picker.hidden = true;
+      await cargarMensajesGlobal();
+    } catch (e) { toast(e.message || 'No se pudo enviar el sticker', 'error'); }
+  }
   // Polling para nuevos mensajes
   clearInterval(chatGlobalTimer);
   chatGlobalTimer = setInterval(() => {
@@ -2465,11 +2520,17 @@ async function cargarMensajesGlobal(silent) {
         if (chatGlobalUltimoFecha >= m.fecha) return;
         const div = document.createElement('div');
         div.className = 'chat-global-msg' + (m.mio ? ' mio' : '');
+        var avatarHtml = m.mio ? "" : "<div class=\"chat-global-avatar\">" + String((m.autor && m.autor.nombre) || "?").charAt(0).toUpperCase() + "</div>";
         div.innerHTML = `
-          ${m.mio ? '' : `<div class="chat-global-avatar">${(m.autor?.nombre || '?')[0].toUpperCase()}</div>`}
+          ${avatarHtml}
           <div class="chat-global-contenido">
             ${m.mio ? '' : `<span class="chat-global-autor">${esc(m.autor?.nombre || 'Músico')}</span>`}
-            <p class="chat-global-texto">${esc(m.texto)}</p>
+            ${m.tipo === 'imagen'
+              ? '<img class="chat-msg-img" src="' + esc(m.media) + '" alt="foto" loading="lazy">'
+              : (m.tipo === 'sticker'
+                  ? '<span class="chat-msg-sticker">' + (CHAT_STICKERS.find(function (s) { return s.id === m.media; }) || { svg: '' }).svg + '</span>'
+                  : '<p class="chat-global-texto">' + esc(m.texto) + '</p>')}
+            ${m.tipo !== 'texto' && m.texto ? '<p class="chat-global-texto">' + esc(m.texto) + '</p>' : ''}
             <span class="chat-global-fecha">${fechaChat(m.fecha)}</span>
           </div>`;
         hilo.appendChild(div);
