@@ -1060,6 +1060,10 @@ async function reembolsarSena(r) {
 }
 
 /* Reservas sin seña pagada a tiempo: se cancelan y el horario vuelve a quedar libre */
+/* Una reserva tentativa (armada desde el chat) se libera sola si la sala no la confirma */
+const HORAS_TENTATIVA = Number(process.env.TENTATIVA_HORAS) > 0 ? Number(process.env.TENTATIVA_HORAS) : 24;
+const MS_TENTATIVA = HORAS_TENTATIVA * 3600 * 1000;
+
 function expirarPendientes(state) {
   const ahora = Date.now();
   let cambio = false;
@@ -1069,6 +1073,16 @@ function expirarPendientes(state) {
       r.cancelada = ahora;
       r.motivoCancelacion = MOTIVO_VENCIDA;
       if (r.pago) r.pago.estado = 'vencido';
+      cambio = true;
+    } else if (r.estado === 'tentativa' && (r.createdAt || 0) + MS_TENTATIVA < ahora) {
+      r.estado = 'cancelada';
+      r.cancelada = ahora;
+      r.motivoCancelacion = 'Tentativa vencida (la sala no la confirmó a tiempo)';
+      const room = state.rooms.find(x => x.id === r.roomId);
+      const detalle = `${room ? room.name : 'Sala'} · ${fmtFechaCorta(r.date)} · ${r.start}–${r.end}`;
+      const avisarIds = new Set([r.userId, ...(r.invitados || [])].filter(Boolean));
+      avisarIds.forEach(id => avisar(state, id, 'La reserva tentativa venció', `${detalle} · la sala no la confirmó a tiempo`, 'warn', { reservaId: r.id, roomId: r.roomId }));
+      if (room && room.ownerId) avisar(state, room.ownerId, 'Reserva tentativa vencida', `${r.name} · ${detalle} · se liberó el horario`, 'info', { reservaId: r.id, roomId: r.roomId, para: 'dueno' });
       cambio = true;
     }
   });
@@ -2466,6 +2480,7 @@ async function handleApi(req, res, url, parts) {
             interesado: (m.interesados || []).includes(u.id),
             reservaId: m.reservaId || null,
             reservaEstado: m.reservaId ? ((state.reservations.find(x => x.id === m.reservaId) || {}).estado || null) : null,
+            reservaNombre: m.reservaId ? ((state.reservations.find(x => x.id === m.reservaId) || {}).name || null) : null,
             fecha: m.fecha,
             mio: m.userId === u.id,
             autor: autor ? { nombre: autor.nombre, usuario: autor.usuario, foto: autor.foto || '' } : { nombre: 'Usuario', usuario: '??', foto: '' },
