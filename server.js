@@ -1838,7 +1838,7 @@ async function handleApi(req, res, url, parts) {
         .sort((a, b) => (b.date + b.start).localeCompare(a.date + a.start));
       const activas = r => (r.estado || 'confirmada') !== 'cancelada';
       const futuras = reservas.filter(r => r.date >= hoy && activas(r));
-      const ingresos = futuras.reduce((s, r) => s + (toMin(r.end) - toMin(r.start)) / 60 * room.price, 0);
+      const ingresos = futuras.reduce((s, r) => s + (r.estado === 'tentativa' ? 0 : (toMin(r.end) - toMin(r.start)) / 60 * room.price), 0);
       return sendJson(res, 200, {
         room,
         reservas,
@@ -1939,6 +1939,22 @@ async function handleApi(req, res, url, parts) {
       return sendJson(res, 200, { state: publicState(state) });
     }
 
+    // Confirmar una reserva tentativa (creada desde el Chat Global)
+    if (method === 'POST' && accion === 'reserva' && parts.length === 4) {
+      const r = state.reservations.find(x => x.id === parts[3] && x.roomId === room.id);
+      if (!r) return sendJson(res, 404, { error: 'Reserva no encontrada' });
+      if (r.estado !== 'tentativa') return sendJson(res, 409, { error: 'Esa reserva no está pendiente de confirmación' });
+      if (!rangoDisponible(state, r.date, room.id, toMin(r.start), toMin(r.end), r.id)) {
+        return sendJson(res, 409, { error: 'Ese horario ya está ocupado por otra reserva' });
+      }
+      r.estado = 'confirmada';
+      r.cancelada = 0;
+      const avisados = new Set([r.userId, ...(r.invitados || [])].filter(Boolean));
+      avisados.forEach(id => avisar(state, id, 'Reserva confirmada por la sala', `${room.name} · ${fmtFechaCorta(r.date)} ${r.start}–${r.end}`, 'ok', { reservaId: r.id, roomId: room.id }));
+      persist(state);
+      return sendJson(res, 200, { state: publicState(state) });
+    }
+
     // Editar una reserva de su sala
     if (method === 'PUT' && accion === 'reserva' && parts.length === 4) {
       const r = state.reservations.find(x => x.id === parts[3] && x.roomId === room.id);
@@ -1951,6 +1967,7 @@ async function handleApi(req, res, url, parts) {
       const antes = `${fmtFechaCorta(r.date)} ${r.start}–${r.end}`;
       Object.assign(r, { date, start, end, estado: 'confirmada', cancelada: 0 });
       if (r.userId) avisar(state, r.userId, 'Reserva modificada por la sala', `Ahora: ${fmtFechaCorta(date)} ${start}–${end} (antes ${antes})`, 'warn', { reservaId: r.id, roomId: r.roomId });
+      (r.invitados || []).forEach(id => { if (id !== r.userId) avisar(state, id, 'Reserva confirmada por la sala', `${room.name} · ${fmtFechaCorta(date)} ${start}–${end}`, 'ok', { reservaId: r.id, roomId: r.roomId }); });
       persist(state);
       return sendJson(res, 200, { state: publicState(state) });
     }
@@ -1963,6 +1980,7 @@ async function handleApi(req, res, url, parts) {
       r.cancelada = Date.now();
       r.motivoCancelacion = String(body.motivo || '').slice(0, 120);
       if (r.userId) avisar(state, r.userId, 'Reserva cancelada por la sala', `${room.name} · ${fmtFechaCorta(r.date)} ${r.start}–${r.end}`, 'warn', { reservaId: r.id, roomId: r.roomId });
+      (r.invitados || []).forEach(id => { if (id !== r.userId) avisar(state, id, 'La sala no pudo confirmar la reserva', `${room.name} · ${fmtFechaCorta(r.date)} ${r.start}–${r.end}`, 'warn', { reservaId: r.id, roomId: r.roomId }); });
       persist(state);
       return sendJson(res, 200, { state: publicState(state) });
     }
@@ -2446,6 +2464,8 @@ async function handleApi(req, res, url, parts) {
             meta: m.meta || null,
             interesados: (m.interesados || []).length,
             interesado: (m.interesados || []).includes(u.id),
+            reservaId: m.reservaId || null,
+            reservaEstado: m.reservaId ? ((state.reservations.find(x => x.id === m.reservaId) || {}).estado || null) : null,
             fecha: m.fecha,
             mio: m.userId === u.id,
             autor: autor ? { nombre: autor.nombre, usuario: autor.usuario, foto: autor.foto || '' } : { nombre: 'Usuario', usuario: '??', foto: '' },
@@ -2478,8 +2498,17 @@ async function handleApi(req, res, url, parts) {
       } else if (tipo === 'invitacion') {
         const sala = (state.rooms || []).find(r => r.id === String(body.media || ''));
         if (!sala) return sendJson(res, 400, { error: 'Elegí una sala para invitar' });
+        const fecha = String(body.fecha || '').slice(0, 10);
+        const desde = String(body.desde || '').slice(0, 5);
+        const hasta = String(body.hasta || '').slice(0, 5);
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha) || !/^\d{1,2}:\d{2}$/.test(desde) || !/^\d{1,2}:\d{2}$/.test(hasta)) {
+          return sendJson(res, 400, { error: 'Elegí un día y un horario' });
+        }
+        if (!rangoDisponible(state, fecha, sala.id, toMin(desde), toMin(hasta))) {
+          return sendJson(res, 409, { error: 'Ese horario ya no está disponible' });
+        }
         media = sala.id;
-        meta = { nombre: sala.name, direccion: sala.direccion || '', localidad: sala.localidad || '' };
+        meta = { nombre: sala.name, direccion: sala.direccion || '', localidad: sala.localidad || '', date: fecha, start: desde, end: hasta };
       }
       if (tipo === 'texto' && !texto) return sendJson(res, 400, { error: 'Escribí un mensaje' });
       state.chatGlobal = state.chatGlobal || [];
@@ -2505,6 +2534,43 @@ async function handleApi(req, res, url, parts) {
         persist(state);
       }
       return sendJson(res, 200, { ok: true, interesados: m.interesados.length, interesado: true });
+    }
+
+    /* El organizador de una invitación arma una reserva tentativa (el dueño de la sala la confirma) */
+    if (method === 'POST' && url.pathname === '/api/comunidad/chat-global/invitacion/confirmar') {
+      if (!tieneAccesoChat(state, u.id)) {
+        return sendJson(res, 403, { error: 'Necesitás una suscripción al Chat Global', requiereSuscripcion: true, planes: CHAT_PLAN_CONFIG });
+      }
+      const m = (state.chatGlobal || []).find(x => x.id === String(body.mensajeId || '') && x.tipo === 'invitacion');
+      if (!m) return sendJson(res, 404, { error: 'Invitación no encontrada' });
+      if (m.userId !== u.id) return sendJson(res, 403, { error: 'Solo quien envió la invitación puede armar la reserva' });
+      if (m.reservaId) return sendJson(res, 409, { error: 'La reserva ya fue pedida' });
+      const meta = m.meta || {};
+      const room = state.rooms.find(r => r.id === m.media && r.activo !== false && r.estado === 'aprobada');
+      if (!room) return sendJson(res, 400, { error: 'La sala ya no está disponible' });
+      const sMin = toMin(meta.start), eMin = toMin(meta.end);
+      if (!Number.isInteger(sMin) || !Number.isInteger(eMin)) return sendJson(res, 400, { error: 'Horario inválido' });
+      if (u.rol === 'USER') {
+        const corte = new Date();
+        corte.setDate(corte.getDate() + 7);
+        if (meta.date > dateStr(corte)) return sendJson(res, 403, { error: 'Los músicos pueden reservar hasta 7 días para adelante' });
+      }
+      if (!rangoDisponible(state, meta.date, room.id, sMin, eMin)) {
+        return sendJson(res, 409, { error: 'Ese horario ya no está disponible' });
+      }
+      const nombre = String(body.nombre || '').trim().slice(0, 60) || ('Grupo de ' + (u.nombre || 'músicos'));
+      const invitados = (m.interesados || []).filter(id => id !== u.id);
+      const reserva = {
+        id: uid(), roomId: room.id, date: meta.date, start: meta.start, end: meta.end,
+        name: nombre, phone: String(u.telefono || '').slice(0, 20), userId: u.id,
+        estado: 'tentativa', origen: 'chat', invitados, createdAt: Date.now(),
+      };
+      state.reservations.push(reserva);
+      m.reservaId = reserva.id;
+      if (room.ownerId) avisar(state, room.ownerId, 'Reserva tentativa desde el Chat', `${nombre} quiere reservar ${room.name} el ${fmtFechaCorta(meta.date)}, de ${meta.start} a ${meta.end}. Confirmala o rechazala en tu panel.`, 'info', { reservaId: reserva.id, roomId: room.id, para: 'dueno' });
+      invitados.forEach(id => avisar(state, id, 'Reserva tentativa pedida', `${room.name} · ${fmtFechaCorta(meta.date)} ${meta.start}–${meta.end}`, 'info', { reservaId: reserva.id, roomId: room.id }));
+      persist(state);
+      return sendJson(res, 201, { ok: true, reservaId: reserva.id, reserva });
     }
 
     return sendJson(res, 404, { error: 'Endpoint de comunidad no encontrado' });
