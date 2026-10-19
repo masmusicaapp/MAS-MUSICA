@@ -552,23 +552,22 @@ function fichaSala(id) {
   ].filter(f => f[1]);
   const dias = [1, 2, 3, 4, 5, 6, 0].map(d => {
     const h = horarioSalaDe(r)[String(d)];
-    return `<div class="dia-fila"><strong>${['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'][d]}</strong><span>${h ? `${h.open} – ${h.close}` : 'Cerrado'}</span></div>`;
+    const nombre = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'][d];
+    return `<div class="fh-dia${h ? '' : ' cerrado'}" title="${nombre}"><strong>${nombre.slice(0, 3)}</strong><span>${h ? `${h.open} – ${h.close}` : 'Cerrado'}</span></div>`;
   }).join('');
   openModal(`
-    <h3>${esc(r.name)}</h3>
-    ${(r.fotos || []).length ? `<h4 class="sub">📸 Fotos de la sala</h4><div class="ficha-fotos">${(r.fotos || []).map(f => `<figure class="ficha-foto">${f.foto ? `<img src="${esc(f.foto)}" alt="${esc(f.titulo || r.name)}" onclick="verFoto('${esc(f.foto)}', 'Foto de la sala')" title="Ver en grande">` : ''}${f.titulo ? `<figcaption>${esc(f.titulo)}</figcaption>` : ''}</figure>`).join('')}</div>` : ''}
-    <div class="ficha-grid">
-      <div><span class="muted">Precio</span><strong>${fmtMoney(r.price)} /hora</strong></div>
-      ${r.telefono ? `<div><span class="muted">Teléfono</span><strong>${esc(r.telefono)}</strong></div>` : ''}
-      ${r.localidad ? `<div><span class="muted">Zona</span><strong>${esc(r.localidad)}</strong></div>` : ''}
+    <div class="ficha-stats">
+      <div class="ficha-dato"><span>💲 Precio</span><strong>${fmtMoney(r.price)} /hora</strong></div>
+      ${r.telefono ? `<div class="ficha-dato"><span>☎️ Teléfono</span><strong>${esc(r.telefono)}</strong></div>` : ''}
+      ${r.localidad ? `<div class="ficha-dato"><span>📍 Zona</span><strong>${esc(r.localidad)}</strong></div>` : ''}
     </div>
     ${r.direccion ? `<p class="ficha-dir">📍 ${esc([r.direccion, r.numero].filter(Boolean).join(' '))}${linkMapaSala(r) ? ` · <a href="${linkMapaSala(r)}" target="_blank" rel="noopener">ver en el mapa</a>` : ''}</p>` : ''}
+    ${(r.fotos || []).length ? `<h4 class="ficha-titulo">📸 Fotos</h4><div class="ficha-fotos">${(r.fotos || []).map(f => `<figure class="ficha-foto">${f.foto ? `<img src="${esc(f.foto)}" alt="${esc(f.titulo || r.name)}" onclick="verFoto('${esc(f.foto)}', 'Foto de la sala')" title="Ver en grande">` : ''}${f.titulo ? `<figcaption>${esc(f.titulo)}</figcaption>` : ''}</figure>`).join('')}</div>` : ''}
     ${r.descripcion ? `<p class="ficha-desc">${esc(r.descripcion)}</p>` : ''}
     ${(r.features || []).length ? `<div class="ficha-chips">${r.features.map(f => `<span class="chip">${esc(f)}</span>`).join('')}</div>` : ''}
-    <h4 class="sub">Equipamiento</h4>
-    ${filas.length ? filas.map(f => `<div class="dia-fila"><strong>${f[0]}</strong><span>${esc(f[1])}</span></div>`).join('') : '<p class="muted small">Sin detalle de equipamiento.</p>'}
-    <h4 class="sub">Horario de atención</h4>
-    <div class="dias-fila">${dias}</div>
+    ${filas.length ? `<h4 class="ficha-titulo">🎛️ Equipamiento</h4><div class="ficha-equip">${filas.map(f => `<div class="ficha-dato"><span>${f[0]}</span><strong>${esc(f[1])}</strong></div>`).join('')}</div>` : ''}
+    <h4 class="ficha-titulo">🕐 Horario de atención</h4>
+    <div class="ficha-horario">${dias}</div>
     <div class="row">
       <button class="btn btn-primary" id="ficha-reservar">Ver horarios →</button>
       <button class="btn" id="ficha-fav">${esFavorita(r.id) ? '♥ Quitar de favoritas' : '♡ Guardar como favorita'}</button>
