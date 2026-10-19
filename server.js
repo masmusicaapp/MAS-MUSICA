@@ -76,6 +76,7 @@ const DATA_FILE = path.join(__dirname, 'data.json');
 const BANDAS_DIR = path.join(PUBLIC_DIR, 'assets', 'bandas');
 const SALAS_DIR = path.join(PUBLIC_DIR, 'assets', 'salas');
 const USUARIOS_DIR = path.join(PUBLIC_DIR, 'assets', 'usuarios');
+const COMUNIDAD_DIR = path.join(PUBLIC_DIR, 'assets', 'comunidad');
 
 /* ================= Imágenes ================= */
 
@@ -111,6 +112,7 @@ function guardarImagen(id, dataUrl, sufijo, subcarpeta) {
 const guardarFotoBanda = (id, d, s) => guardarImagen(id, d, s, 'bandas');
 const guardarFotoSala = (id, d, s) => guardarImagen(id, d, s, 'salas');
 const guardarFotoUsuario = (id, d, s) => guardarImagen(id, d, s, 'usuarios');
+const guardarFotoComunidad = (id, d, s) => guardarImagen(id, d, s, 'comunidad');
 
 function borrarEnAssets(fotos, subcarpeta) {
   const base = path.join(PUBLIC_DIR, 'assets', subcarpeta);
@@ -2410,7 +2412,9 @@ async function handleApi(req, res, url, parts) {
           const autor = (state.users || []).find(x => x.id === m.userId);
           return {
             id: m.id,
-            texto: m.texto,
+            tipo: m.tipo || 'texto',
+            texto: m.texto || '',
+            media: m.media || '',
             fecha: m.fecha,
             mio: m.userId === u.id,
             autor: autor ? { nombre: autor.nombre, usuario: autor.usuario, foto: autor.foto || '' } : { nombre: 'Usuario', usuario: '??', foto: '' },
@@ -2424,15 +2428,26 @@ async function handleApi(req, res, url, parts) {
       if (!tieneAccesoChat(state, u.id)) {
         return sendJson(res, 403, { error: 'Necesitás una suscripción al Chat Global', requiereSuscripcion: true, planes: CHAT_PLAN_CONFIG });
       }
-      const texto = String(body.texto || '').trim().slice(0, 600);
-      if (!texto) return sendJson(res, 400, { error: 'Escribí un mensaje' });
+      const tipo = ['texto', 'imagen', 'sticker'].includes(body.tipo) ? body.tipo : 'texto';
+      let texto = String(body.texto || '').trim().slice(0, 600);
+      let media = '';
+      if (tipo === 'imagen') {
+        const ruta = guardarFotoComunidad(u.id, body.media, '-img');
+        if (!ruta) return sendJson(res, 400, { error: 'No se pudo guardar la imagen' });
+        media = ruta;
+      } else if (tipo === 'sticker') {
+        const sid = String(body.media || '').slice(0, 12);
+        if (!/^s\d{1,2}$/.test(sid)) return sendJson(res, 400, { error: 'Sticker inválido' });
+        media = sid;
+      }
+      if (tipo === 'texto' && !texto) return sendJson(res, 400, { error: 'Escribí un mensaje' });
       state.chatGlobal = state.chatGlobal || [];
-      const m = { id: uid(), userId: u.id, texto, fecha: Date.now() };
+      const m = { id: uid(), userId: u.id, tipo, texto, media, fecha: Date.now() };
       state.chatGlobal.push(m);
       /* Mantener solo los últimos 500 mensajes */
       if (state.chatGlobal.length > 500) state.chatGlobal = state.chatGlobal.slice(-500);
       persist(state);
-      return sendJson(res, 201, { ok: true, mensaje: { id: m.id, texto: m.texto, fecha: m.fecha } });
+      return sendJson(res, 201, { ok: true, mensaje: { id: m.id, tipo: m.tipo, texto: m.texto, media: m.media, fecha: m.fecha } });
     }
 
     return sendJson(res, 404, { error: 'Endpoint de comunidad no encontrado' });
