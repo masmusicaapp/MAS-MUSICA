@@ -2500,6 +2500,21 @@ const CHAT_STICKERS = [
 let chatGlobalTimer = null;
 let chatGlobalUltimoFecha = 0;
 
+/* Ver en el mapa la sala de una invitación del chat (centrada y con su tarjeta) */
+function verSalaEnMapa(salaId) {
+  const sala = (state.rooms || []).find(x => x.id === salaId);
+  if (!sala) { toast('La sala ya no está disponible', 'error'); return; }
+  /* Sin ubicación cargada, abrimos la ficha (ahí está la dirección) */
+  if (!tieneUbicacion(sala)) { fichaSala(sala.id); return; }
+  irMapa();
+  setTimeout(() => {
+    centrarMapa([Number(sala.lat), Number(sala.lng)], 16);
+    const marca = marcasSala ? marcasSala[sala.id] : null;
+    if (marca && marca.openPopup) { try { marca.openPopup(); } catch (e) {} }
+    abrirTarjetaSala(sala.id);
+  }, 260);
+}
+
 /* Dibuja el cuerpo de un mensaje del chat según su tipo */
 function renderCuerpoChat(m) {
   if (m.tipo === 'imagen') return '<img class="chat-msg-img" src="' + esc(m.media) + '" alt="foto" loading="lazy">';
@@ -2522,8 +2537,9 @@ function renderCuerpoChat(m) {
     if (m.reservaEstado === 'tentativa') estado = '<span class="ci-estado espera">' + grupo + 'Reserva pedida · esperando que la sala confirme</span>';
     else if (m.reservaEstado === 'confirmada') estado = '<span class="ci-estado ok">✓ ' + grupo + 'Reserva confirmada por la sala</span>';
     else if (m.reservaEstado === 'cancelada') estado = '<span class="ci-estado no">' + grupo + 'La sala no pudo confirmar</span>';
-    const boton = !m.reservaId
-      ? '<button type="button" class="ci-btn' + (m.interesado ? ' on' : '') + '" data-invitacion="' + esc(m.id) + '">' + (m.interesado ? '✓ Anotado' : 'Anotarse') + '</button>'
+    /* Anotarse / desanotarse: se puede mientras la invitación siga abierta */
+    const boton = (!m.reservaId || (m.reservaEstado === 'tentativa' && !m.mio))
+      ? '<button type="button" class="ci-btn' + (m.interesado ? ' on' : '') + '" data-invitacion="' + esc(m.id) + '">' + (m.interesado ? 'Desanotarse' : 'Anotarse') + '</button>'
       : '';
     const botonConf = (!m.reservaId && m.mio && meta.date)
       ? '<button type="button" class="ci-btn ci-confirmar" data-confirmar-invitacion="' + esc(m.id) + '">Armar reserva tentativa</button>'
@@ -2531,12 +2547,15 @@ function renderCuerpoChat(m) {
     const botonDesistir = (m.reservaId && m.reservaEstado === 'tentativa' && m.mio)
       ? '<button type="button" class="ci-btn ci-desistir" data-desistir-invitacion="' + esc(m.id) + '">Desistir</button>'
       : '';
+    const botonMapa = m.media
+      ? '<button type="button" class="ci-btn ci-mapa" data-mapa-sala="' + esc(m.media) + '">' + icono + ' Ver en el mapa</button>'
+      : '';
     return '<div class="chat-invitacion">' +
       '<div class="ci-encabezado">' + icono + ' Invitación a sala</div>' +
       '<div class="ci-nombre">' + esc(meta.nombre || 'Sala') + '</div>' +
       (dir ? '<div class="ci-dir">' + esc(dir) + '</div>' : '') +
       (cuando ? '<div class="ci-cuando">' + iconoCal + ' ' + esc(cuando) + '</div>' : '') +
-      boton + botonConf + botonDesistir + estado +
+      boton + botonConf + botonDesistir + botonMapa + estado +
       '<span class="ci-count">' + (n ? n + (n === 1 ? ' músico anotado' : ' músicos anotados') : 'Sé el primero en anotarte') + '</span>' +
       '</div>';
   }
@@ -2685,18 +2704,22 @@ async function cargarChatGlobal() {
         }
         return;
       }
+      const mp = e.target.closest('[data-mapa-sala]');
+      if (mp) { verSalaEnMapa(mp.dataset.mapaSala); return; }
       const b = e.target.closest('[data-invitacion]');
       if (!b || b.disabled) return;
       b.disabled = true;
       try {
         const r = await api('/api/comunidad/chat-global/interes', { method: 'POST', body: { mensajeId: b.dataset.invitacion } });
-        b.classList.add('on');
-        b.textContent = '✓ Anotado';
+        const anotado = !!r.interesado;
+        b.classList.toggle('on', anotado);
+        b.textContent = anotado ? 'Desanotarse' : 'Anotarse';
         const card = b.closest('.chat-invitacion');
         const cnt = card && card.querySelector('.ci-count');
-        const n = r.interesados || 1;
-        if (cnt) cnt.textContent = n + (n === 1 ? ' músico anotado' : ' músicos anotados');
-        toast('Te anotaste en la invitación', 'ok');
+        const n = r.interesados || 0;
+        if (cnt) cnt.textContent = n ? (n + (n === 1 ? ' músico anotado' : ' músicos anotados')) : 'Sé el primero en anotarte';
+        toast(anotado ? 'Te anotaste en la invitación' : 'Te desanotaste de la invitación', 'ok');
+        b.disabled = false;   /* es un interruptor: se puede volver a tocar */
       } catch (err) {
         toast(err.message || 'No se pudo anotar', 'error');
         b.disabled = false;
