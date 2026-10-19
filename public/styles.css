@@ -5449,3 +5449,32 @@ main#view-comunidad:has(.suscripcion-wrap) > .panel {
   .mt-acciones #tarjeta-ficha { flex: 1 1 auto; }
   .mt-fav { flex: 0 0 46px !important; }
 }
+
+/* ===== Chat global: adjuntos (stickers/foto) ===== */
+.chat-adj-btn {
+  width: 38px; height: 38px; padding: 0; border-radius: 12px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--panel2); border: 1px solid var(--line); color: var(--text);
+  cursor: pointer; flex: 0 0 auto;
+}
+.chat-adj-btn svg { width: 18px; height: 18px; }
+.chat-adj-btn:hover { border-color: var(--accent); color: var(--accent2); }
+.chat-sticker-picker {
+  display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px;
+  padding: 8px; background: var(--panel2); border: 1px solid var(--line);
+  border-radius: 12px; margin: 0 0 8px;
+}
+.chat-sticker-picker[hidden] { display: none; }
+.chat-sticker-item {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+  padding: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  color: var(--accent2);
+}
+.chat-sticker-item svg { width: 28px; height: 28px; }
+.chat-sticker-item:hover { border-color: var(--accent); transform: scale(1.05); }
+.chat-msg-img {
+  max-width: 220px; max-height: 220px; border-radius: 12px; display: block;
+  margin: 4px 0; object-fit: cover;
+}
+.chat-msg-sticker { display: inline-block; width: 64px; height: 64px; color: var(--accent2); }
+.chat-msg-sticker svg { width: 100%; height: 100%; }
