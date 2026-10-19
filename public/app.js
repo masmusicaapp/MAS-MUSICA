@@ -334,9 +334,59 @@ function renderMineRapido() {
           <strong>${esc(sala)} <span class="badge ${cancelada ? 'badge-past' : pasada ? 'badge-past' : 'badge-next'}">${cancelada ? 'Cancelada' : pasada ? 'Pasada' : r.estado === 'pendiente_pago' ? 'Falta pagar la seña' : 'Próxima'}</span></strong>
           <span class="muted small">${esc(r.name)} · 💰 ${fmtMoney(precioReserva(r))}${alq ? ' · 🎒 ' + alq : ''}</span>
         </div>
+        ${(!pasada && !cancelada && esMia && r.estado === 'pendiente_pago') ? `<button class="btn btn-sm btn-primary" data-mine-pagar="${r.id}">Pagar seña</button>` : ''}
         ${(!pasada && !cancelada && esMia) ? `<button class="btn btn-sm btn-danger" data-mine-cancel="${r.id}">Cancelar</button>` : ''}
       </div>`;
   }).join('');
+}
+
+/* Pagar la seña de una reserva pendiente desde "Mis reservas" (si cerró la pantalla de pago) */
+async function pagarSenaDesde(r) {
+  let data;
+  try {
+    data = await api('/api/pagos/reintentar', { method: 'POST', body: { reservaId: r.id } });
+  } catch (e) {
+    toast(e.message || 'No se pudo iniciar el pago', 'error');
+    return;
+  }
+  if (data.url && urlSegura(data.url)) {
+    toast('Te llevamos a Mercado Pago para pagar la seña…', 'ok');
+    setTimeout(() => { location.href = urlSegura(data.url); }, 1300);
+    return;
+  }
+  const room = state.rooms.find(x => x.id === r.roomId);
+  const sena = data.sena != null ? data.sena : r.sena;
+  const total = data.total != null ? data.total : r.total;
+  const saldo = data.saldo != null ? data.saldo : r.saldo;
+  openModal(`
+    <div class="success">
+      <h3>Falta pagar la seña</h3>
+      <p><strong>${esc(r.name || '')}</strong></p>
+      <p>${fmtDate(r.date)} · ${esc(room ? room.name : '')} · ${r.start} – ${r.end}</p>
+      <p class="accent"><strong>Seña a pagar ahora: ${fmtMoney(sena)}</strong></p>
+      <p class="muted small">Total ${fmtMoney(total)} · el saldo de ${fmtMoney(saldo)} se paga en la sala.</p>
+      ${data.simulado
+        ? '<button class="btn btn-primary" id="pg-pagar">Pagar la seña (prueba)</button>'
+        : '<p class="muted small">El cobro de la seña no está activo.</p>'}
+      <button class="btn" id="pg-cerrar">Cerrar</button>
+    </div>`);
+  $('#pg-cerrar').onclick = closeModal;
+  const btn = $('#pg-pagar');
+  if (btn) btn.onclick = async () => {
+    btn.disabled = true;
+    try {
+      const res = await api('/api/pagos/simular', { method: 'POST', body: { reservaId: r.id, resultado: 'aprobado' } });
+      if (res && res.state) state = res.state;
+      if (yo) cargarNotificaciones();
+      closeModal();
+      renderMineRapido();
+      renderMine();
+      toast('Seña pagada (prueba) ✓ La reserva quedó confirmada', 'ok');
+    } catch (err) {
+      toast(err.message || 'No se pudo simular el pago', 'error');
+      btn.disabled = false;
+    }
+  };
 }
 
 /* ---------- Perfil de la banda dentro de Mis reservas ---------- */
@@ -5304,6 +5354,16 @@ function wirePublic() {
     if (e.target.closest('#filtro-mine-clear')) {
       filtroMisReservas = '';
       renderMineRapido();
+      return;
+    }
+    const pg = e.target.closest('[data-mine-pagar]');
+    if (pg) {
+      const r = state.reservations.find(x => x.id === pg.dataset.minePagar);
+      if (r) {
+        pg.disabled = true;
+        await pagarSenaDesde(r);
+        if (document.body.contains(pg)) pg.disabled = false;
+      }
       return;
     }
     const b = e.target.closest('[data-mine-cancel]');
