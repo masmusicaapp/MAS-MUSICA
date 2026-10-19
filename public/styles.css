@@ -1076,6 +1076,18 @@ tr:hover td {
   border-radius: 14px;
 }
 
+/* ---------- Asignar / cambiar dueño (Administración central → Salas) ---------- */
+.own-ctx { margin: 4px 0 12px; font-size: .88rem; color: var(--muted); }
+.own-ctx b { color: var(--text); }
+.own-lista { display: grid; gap: 6px; max-height: 42vh; overflow-y: auto; margin: 8px 0 4px; padding-right: 2px; }
+.own-op { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; text-align: left; background: var(--panel2); border: 1px solid var(--line); border-radius: 12px; padding: 9px 12px; cursor: pointer; color: var(--text); font-family: inherit; }
+.own-op:hover { border-color: var(--accent); }
+.own-op.on { border-color: var(--accent); background: rgba(0, 160, 56, .12); box-shadow: 0 0 0 1px var(--accent) inset; }
+.own-nom { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.own-nom b { font-size: .92rem; }
+.own-nom small { font-size: .78rem; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.own-rol { flex: 0 0 auto; font-style: normal; font-size: .68rem; font-weight: 800; letter-spacing: .4px; text-transform: uppercase; color: var(--muted); background: var(--panel); border: 1px solid var(--line); border-radius: 999px; padding: 3px 8px; }
+
 /* ---------- Toast ---------- */
 #toast {
   position: fixed; bottom: calc(92px + env(safe-area-inset-bottom)); left: 50%; transform: translate(-50%, 80px);
