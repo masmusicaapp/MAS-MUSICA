@@ -981,25 +981,26 @@ function reglasPago(state) {
   };
 }
 
-/* Modelo de negocio oficial +MÚSICA:
- * room_price: valor base sala + alquiler instrumentos
- * service_fee: 5% a cargo del músico (ingreso bruto plataforma)
- * total_amount: room_price + service_fee
+/* Modelo de negocio oficial +MÚSICA (ver PAGOS.md):
+ * room_price: valor base de la sala + alquiler de instrumentos = total que paga la banda
+ * sena:       lo que la banda paga al reservar (senaPorcentaje del total)
+ * saldo:      el resto del total, que se paga en la sala
+ * comision:   lo que se queda +MÚSICA (comisionPorcentaje del total), descontado de la seña
+ * paraSala:   lo que se le liquida a la sala por la seña (seña menos comisión)
  */
 function calcularPago(room, startMin, endMin, alquiler, regs) {
   const horas = (endMin - startMin) / 60;
   const room_price = Math.round(room.price * horas) + (alquiler || []).reduce((s, a) => s + a.total, 0);
-  const service_fee = Math.round(room_price * 0.05);
-  const total_amount = room_price + service_fee;
+  const sena = Math.round(room_price * regs.senaPorcentaje / 100);
+  const comision = Math.round(room_price * regs.comisionPorcentaje / 100);
   return {
     room_price,
-    service_fee,
-    total_amount,
-    total: total_amount,
-    sena: total_amount,
-    comision: service_fee,
-    paraSala: room_price,
-    saldo: 0
+    total_amount: room_price,
+    total: room_price,
+    sena,
+    saldo: room_price - sena,
+    comision,
+    paraSala: sena - comision,
   };
 }
 
@@ -1618,7 +1619,7 @@ async function handleApi(req, res, url, parts) {
       console.error('[pagos] no se pudo crear el pago:', e.message);
       return sendJson(res, 502, { error: 'No pudimos iniciar el pago. Probá de nuevo en unos minutos.' });
     }
-    Object.assign(pago, { room_price: reservation.room_price, service_fee: reservation.service_fee, total_amount: reservation.total_amount, total: reservation.total, sena: reservation.sena, saldo: reservation.saldo, venceEn: reservation.venceEn });
+    Object.assign(pago, { room_price: reservation.room_price, total_amount: reservation.total_amount, total: reservation.total, sena: reservation.sena, saldo: reservation.saldo, venceEn: reservation.venceEn });
     state.reservations.push(reservation);
     if (u) avisar(state, u.id, 'Falta pagar la seña', `${room.name} · ${fmtFechaCorta(date)} · ${start}–${end}. Tenés ${regs.minutosPago} min para pagarla`, 'info', { reservaId: reservation.id, roomId: room.id });
     persist(state);
@@ -2089,13 +2090,13 @@ async function handleApi(req, res, url, parts) {
       };
     });
 
-    // Ingresos por comisiones del 5% del servicio
+    // Ingresos por la comisión de +MÚSICA (se descuenta de la seña cobrada)
     let totalComisionesPlataforma = 0;
     let totalBrutoReservas = 0;
     (state.reservations || []).forEach(r => {
       if (r.estado !== 'cancelada') {
         totalBrutoReservas += (r.total_amount || r.total || 0);
-        totalComisionesPlataforma += (r.service_fee || r.comision || Math.round((r.total || 0) * 0.05));
+        totalComisionesPlataforma += (r.comision || r.service_fee || 0);
       }
     });
 
