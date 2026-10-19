@@ -2434,11 +2434,27 @@ function renderCuerpoChat(m) {
     const meta = m.meta || {};
     const dir = [meta.direccion, meta.localidad].filter(Boolean).join(' · ');
     const n = Number(m.interesados || 0);
+    const cuando = meta.date
+      ? fmtDate(meta.date, { weekday: 'short', day: 'numeric', month: 'short' }) + ' · ' + meta.start + '–' + meta.end
+      : '';
+    const icono = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-6-5.3-6-10a6 6 0 0 1 12 0c0 4.7-6 10-6 10z"/><circle cx="12" cy="11" r="2.2"/></svg>';
+    const iconoCal = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/></svg>';
+    let estado = '';
+    if (m.reservaEstado === 'tentativa') estado = '<span class="ci-estado espera">Reserva pedida · esperando que la sala confirme</span>';
+    else if (m.reservaEstado === 'confirmada') estado = '<span class="ci-estado ok">✓ Reserva confirmada por la sala</span>';
+    else if (m.reservaEstado === 'cancelada') estado = '<span class="ci-estado no">La sala no pudo confirmar</span>';
+    const boton = !m.reservaId
+      ? '<button type="button" class="ci-btn' + (m.interesado ? ' on' : '') + '" data-invitacion="' + esc(m.id) + '">' + (m.interesado ? '✓ Anotado' : 'Anotarse') + '</button>'
+      : '';
+    const botonConf = (!m.reservaId && m.mio && meta.date)
+      ? '<button type="button" class="ci-btn ci-confirmar" data-confirmar-invitacion="' + esc(m.id) + '">Armar reserva tentativa</button>'
+      : '';
     return '<div class="chat-invitacion">' +
-      '<div class="ci-encabezado"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-6-5.3-6-10a6 6 0 0 1 12 0c0 4.7-6 10-6 10z"/><circle cx="12" cy="11" r="2.2"/></svg> Invitación a sala</div>' +
+      '<div class="ci-encabezado">' + icono + ' Invitación a sala</div>' +
       '<div class="ci-nombre">' + esc(meta.nombre || 'Sala') + '</div>' +
       (dir ? '<div class="ci-dir">' + esc(dir) + '</div>' : '') +
-      '<button type="button" class="ci-btn' + (m.interesado ? ' on' : '') + '" data-invitacion="' + esc(m.id) + '">' + (m.interesado ? '✓ Anotado' : 'Me interesa') + '</button>' +
+      (cuando ? '<div class="ci-cuando">' + iconoCal + ' ' + esc(cuando) + '</div>' : '') +
+      boton + botonConf + estado +
       '<span class="ci-count">' + (n ? n + (n === 1 ? ' músico anotado' : ' músicos anotados') : 'Sé el primero en anotarte') + '</span>' +
       '</div>';
   }
@@ -2493,7 +2509,7 @@ async function cargarChatGlobal() {
     try {
       await api('/api/comunidad/chat-global', { method: 'POST', body: { texto } });
       input.value = '';
-      await cargarMensajesGlobal();
+      await recargarChat();
     } catch (e) {
       toast(e.message, 'error');
     }
@@ -2527,14 +2543,35 @@ async function cargarChatGlobal() {
   if (salaPicker && !salaPicker._ok) {
     salaPicker._ok = true;
     salaPicker.addEventListener('click', e => {
-      const b = e.target.closest('[data-sala]');
-      if (!b) return;
-      enviarInvitacion(b.dataset.sala);
+      const sala = e.target.closest('[data-sala]');
+      if (sala) { invSalaId = sala.dataset.sala; invDate = null; pintarSalaPicker(); return; }
+      const back = e.target.closest('[data-inv-volver]');
+      if (back) { invSalaId = null; invDate = null; pintarSalaPicker(); return; }
+      const slot = e.target.closest('[data-slot]');
+      if (slot) enviarInvitacion(invSalaId, invDate, slot.dataset.start, slot.dataset.end);
+    });
+    salaPicker.addEventListener('change', e => {
+      const d = e.target.closest('#chat-inv-date');
+      if (d) { invDate = d.value || todayStr(); pintarSalaPicker(); }
     });
   }
   if (hilo && !hilo._ok) {
     hilo._ok = true;
     hilo.addEventListener('click', async e => {
+      const conf = e.target.closest('[data-confirmar-invitacion]');
+      if (conf) {
+        if (conf.disabled) return;
+        conf.disabled = true;
+        try {
+          await api('/api/comunidad/chat-global/invitacion/confirmar', { method: 'POST', body: { mensajeId: conf.dataset.confirmarInvitacion } });
+          toast('Reserva tentativa pedida. La sala la tiene que confirmar.', 'ok');
+          await recargarChat();
+        } catch (err) {
+          toast(err.message || 'No se pudo armar la reserva', 'error');
+          conf.disabled = false;
+        }
+        return;
+      }
       const b = e.target.closest('[data-invitacion]');
       if (!b || b.disabled) return;
       b.disabled = true;
@@ -2582,23 +2619,46 @@ async function cargarChatGlobal() {
     };
   }
 
+  let invSalaId = null, invDate = null;
   function abrirSalaPicker() {
     if (!salaPicker) return;
-    const salas = salasPublicas();
-    if (miUbicacion) {
-      salas.sort((a, b) => distKm(miUbicacion[0], miUbicacion[1], Number(a.lat), Number(a.lng)) - distKm(miUbicacion[0], miUbicacion[1], Number(b.lat), Number(b.lng)));
-    }
-    if (!salas.length) {
-      salaPicker.innerHTML = '<p class="muted small" style="padding:10px">No hay salas para invitar.</p>';
+    invSalaId = null;
+    invDate = null;
+    pintarSalaPicker();
+  }
+  function pintarSalaPicker() {
+    if (!salaPicker) return;
+    if (!invSalaId) {
+      const salas = salasPublicas();
+      if (miUbicacion) {
+        salas.sort((a, b) => distKm(miUbicacion[0], miUbicacion[1], Number(a.lat), Number(a.lng)) - distKm(miUbicacion[0], miUbicacion[1], Number(b.lat), Number(b.lng)));
+      }
+      if (!salas.length) {
+        salaPicker.innerHTML = '<p class="muted small" style="padding:10px">No hay salas para invitar.</p>';
+        salaPicker.hidden = false;
+        return;
+      }
+      salaPicker.innerHTML = '<div class="chat-sala-titulo">Elegí una sala para invitar</div><div class="chat-sala-lista">' +
+        salas.map(s => {
+          const dir = [s.direccion, s.localidad].filter(Boolean).join(' · ');
+          const dist = miUbicacion ? ' · a ' + distKm(miUbicacion[0], miUbicacion[1], Number(s.lat), Number(s.lng)).toFixed(1) + ' km' : '';
+          return '<button type="button" class="chat-sala-item" data-sala="' + esc(s.id) + '"><span class="cs-nombre">' + esc(s.name || 'Sala') + '</span><span class="cs-dir">' + esc(dir + dist) + '</span></button>';
+        }).join('') + '</div>';
       salaPicker.hidden = false;
       return;
     }
-    salaPicker.innerHTML = '<div class="chat-sala-titulo">Invitá a una sala</div><div class="chat-sala-lista">' +
-      salas.map(s => {
-        const dir = [s.direccion, s.localidad].filter(Boolean).join(' · ');
-        const dist = miUbicacion ? ' · a ' + distKm(miUbicacion[0], miUbicacion[1], Number(s.lat), Number(s.lng)).toFixed(1) + ' km' : '';
-        return '<button type="button" class="chat-sala-item" data-sala="' + esc(s.id) + '"><span class="cs-nombre">' + esc(s.name || 'Sala') + '</span><span class="cs-dir">' + esc(dir + dist) + '</span></button>';
-      }).join('') + '</div>';
+    const sala = state.rooms.find(r => r.id === invSalaId) || {};
+    if (!invDate) invDate = todayStr();
+    const { slots } = slotsFor(invDate, invSalaId);
+    const libres = slots.filter(s => s.status === 'available');
+    const max = (function () { const d = new Date(); d.setDate(d.getDate() + 7); const m = String(d.getMonth() + 1).padStart(2, '0'); const dd = String(d.getDate()).padStart(2, '0'); return d.getFullYear() + '-' + m + '-' + dd; })();
+    salaPicker.innerHTML = '<div class="chat-sala-titulo">' + esc(sala.name || 'Sala') + '</div>' +
+      '<label class="chat-inv-fecha">Día <input type="date" id="chat-inv-date" value="' + invDate + '" min="' + todayStr() + '" max="' + max + '"></label>' +
+      '<div class="chat-slot-grid">' + (libres.length
+        ? libres.map(s => '<button type="button" class="chat-slot" data-slot data-start="' + esc(s.start) + '" data-end="' + esc(s.end) + '">' + esc(s.start) + '–' + esc(s.end) + '</button>').join('')
+        : '<p class="muted small">No hay horarios libres ese día.</p>') +
+      '</div>' +
+      '<button type="button" class="btn btn-sm" data-inv-volver>← Cambiar sala</button>';
     salaPicker.hidden = false;
   }
 
@@ -2617,14 +2677,14 @@ async function cargarChatGlobal() {
       const dataUrl = await comprimirImagen(file, 900);
       await api('/api/comunidad/chat-global', { method: 'POST', body: { tipo: 'imagen', media: dataUrl } });
       if (input) input.value = '';
-      await cargarMensajesGlobal();
+      await recargarChat();
     } catch (e) { toast(e.message || 'No se pudo enviar la foto', 'error'); }
   }
   async function enviarSticker(id) {
     try {
       await api('/api/comunidad/chat-global', { method: 'POST', body: { tipo: 'sticker', media: id } });
       cerrarPaneles();
-      await cargarMensajesGlobal();
+      await recargarChat();
     } catch (e) { toast(e.message || 'No se pudo enviar el sticker', 'error'); }
   }
   async function enviarVideo(file) {
@@ -2636,16 +2696,17 @@ async function cargarChatGlobal() {
       const dataUrl = await leerDataUrl(file);
       await api('/api/comunidad/chat-global', { method: 'POST', body: { tipo: 'video', media: dataUrl } });
       if (input) input.value = '';
-      await cargarMensajesGlobal();
+      await recargarChat();
     } catch (e) { toast(e.message || 'No se pudo enviar el video', 'error'); }
   }
-  async function enviarInvitacion(salaId) {
+  async function enviarInvitacion(salaId, date, start, end) {
     const nota = input ? input.value.trim() : '';
     try {
-      await api('/api/comunidad/chat-global', { method: 'POST', body: { tipo: 'invitacion', media: salaId, texto: nota } });
+      await api('/api/comunidad/chat-global', { method: 'POST', body: { tipo: 'invitacion', media: salaId, fecha: date, desde: start, hasta: end, texto: nota } });
       if (input) input.value = '';
+      invSalaId = null; invDate = null;
       cerrarPaneles();
-      await cargarMensajesGlobal();
+      await recargarChat();
     } catch (e) { toast(e.message || 'No se pudo enviar la invitación', 'error'); }
   }
   // Polling para nuevos mensajes
@@ -2657,6 +2718,14 @@ async function cargarChatGlobal() {
 }
 
 /* Cargar mensajes del chat global */
+async function recargarChat() {
+  const hilo = $('#chat-global-hilo');
+  if (!hilo) return;
+  hilo.innerHTML = '';
+  chatGlobalUltimoFecha = 0;
+  await cargarMensajesGlobal(true);
+}
+
 async function cargarMensajesGlobal(silent) {
   const hilo = $('#chat-global-hilo');
   if (!hilo) return;
@@ -4684,14 +4753,16 @@ function renderPanelReservas() {
     <div class="res-item ${r.estado === 'cancelada' ? 'cancelada' : ''}" data-res="${r.id}">
       <div class="res-time">${r.start} – ${r.end}</div>
       <div class="res-info">
-        <strong>${fmtDate(r.date, { weekday: 'short', day: 'numeric', month: 'short' })} ${r.estado === 'cancelada' ? '<span class="badge badge-past">Cancelada</span>' : r.date >= hoy ? '<span class="badge badge-next">Próxima</span>' : ''}</strong>
+        <strong>${fmtDate(r.date, { weekday: 'short', day: 'numeric', month: 'short' })} ${r.estado === 'cancelada' ? '<span class="badge badge-past">Cancelada</span>' : r.estado === 'tentativa' ? '<span class="badge badge-warn">Tentativa · chat</span>' : r.date >= hoy ? '<span class="badge badge-next">Próxima</span>' : ''}</strong>
         <div>${esc(r.name)}${r.phone ? ' · 📞 ' + esc(r.phone) : ''}</div>
+        ${r.estado === 'tentativa' ? '<div class="muted small">Pidió reservar desde el Chat Global · confirmá o rechazá</div>' : ''}
         ${(r.alquiler || []).length ? `<div class="muted small">🎒 ${r.alquiler.map(a => esc(a.nombre)).join(', ')}</div>` : ''}
       </div>
       <div class="res-price">${fmtMoney((toMin(r.end) - toMin(r.start)) / 60 * panelDatos.room.price)}</div>
       <div class="res-actions">
-        <button class="btn btn-sm" data-editar-res="${r.id}">Editar</button>
-        ${r.estado !== 'cancelada' ? `<button class="btn btn-sm btn-danger" data-cancelar-res="${r.id}">Cancelar</button>` : ''}
+        ${r.estado === 'tentativa'
+          ? `<button class="btn btn-sm btn-primary" data-confirmar-res="${r.id}">Confirmar</button><button class="btn btn-sm btn-danger" data-rechazar-res="${r.id}">Rechazar</button>`
+          : `<button class="btn btn-sm" data-editar-res="${r.id}">Editar</button>${r.estado !== 'cancelada' ? `<button class="btn btn-sm btn-danger" data-cancelar-res="${r.id}">Cancelar</button>` : ''}`}
       </div>
     </div>`).join('') : '<p class="muted">No hay reservas para este filtro.</p>';
 }
@@ -4833,22 +4904,43 @@ function wirePanel() {
   $('#ps-reservas').onclick = async e => {
     const ed = e.target.closest('[data-editar-res]');
     if (ed) return editarReservaPanel(ed.dataset.editarRes);
-    const cx = e.target.closest('[data-cancelar-res]');
+    const cf = e.target.closest('[data-confirmar-res]');
+    if (cf) {
+      const okConf = await confirmarAccion(
+        '¿Confirmar esta reserva tentativa? Se le avisa a los músicos del chat.',
+        '¿Confirmar reserva?',
+        'Sí, confirmar',
+        'No',
+        'ok'
+      );
+      if (!okConf) return;
+      try {
+        const data = await api(`/api/panel/reserva/${cf.dataset.confirmarRes}?roomId=${encodeURIComponent(panelDatos.room.id)}`, { method: 'POST' });
+        state = data.state;
+        await cargarPanel();
+        renderPanelTab('reservas');
+        toast('Reserva confirmada ✓', 'ok');
+      } catch (err) { toast(err.message, 'error'); }
+      return;
+    }
+    const cx = e.target.closest('[data-cancelar-res]') || e.target.closest('[data-rechazar-res]');
     if (!cx) return;
+    const esTentativa = !!cx.dataset.rechazarRes;
     const okCancel = await confirmarAccion(
-      '¿Cancelar esta reserva? Se le avisa al músico.',
-      '¿Cancelar reserva?',
-      'Sí, cancelar',
+      esTentativa ? '¿Rechazar esta reserva pedida por el chat? Se le avisa al grupo.' : '¿Cancelar esta reserva? Se le avisa al músico.',
+      esTentativa ? '¿Rechazar reserva?' : '¿Cancelar reserva?',
+      esTentativa ? 'Sí, rechazar' : 'Sí, cancelar',
       'No, mantener',
       'peligro'
     );
     if (!okCancel) return;
     try {
-      const data = await api(`/api/panel/reserva/${cx.dataset.cancelarRes}?roomId=${encodeURIComponent(panelDatos.room.id)}`, { method: 'DELETE' });
+      const id = cx.dataset.cancelarRes || cx.dataset.rechazarRes;
+      const data = await api(`/api/panel/reserva/${id}?roomId=${encodeURIComponent(panelDatos.room.id)}`, { method: 'DELETE' });
       state = data.state;
       await cargarPanel();
       renderPanelTab('reservas');
-      toast('Reserva cancelada', 'ok');
+      toast(esTentativa ? 'Reserva rechazada' : 'Reserva cancelada', 'ok');
     } catch (err) { toast(err.message, 'error'); }
   };
 
