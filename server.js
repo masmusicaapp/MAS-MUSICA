@@ -1088,14 +1088,21 @@ function expirarPendientes(state) {
       avisarIds.forEach(id => avisar(state, id, 'La reserva tentativa venció', `${detalle} · la sala no la confirmó a tiempo`, 'warn', { reservaId: r.id, roomId: r.roomId }));
       if (room && room.ownerId) avisar(state, room.ownerId, 'Reserva tentativa vencida', `${r.name} · ${detalle} · se liberó el horario`, 'info', { reservaId: r.id, roomId: r.roomId, para: 'dueno' });
       cambio = true;
-    } else if (r.estado === 'tentativa' && !r.recordado && (r.createdAt || 0) + MS_RECORDATORIO < ahora && (r.createdAt || 0) + MS_TENTATIVA >= ahora) {
-      /* Recordatorio a la sala: pasó la mitad del plazo y todavía no respondió */
+    } else if (r.estado === 'tentativa' && (!r.recordado || !r.recordadoOrg) && (r.createdAt || 0) + MS_RECORDATORIO < ahora && (r.createdAt || 0) + MS_TENTATIVA >= ahora) {
+      /* Pasó la mitad del plazo y la sala todavía no respondió: se avisa a la sala y al organizador */
       const room = state.rooms.find(x => x.id === r.roomId);
       const detalle = `${room ? room.name : 'Sala'} · ${fmtFechaCorta(r.date)} · ${r.start}–${r.end}`;
       const horasRestantes = Math.max(1, Math.round(((r.createdAt || 0) + MS_TENTATIVA - ahora) / 3600000));
-      r.recordado = ahora;
-      if (room && room.ownerId) avisar(state, room.ownerId, 'Te falta responder una reserva tentativa', `${r.name} · ${detalle} · quedan ~${horasRestantes} h para confirmarla o rechazarla. Si no respondés, el horario se libera.`, 'warn', { reservaId: r.id, roomId: r.roomId, para: 'dueno' });
-      cambio = true;
+      if (!r.recordado) {
+        r.recordado = ahora;
+        cambio = true;
+        if (room && room.ownerId) avisar(state, room.ownerId, 'Te falta responder una reserva tentativa', `${r.name} · ${detalle} · quedan ~${horasRestantes} h para confirmarla o rechazarla. Si no respondés, el horario se libera.`, 'warn', { reservaId: r.id, roomId: r.roomId, para: 'dueno' });
+      }
+      if (!r.recordadoOrg) {
+        r.recordadoOrg = ahora;
+        cambio = true;
+        if (r.userId) avisar(state, r.userId, 'La sala todavía no confirmó tu reserva', `${detalle} · quedan ~${horasRestantes} h. Si no responden, el horario se libera. Si ya no la necesitás, podés desistir desde el chat.`, 'warn', { reservaId: r.id, roomId: r.roomId });
+      }
     }
   });
   if (cambio) persist(state);
