@@ -5782,7 +5782,12 @@ function claveTemporalUsuario() {
 async function darClaveDesdeAyuda(id) {
   const a = (window.__ayuda || []).find(x => x.id === id);
   if (!a || !a.cuenta || !a.cuenta.id) return toast('Ese pedido no tiene una cuenta asociada', 'error');
-  const nueva = prompt(`Contraseña nueva para @${a.cuenta.usuario} (mínimo 6 caracteres).\nSe la pasás a la persona para que entre:`, claveTemporalUsuario());
+  const nueva = await pedirTextoModal({
+    titulo: 'Contraseña nueva',
+    texto: `Para <b>@${esc(a.cuenta.usuario)}</b> (mínimo 6 caracteres). La persona la usa para entrar.`,
+    valor: claveTemporalUsuario(),
+    aceptar: 'Guardar'
+  });
   if (nueva === null) return;
   const clave = String(nueva).trim();
   if (clave.length < 6) return toast('La contraseña debe tener al menos 6 caracteres', 'error');
@@ -5791,7 +5796,7 @@ async function darClaveDesdeAyuda(id) {
   } catch (e) { return toast(e.message, 'error'); }
   /* Al darle una clave nueva, el pedido queda resuelto */
   try { await api('/api/admin/ayuda', { method: 'POST', admin: true, body: { id: a.id } }); } catch (e) {}
-  alert(`Contraseña nueva de @${a.cuenta.usuario}:\n\n${clave}\n\nPasásela y que la cambie al entrar.`);
+  await mostrarClaveModal(a.cuenta.usuario, clave);
   toast('Contraseña actualizada y pedido resuelto ✓', 'ok');
   await cargarAyuda();
 }
@@ -7234,13 +7239,26 @@ async function importar(file) {
 }
 
 /* ================= Modal y toast ================= */
+let avisoCierreModal = null;   /* avisa cuando el modal se cierra sin aceptar (✕, fondo o Escape) */
+
 function openModal(html) {
+  const aviso = avisoCierreModal;
+  avisoCierreModal = null;
+  if (aviso) aviso();
   $('#modal-box').innerHTML = html;
   $('#modal').classList.add('open');
 }
 function closeModal() {
   $('#modal').classList.remove('open');
+  const aviso = avisoCierreModal;
+  avisoCierreModal = null;
+  if (aviso) aviso();
 }
+
+/* Escape cancela los diálogos con campo de texto (igual que el prompt() del navegador) */
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && avisoCierreModal) { e.preventDefault(); closeModal(); }
+});
 
 /* Modal de confirmación personalizado (reemplaza a confirm() nativo) */
 function confirmarAccion(mensaje, titulo = '¿Estás seguro?', textoAceptar = 'Aceptar', textoCancelar = 'Cancelar', tipo = 'peligro') {
@@ -7259,6 +7277,84 @@ function confirmarAccion(mensaje, titulo = '¿Estás seguro?', textoAceptar = 'A
     `);
     $('#confirmar-si').onclick = () => { closeModal(); resolve(true); };
     $('#confirmar-no').onclick = () => { closeModal(); resolve(false); };
+  });
+}
+
+/* Modal con un campo de texto (reemplaza al prompt() del navegador).
+   Devuelve el texto escrito, o null si se cancela o se cierra el modal. */
+function pedirTextoModal({ titulo, texto = '', valor = '', placeholder = '', multilinea = false, aceptar = 'Aceptar' }) {
+  return new Promise(resolve => {
+    let listo = false;
+    const terminar = v => {
+      if (listo) return;
+      listo = true;
+      avisoCierreModal = null;
+      if ($('#modal').classList.contains('open')) closeModal();
+      resolve(v);
+    };
+    openModal(`
+      <div class="pedir-modal">
+        <h3>${esc(titulo)}</h3>
+        ${texto ? `<p class="pedir-texto">${texto}</p>` : ''}
+        ${multilinea
+          ? `<textarea id="pedir-campo" rows="3" maxlength="400" placeholder="${esc(placeholder)}">${esc(valor)}</textarea>`
+          : `<input id="pedir-campo" type="text" maxlength="120" value="${esc(valor)}" placeholder="${esc(placeholder)}">`}
+        <div class="confirmar-botones">
+          <button class="btn" id="pedir-no">Cancelar</button>
+          <button class="btn btn-primary" id="pedir-si">${esc(aceptar)}</button>
+        </div>
+      </div>`);
+    const campo = $('#pedir-campo');
+    campo.focus();
+    if (multilinea) campo.setSelectionRange(campo.value.length, campo.value.length);
+    else campo.select();
+    campo.onkeydown = e => {
+      if (e.key === 'Enter' && (!multilinea || e.ctrlKey || e.metaKey)) { e.preventDefault(); terminar(campo.value); }
+    };
+    $('#pedir-si').onclick = () => terminar(campo.value);
+    $('#pedir-no').onclick = () => terminar(null);
+    avisoCierreModal = () => terminar(null);
+  });
+}
+
+/* Muestra la contraseña nueva para copiarla y pasarla (reemplaza al alert() del navegador) */
+function mostrarClaveModal(usuario, clave) {
+  return new Promise(resolve => {
+    let listo = false;
+    const terminar = () => {
+      if (listo) return;
+      listo = true;
+      avisoCierreModal = null;
+      if ($('#modal').classList.contains('open')) closeModal();
+      resolve();
+    };
+    openModal(`
+      <div class="pedir-modal">
+        <h3>Contraseña nueva</h3>
+        <p class="pedir-texto">Se la pasás a <b>@${esc(usuario)}</b> y que la cambie al entrar:</p>
+        <div class="clave-caja" id="clave-caja">${esc(clave)}</div>
+        <div class="confirmar-botones">
+          <button class="btn" id="clave-copiar">Copiar</button>
+          <button class="btn btn-primary" id="clave-listo">Listo</button>
+        </div>
+      </div>`);
+    $('#clave-copiar').onclick = async () => {
+      try {
+        await navigator.clipboard.writeText(clave);
+        toast('Contraseña copiada ✓', 'ok');
+      } catch (e) {
+        const rango = document.createRange();
+        rango.selectNodeContents($('#clave-caja'));
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(rango);
+        let copiada = false;
+        try { copiada = document.execCommand('copy'); } catch (e2) {}
+        toast(copiada ? 'Contraseña copiada ✓' : 'Contraseña seleccionada: copiala con Ctrl+C', copiada ? 'ok' : 'warn');
+      }
+    };
+    $('#clave-listo').onclick = terminar;
+    avisoCierreModal = terminar;
   });
 }
 
@@ -7440,21 +7536,34 @@ function wireAdmin() {
       renderSolicitudes();
     };
   });
-  $('#solicitudes-list').onclick = e => {
+  $('#solicitudes-list').onclick = async e => {
     const ok = e.target.closest('[data-sol-ok]');
     if (ok) return accionSolicitud(ok.dataset.solOk, 'aprobar');
     const corr = e.target.closest('[data-sol-corr]');
     if (corr) {
-      const motivo = prompt('¿Qué tenés que corregir? Se le avisa al dueño de la sala:');
+      const motivo = await pedirTextoModal({
+        titulo: 'Pedir correcciones',
+        texto: 'Contale al dueño de la sala qué tiene que corregir. Se le avisa en la app:',
+        placeholder: 'Ej.: faltan fotos del lugar y el horario está incompleto',
+        multilinea: true,
+        aceptar: 'Enviar aviso'
+      });
       if (motivo) accionSolicitud(corr.dataset.solCorr, 'corregir', motivo);
       return;
     }
     const no = e.target.closest('[data-sol-no]');
     if (no) {
       const sala = (listaSolicitudes || []).find(r => r.id === no.dataset.solNo);
-      const motivo = prompt(`¿Por qué ${sala && sala.estado === 'pendiente' ? 'rechazás' : 'suspendés'} “${sala ? sala.name : 'la sala'}”?`, '');
+      const esPendiente = !!sala && sala.estado === 'pendiente';
+      const motivo = await pedirTextoModal({
+        titulo: esPendiente ? 'Rechazar sala' : 'Suspender sala',
+        texto: `¿Por qué ${esPendiente ? 'rechazás' : 'suspendés'} “${esc(sala ? sala.name : 'la sala')}”? Se le avisa al dueño:`,
+        placeholder: 'Motivo',
+        multilinea: true,
+        aceptar: esPendiente ? 'Rechazar' : 'Suspender'
+      });
       if (motivo === null) return;
-      const accion = sala && sala.estado === 'pendiente' ? 'rechazar' : (sala && sala.estado === 'suspendida' ? 'rechazar' : 'desactivar');
+      const accion = esPendiente ? 'rechazar' : (sala && sala.estado === 'suspendida' ? 'rechazar' : 'desactivar');
       return accionSolicitud(no.dataset.solNo, accion, motivo);
     }
     const ed = e.target.closest('[data-sol-editar]');
