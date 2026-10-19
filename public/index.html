@@ -51,7 +51,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@500;600;700&family=Barlow+Condensed:ital,wght@1,900&display=swap">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
       integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
-<link rel="stylesheet" href="styles.css?v=69">
+<link rel="stylesheet" href="styles.css?v=71">
 </head>
 <body>
 
@@ -999,22 +999,29 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-<script src="app.js?v=69"></script>
+<script src="app.js?v=71"></script>
 <script>
-  /* Fallback: si después de 2s no hay sesión y el auth-body está vacío, forzar login */
-  setTimeout(function() {
+  /* Fallback: si a los 1.5s la app no arrancó (init lento o trabado), forzar el arranque.
+     Espera a que state esté cargado: llamar a arrancarApp con state en null tiraba
+     TypeError en renderCalendar ("reading 'reservations' of null"). */
+  function fallbackInicio() {
     try {
-      if (!document.body.classList.contains('app-activa') && typeof verificarSesion === 'function') {
-        verificarSesion().then(function(ok) {
-          if (ok && typeof arrancarApp === 'function') {
-            arrancarApp();
-          } else if (typeof mostrarLogin === 'function') {
-            mostrarLogin();
-          }
-        });
-      }
+      if (document.body.classList.contains('app-activa')) return;   /* la app ya arrancó */
+      if (typeof verificarSesion !== 'function') return;
+      verificarSesion().then(function(ok) {
+        if (!ok) { if (typeof mostrarLogin === 'function') mostrarLogin(); return; }
+        if (typeof arrancarApp !== 'function') return;
+        var intentos = 0;
+        (function esperarState() {
+          if (document.body.classList.contains('app-activa')) return;  /* init() llegó primero */
+          if (typeof state !== 'undefined' && state) { arrancarApp(); return; }
+          if (++intentos >= 20) return;   /* 10s sin state: lo resuelve init() (pantalla de conexión) */
+          setTimeout(esperarState, 500);
+        })();
+      });
     } catch (e) {}
-  }, 1500);
+  }
+  setTimeout(fallbackInicio, 1500);
 </script>
 </body>
 </html>
