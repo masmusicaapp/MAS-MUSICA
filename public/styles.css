@@ -396,6 +396,22 @@ h3.sub {
 .rm-btn-secondary { background: var(--panel2); border-color: var(--line); color: var(--text); }
 .rm-btn-danger { background: transparent; border-color: rgba(248, 113, 113, .4); color: #f87171; }
 .rm-btn-danger:hover { background: rgba(239, 68, 68, .12); }
+
+/* ===== Tarjeta del popup en escritorio (proporciones del diseño: 380px) ===== */
+@media (min-width: 960px) {
+  .mapa-tarjeta-card { max-width: 380px !important; }
+  .rm-cover { height: 150px; }
+  .rm-avatar { width: 88px; height: 88px; }
+  .rm-avatar-wrap { margin-top: -46px; }
+  .rm-body { padding: 4px 22px 22px; }
+  .rm-title { font-size: 1.4rem; }
+  .rm-date { font-size: .9rem; padding: 9px 16px; }
+  .rm-btn { height: 52px; font-size: 1rem; border-radius: 16px; }
+  /* la tarjeta de sala también respira mejor en pantalla grande */
+  .mt-cover { height: 130px; }
+  .mt-cuerpo { padding: 0 18px 18px; }
+  .mt-nombre { font-size: 1.1rem; }
+}
 .cal-h { text-align: center; font-size: .8rem; color: var(--muted); padding: 4px 0; text-transform: uppercase; }
 .cal-reservas-dia { margin-top: 10px; padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel2); }
 .cal-res-dia-head { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
