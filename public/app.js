@@ -538,18 +538,37 @@ function pintarBotonFav() {
   if (b) b.textContent = filtroSalas === 'favoritas' ? '♥ Favoritas' : '♡ Favoritas';
 }
 
+/* Íconos SVG compartidos (ficha de sala y tarjeta del mapa) */
+const ICO_SVG = {
+  precio: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',
+  telefono: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>',
+  pin: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>',
+  camara: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>',
+  reloj: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+  consola: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>',
+  musica: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>',
+  bateria: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="7" rx="8" ry="3"/><path d="M4 7v8c0 1.7 3.6 3 8 3s8-1.3 8-3V7"/><path d="M4 11c1.5 1.2 4.5 2 8 2s6.5-.8 8-2"/></svg>',
+  amplis: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>',
+  micro: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>',
+  estrella: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
+  info: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>',
+  flecha: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg>',
+  corazon: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>',
+  corazonOn: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path fill="currentColor" d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>'
+};
+
 function fichaSala(id) {
   const r = state.rooms.find(x => x.id === id);
   if (!r) return;
   const equ = r.equipos || {};
   const filas = [
-    ['🎸 Instrumentos', equ.instrumentos],
-    ['🥁 Batería', equ.bateria],
-    ['🔊 Amplificadores', equ.amplificadores],
-    ['🎤 Micrófonos', equ.microfonos],
-    ['🎛️ Consola / sonido', equ.consola],
-    ['✨ Otros', equ.otros],
-  ].filter(f => f[1]);
+    [ICO_SVG.musica, 'Instrumentos', equ.instrumentos],
+    [ICO_SVG.bateria, 'Batería', equ.bateria],
+    [ICO_SVG.amplis, 'Amplificadores', equ.amplificadores],
+    [ICO_SVG.micro, 'Micrófonos', equ.microfonos],
+    [ICO_SVG.consola, 'Consola / sonido', equ.consola],
+    [ICO_SVG.estrella, 'Otros', equ.otros],
+  ].filter(f => f[2]);
   const dias = [1, 2, 3, 4, 5, 6, 0].map(d => {
     const h = horarioSalaDe(r)[String(d)];
     const nombre = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'][d];
@@ -557,20 +576,20 @@ function fichaSala(id) {
   }).join('');
   openModal(`
     <div class="ficha-stats">
-      <div class="ficha-dato"><span>💲 Precio</span><strong>${fmtMoney(r.price)} /hora</strong></div>
-      ${r.telefono ? `<div class="ficha-dato"><span>☎️ Teléfono</span><strong>${esc(r.telefono)}</strong></div>` : ''}
-      ${r.localidad ? `<div class="ficha-dato"><span>📍 Zona</span><strong>${esc(r.localidad)}</strong></div>` : ''}
+      <div class="ficha-dato"><span>${ICO_SVG.precio}Precio</span><strong>${fmtMoney(r.price)} /hora</strong></div>
+      ${r.telefono ? `<div class="ficha-dato"><span>${ICO_SVG.telefono}Teléfono</span><strong>${esc(r.telefono)}</strong></div>` : ''}
+      ${r.localidad ? `<div class="ficha-dato"><span>${ICO_SVG.pin}Zona</span><strong>${esc(r.localidad)}</strong></div>` : ''}
     </div>
-    ${r.direccion ? `<p class="ficha-dir">📍 ${esc([r.direccion, r.numero].filter(Boolean).join(' '))}${linkMapaSala(r) ? ` · <a href="${linkMapaSala(r)}" target="_blank" rel="noopener">ver en el mapa</a>` : ''}</p>` : ''}
-    ${(r.fotos || []).length ? `<h4 class="ficha-titulo">📸 Fotos</h4><div class="ficha-fotos">${(r.fotos || []).map(f => `<figure class="ficha-foto">${f.foto ? `<img src="${esc(f.foto)}" alt="${esc(f.titulo || r.name)}" onclick="verFoto('${esc(f.foto)}', 'Foto de la sala')" title="Ver en grande">` : ''}${f.titulo ? `<figcaption>${esc(f.titulo)}</figcaption>` : ''}</figure>`).join('')}</div>` : ''}
+    ${r.direccion ? `<p class="ficha-dir">${ICO_SVG.pin}${esc([r.direccion, r.numero].filter(Boolean).join(' '))}${linkMapaSala(r) ? ` · <a href="${linkMapaSala(r)}" target="_blank" rel="noopener">ver en el mapa</a>` : ''}</p>` : ''}
+    ${(r.fotos || []).length ? `<h4 class="ficha-titulo">${ICO_SVG.camara}Fotos</h4><div class="ficha-fotos">${(r.fotos || []).map(f => `<figure class="ficha-foto">${f.foto ? `<img src="${esc(f.foto)}" alt="${esc(f.titulo || r.name)}" onclick="verFoto('${esc(f.foto)}', 'Foto de la sala')" title="Ver en grande">` : ''}${f.titulo ? `<figcaption>${esc(f.titulo)}</figcaption>` : ''}</figure>`).join('')}</div>` : ''}
     ${r.descripcion ? `<p class="ficha-desc">${esc(r.descripcion)}</p>` : ''}
     ${(r.features || []).length ? `<div class="ficha-chips">${r.features.map(f => `<span class="chip">${esc(f)}</span>`).join('')}</div>` : ''}
-    ${filas.length ? `<h4 class="ficha-titulo">🎛️ Equipamiento</h4><div class="ficha-equip">${filas.map(f => `<div class="ficha-dato"><span>${f[0]}</span><strong>${esc(f[1])}</strong></div>`).join('')}</div>` : ''}
-    <h4 class="ficha-titulo">🕐 Horario de atención</h4>
+    ${filas.length ? `<h4 class="ficha-titulo">${ICO_SVG.consola}Equipamiento</h4><div class="ficha-equip">${filas.map(f => `<div class="ficha-dato"><span>${f[0]}${f[1]}</span><strong>${esc(f[2])}</strong></div>`).join('')}</div>` : ''}
+    <h4 class="ficha-titulo">${ICO_SVG.reloj}Horario de atención</h4>
     <div class="ficha-horario">${dias}</div>
     <div class="row">
-      <button class="btn btn-primary" id="ficha-reservar">Ver horarios →</button>
-      <button class="btn" id="ficha-fav">${esFavorita(r.id) ? '♥ Quitar de favoritas' : '♡ Guardar como favorita'}</button>
+      <button class="btn btn-primary" id="ficha-reservar">Ver horarios ${ICO_SVG.flecha}</button>
+      <button class="btn" id="ficha-fav">${esFavorita(r.id) ? `${ICO_SVG.corazonOn} Quitar de favoritas` : `${ICO_SVG.corazon} Guardar como favorita`}</button>
       <button class="btn" id="ficha-cerrar">Cerrar</button>
     </div>`);
   $('#ficha-cerrar').onclick = closeModal;
@@ -1164,18 +1183,18 @@ function abrirTarjetaSala(id) {
           ${r.fotoPortada ? `<img src="${esc(r.fotoPortada)}" alt="Portada de ${esc(r.name)}">` : '<img src="/assets/marca-agua-negro.png" alt="Más Música">'}
         </div>
         <div class="mt-cuerpo">
-          ${r.foto ? `<img class="mt-logo" src="${esc(r.foto)}" alt="${esc(r.name)}">` : `<div class="mt-logo mt-logo-ico">🎸</div>`}
+          ${r.foto ? `<img class="mt-logo" src="${esc(r.foto)}" alt="${esc(r.name)}">` : `<div class="mt-logo mt-logo-ico">${ICO_SVG.musica}</div>`}
           <h3 class="mt-nombre">${esc(r.name)}</h3>
           <div class="mt-chips">
-            <span class="mt-chip">💵 ${fmtMoney(r.price)}<em>/hora</em></span>
-            ${r.localidad ? `<span class="mt-chip">📍 ${esc(r.localidad)}</span>` : ''}
+            <span class="mt-chip">${ICO_SVG.precio}${fmtMoney(r.price)}<em>/hora</em></span>
+            ${r.localidad ? `<span class="mt-chip">${ICO_SVG.pin}${esc(r.localidad)}</span>` : ''}
           </div>
           ${dir ? `<p class="mt-dir">${esc(dir)}${linkMapaSala(r) ? ` · <a href="${linkMapaSala(r)}" target="_blank" rel="noopener">ver en el mapa</a>` : ''}</p>` : ''}
-          ${r.telefono ? `<a class="mt-tel" href="tel:${esc(String(r.telefono).replace(/[^0-9+]/g, ''))}">📞 ${esc(r.telefono)}</a>` : ''}
+          ${r.telefono ? `<a class="mt-tel" href="tel:${esc(String(r.telefono).replace(/[^0-9+]/g, ''))}">${ICO_SVG.telefono}${esc(r.telefono)}</a>` : ''}
           <div class="mt-acciones">
-            <button class="btn btn-primary" id="tarjeta-reservar">Ver horarios →</button>
-            <button class="btn" id="tarjeta-ficha">ℹ️ Ficha</button>
-            <button class="btn mt-fav ${esFavorita(r.id) ? 'on' : ''}" id="tarjeta-fav" title="${esFavorita(r.id) ? 'Quitar de favoritas' : 'Guardar como favorita'}" aria-label="${esFavorita(r.id) ? 'Quitar de favoritas' : 'Guardar como favorita'}">${esFavorita(r.id) ? '♥' : '♡'}</button>
+            <button class="btn btn-primary" id="tarjeta-reservar">Ver horarios ${ICO_SVG.flecha}</button>
+            <button class="btn" id="tarjeta-ficha">${ICO_SVG.info}Ficha</button>
+            <button class="btn mt-fav ${esFavorita(r.id) ? 'on' : ''}" id="tarjeta-fav" title="${esFavorita(r.id) ? 'Quitar de favoritas' : 'Guardar como favorita'}" aria-label="${esFavorita(r.id) ? 'Quitar de favoritas' : 'Guardar como favorita'}">${esFavorita(r.id) ? ICO_SVG.corazonOn : ICO_SVG.corazon}</button>
           </div>
         </div>
       </div>`;
