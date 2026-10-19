@@ -1088,6 +1088,21 @@ tr:hover td {
 .own-nom small { font-size: .78rem; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .own-rol { flex: 0 0 auto; font-style: normal; font-size: .68rem; font-weight: 800; letter-spacing: .4px; text-transform: uppercase; color: var(--muted); background: var(--panel); border: 1px solid var(--line); border-radius: 999px; padding: 3px 8px; }
 
+/* ---------- Pedir un dato (reemplaza al prompt() del navegador) ---------- */
+.pedir-modal { display: flex; flex-direction: column; gap: 8px; padding: 4px 0; }
+.pedir-modal h3 { margin: 0; font-size: 1.15rem; }
+.pedir-texto { margin: 0 0 2px; font-size: .93rem; color: var(--muted); line-height: 1.45; }
+.pedir-texto b { color: var(--text); }
+.pedir-modal input, .pedir-modal textarea { margin-top: 0; }
+.clave-caja {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 1.4rem; letter-spacing: 2px; text-align: center;
+  user-select: all; background: var(--panel2);
+  border: 1px dashed var(--accent); border-radius: 12px;
+  padding: 14px 10px; margin: 2px 0 4px;
+  overflow-wrap: anywhere;
+}
+
 /* ---------- Toast ---------- */
 #toast {
   position: fixed; bottom: calc(92px + env(safe-area-inset-bottom)); left: 50%; transform: translate(-50%, 80px);
