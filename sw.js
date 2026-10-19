@@ -1,11 +1,11 @@
-/* Service worker de Más Música — cache para funcionamiento offline */
-const CACHE = 'mas-musica-v66';
+/* Service worker de MÃ¡s MÃºsica â€” cache para funcionamiento offline */
+const CACHE = 'mas-musica-v68';
 
 const ESTATICOS = [
   './',
   './index.html',
-  './styles.css',
-  './app.js',
+  './styles.css?v=68',
+  './app.js?v=68',
   './manifest.webmanifest',
   './assets/logo_musica.png',
   './assets/logo_musica_negro.png',
@@ -39,12 +39,12 @@ self.addEventListener('fetch', event => {
   const req = event.request;
   if (req.method !== 'GET') return;
 
-  /* La API nunca se cachea: trae datos privados (sesión, reservas, avisos) */
+  /* La API nunca se cachea: trae datos privados (sesiÃ³n, reservas, avisos) */
   const reqUrl = new URL(req.url);
   if (reqUrl.pathname.startsWith('/api/')) return;
 
   /* Red primero: la app necesita el servidor (reservas en tiempo real),
-     así los cambios llegan al instante. La caché solo es respaldo offline. */
+     asÃ­ los cambios llegan al instante. La cachÃ© solo es respaldo offline. */
   event.respondWith(
     fetch(req).then(res => {
       if (res.ok && reqUrl.origin === location.origin) {

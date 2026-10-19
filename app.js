@@ -1119,7 +1119,7 @@ function verSalaEnMapa(id) {
   if (!r || !tieneUbicacion(r)) return;
   const punto = [Number(r.lat), Number(r.lng)];
   centrarMapa(punto, 15);
-  if (mapaEsGoogle()) { if (gmap) abrirVentanaInfo(popupSala(r)); return; }
+  if (mapaEsGoogle()) { if (gmap) abrirTarjetaSala(id); return; }
   if (marcasSala[id]) { try { marcasSala[id].openPopup(); } catch (e) {} }
   irACarruselSala(id);
 }
@@ -1357,7 +1357,7 @@ async function renderMapaGoogle() {
           ? { url: iconos[i], scaledSize: new google.maps.Size(28, 28), anchor: new google.maps.Point(14, 14) }
           : undefined,
       });
-      m.addListener('click', () => abrirVentanaInfo(popupSala(r)));
+      m.addListener('click', () => abrirTarjetaSala(r.id));
       gmarcadores.push(m);
     });
 
