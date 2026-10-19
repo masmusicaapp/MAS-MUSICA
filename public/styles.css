@@ -5526,3 +5526,34 @@ main#view-comunidad:has(.suscripcion-wrap) > .panel {
 }
 .ci-btn.on { background: transparent; color: var(--accent2); border-color: var(--accent2); }
 .ci-count { font-size: .72rem; color: var(--muted); }
+
+/* ===== Chat global: invitación con horario + reserva tentativa ===== */
+.chat-inv-fecha {
+  display: flex; align-items: center; gap: 6px; font-size: .78rem; color: var(--muted);
+  margin: 2px 0 6px; width: 100%;
+}
+.chat-inv-fecha input {
+  flex: 1; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--line);
+  background: var(--panel); color: var(--text);
+}
+.chat-slot-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; width: 100%; margin-bottom: 8px; }
+.chat-slot {
+  padding: 8px 4px; border-radius: 9px; cursor: pointer; font-size: .76rem;
+  background: var(--panel); border: 1px solid var(--line); color: var(--text);
+}
+.chat-slot:hover { border-color: var(--accent); background: var(--accent); color: #fff; }
+.ci-cuando { display: flex; align-items: center; gap: 5px; font-size: .78rem; color: var(--text); margin-top: 2px; }
+.ci-cuando svg { width: 14px; height: 14px; color: var(--accent2); flex: none; }
+.ci-estado { font-size: .74rem; margin-top: 4px; padding: 3px 8px; border-radius: 8px; }
+.ci-estado.espera { background: rgba(234, 179, 8, .16); color: #eab308; }
+.ci-estado.ok { background: rgba(34, 197, 94, .16); color: #22c55e; }
+.ci-estado.no { background: rgba(239, 68, 68, .16); color: #ef4444; }
+.ci-confirmar { background: var(--panel); color: var(--accent2); border-color: var(--accent2); }
+.badge-warn { background: rgba(234, 179, 8, .16); color: #eab308; }
+[data-inv-volver] { margin-top: 2px; }
+
+@media (max-width: 959px) {
+  .chat-slot-grid { grid-template-columns: repeat(2, 1fr); }
+  .chat-invitacion { max-width: 100%; }
+  .chat-msg-video, .chat-msg-img { max-width: 100%; }
+}
