@@ -5476,6 +5476,10 @@ function renderAdminTab(tab) {
     lugar: renderLugarAdmin,
     bandas: renderBandasAdmin,
   }[tab])();
+  /* La pestaña Salas necesita la lista de cuentas para mostrar el dueño de cada sala */
+  if (tab === 'salas' && esSuper() && !(window.__usuarios && window.__usuarios.length)) {
+    asegurarUsuarios().then(() => { if (currentAdminTab === 'salas') renderSalasAdmin(); });
+  }
   const pend = (state.rooms || []).filter(r => r.estado === 'pendiente').length;
   const pill = $('#pill-solicitudes');
   if (pill) { pill.hidden = !pend; pill.textContent = pend; }
@@ -6096,7 +6100,7 @@ function renderSalasAdmin() {
 
   cont.innerHTML = lista.length ? lista.map(r => {
     const st = ESTADO[r.estado] || { label: r.estado, cls: 'off' };
-    const owner = r.ownerId ? (state.users || []).find(u => u.id === r.ownerId) : null;
+    const owner = r.ownerId ? (window.__usuarios || []).find(u => u.id === r.ownerId) : null;
     const dueño = owner ? esc(owner.nombre) : 'Sin dueño';
     const dueñoNone = !owner;
     const horas = r.horario ? Object.values(r.horario).filter(Boolean).map(h => h.open + ' – ' + h.close) : [];
@@ -7258,6 +7262,86 @@ function confirmarAccion(mensaje, titulo = '¿Estás seguro?', textoAceptar = 'A
   });
 }
 
+/* Lista de cuentas para la administración general (se pide una vez y queda en memoria) */
+async function asegurarUsuarios() {
+  if (window.__usuarios && window.__usuarios.length) return window.__usuarios;
+  try {
+    const data = await api('/api/admin/usuarios', { admin: true });
+    window.__usuarios = data.usuarios || [];
+  } catch (e) { /* sin lista */ }
+  return window.__usuarios || [];
+}
+
+/* Asignar o cambiar el dueño de una sala (Administración central → Salas).
+   Interacción con búsqueda y selección, reemplaza al prompt() del navegador. */
+async function asignarDuenioModal(roomId, cambiar) {
+  const r = (state.rooms || []).find(x => x.id === roomId);
+  if (!r) return;
+  openModal(`
+    <h3>${cambiar ? 'Cambiar dueño' : 'Asignar dueño'}</h3>
+    <p class="own-ctx">Sala: <b>${esc(r.name)}</b><span id="own-ctx-dueno"></span></p>
+    <label>Buscar usuario
+      <input type="text" id="own-buscar" placeholder="usuario o nombre…" autocomplete="off">
+    </label>
+    <div class="own-lista" id="own-lista"><p class="muted small">Cargando cuentas…</p></div>
+    <div class="row">
+      <button class="btn btn-primary" id="own-ok" disabled>${cambiar ? 'Cambiar' : 'Asignar'}</button>
+      <button class="btn" id="own-cancel">Cancelar</button>
+    </div>`);
+  const lista = $('#own-lista');
+  const busq = $('#own-buscar');
+  const ok = $('#own-ok');
+  const ctxDueno = $('#own-ctx-dueno');
+  const ROL = { SUPER_ADMIN: 'Administración', ROOM_ADMIN: 'Dueño', USER: 'Músico' };
+  let sel = null;
+  let usuarios = [];
+
+  function pintar() {
+    if (!lista.isConnected) return;
+    const term = String(busq.value || '').trim().toLowerCase();
+    const actualId = r.ownerId;
+    const us = usuarios.filter(u => u.id !== actualId &&
+      (!term || String(u.usuario || '').toLowerCase().includes(term) || String(u.nombre || '').toLowerCase().includes(term)));
+    lista.innerHTML = us.length ? us.map(u => `
+      <button type="button" class="own-op" data-u="${esc(u.id)}">
+        <span class="own-nom"><b>${esc(u.usuario)}</b>${u.nombre ? `<small>${esc(u.nombre)}</small>` : ''}</span>
+        <em class="own-rol">${esc(ROL[u.rol] || u.rol || '')}</em>
+      </button>`).join('') : '<p class="muted small">Sin usuarios que coincidan.</p>';
+  }
+
+  busq.oninput = () => { sel = null; ok.disabled = true; pintar(); };
+  lista.onclick = e => {
+    const op = e.target.closest('.own-op');
+    if (!op) return;
+    sel = op.dataset.u;
+    lista.querySelectorAll('.own-op.on').forEach(x => x.classList.remove('on'));
+    op.classList.add('on');
+    ok.disabled = false;
+  };
+  $('#own-cancel').onclick = closeModal;
+  ok.onclick = async () => {
+    if (!sel) return;
+    ok.disabled = true;
+    try {
+      const data = await api('/api/rooms/' + roomId, { method: 'PUT', admin: true, body: { ownerId: sel } });
+      state = data.state;
+      window.__usuarios = null;   /* el rol del nuevo dueño puede haber cambiado */
+      closeModal();
+      renderAdminTab('salas');
+      toast(cambiar ? 'Dueño cambiado ✓' : 'Dueño asignado ✓', 'ok');
+    } catch (err) {
+      ok.disabled = false;
+      toast(err.message, 'error');
+    }
+  };
+
+  usuarios = await asegurarUsuarios();
+  if (!lista.isConnected) return;
+  const actual = r.ownerId ? usuarios.find(u => u.id === r.ownerId) : null;
+  if (actual) ctxDueno.innerHTML = ` · Dueño actual: <b>${esc(actual.nombre || actual.usuario)}</b>`;
+  pintar();
+}
+
 let toastTimer;
 function toast(msg, type = 'ok') {
   const t = $('#toast');
@@ -7448,29 +7532,9 @@ function wireAdmin() {
       return;
     }
     const own = e.target.closest('[data-assign-owner]');
-    if (own) {
-      const name = prompt('Nombre del dueño para esta sala (usuario):');
-      if (!name || !name.trim()) return;
-      const u = (state.users || []).find(x => x.usuario === name.trim().toLowerCase());
-      if (!u) { toast('Usuario no encontrado', 'warn'); return; }
-      try {
-        const data = await api('/api/rooms/' + own.dataset.assignOwner, { method: 'PUT', admin: true, body: { ownerId: u.id } });
-        state = data.state; renderAdminTab('salas'); toast('Dueño asignado ✓', 'ok');
-      } catch (err) { toast(err.message, 'error'); }
-      return;
-    }
+    if (own) return asignarDuenioModal(own.dataset.assignOwner, false);
     const chg = e.target.closest('[data-change-owner]');
-    if (chg) {
-      const name = prompt('Nuevo dueño para la sala (usuario):');
-      if (!name || !name.trim()) return;
-      const u = (state.users || []).find(x => x.usuario === name.trim().toLowerCase());
-      if (!u) { toast('Usuario no encontrado', 'warn'); return; }
-      try {
-        const data = await api('/api/rooms/' + chg.dataset.changeOwner, { method: 'PUT', admin: true, body: { ownerId: u.id } });
-        state = data.state; renderAdminTab('salas'); toast('Dueño cambiado ✓', 'ok');
-      } catch (err) { toast(err.message, 'error'); }
-      return;
-    }
+    if (chg) return asignarDuenioModal(chg.dataset.changeOwner, true);
     const more = e.target.closest('[data-more-room]');
     if (more) {
       toast('Opciones: eliminar, desactivar, ver historial', 'ok');
