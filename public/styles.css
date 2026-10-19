@@ -2654,7 +2654,7 @@ main {
   border-radius: 10px; padding: 8px 10px;
   display: flex; flex-direction: column; font-size: .9rem;
 }
-.ficha-dir, .ficha-desc { font-size: .88rem; color: var(--muted); }
+.ficha-desc { font-size: .88rem; color: var(--muted); margin: 0 0 10px; }
 .ficha-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
 .chip {
   background: var(--panel2);
@@ -2687,6 +2687,20 @@ main {
 .hora-fila strong { min-width: 110px; }
 .hora-fila .check { margin: 0 6px 0 0; }
 .dias-fila { margin-bottom: 10px; }
+/* Ficha rediseñada: datos clave en tarjetas, dirección en fila y grillas compactas */
+.ficha-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 8px; margin-bottom: 10px; }
+.ficha-dato { background: var(--panel2); border: 1px solid var(--line); border-radius: 12px; padding: 9px 10px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.ficha-dato span { font-size: .7rem; font-weight: 600; color: var(--muted); letter-spacing: .2px; }
+.ficha-dato strong { font-size: .9rem; font-weight: 700; color: var(--text); line-height: 1.25; word-break: break-word; }
+.ficha-dir { display: flex; align-items: center; gap: 8px; background: var(--panel2); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; margin: 0 0 12px; font-size: .88rem; color: var(--text); }
+.ficha-dir a { color: var(--accent2); font-weight: 700; text-decoration: none; white-space: nowrap; }
+.ficha-titulo { margin: 16px 0 8px; font-size: .78rem; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: var(--label); }
+.ficha-equip { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin-bottom: 4px; }
+.ficha-horario { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-bottom: 6px; }
+.fh-dia { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 7px 10px; font-size: .8rem; min-width: 0; }
+.fh-dia strong { font-weight: 700; }
+.fh-dia span { color: var(--muted); white-space: nowrap; }
+.fh-dia.cerrado span { font-style: italic; opacity: .75; }
 
 /* ================= SOLICITUDES DE SALAS ================= */
 .pill {
