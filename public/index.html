@@ -51,7 +51,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@500;600;700&family=Barlow+Condensed:ital,wght@1,900&display=swap">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
       integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
-<link rel="stylesheet" href="styles.css?v=79">
+<link rel="stylesheet" href="styles.css?v=80">
 </head>
 <body>
 
@@ -285,7 +285,7 @@
         </div>
       </details>
       <details class="sala-sec" open>
-        <summary>📍 Ubicación y contacto</summary>
+        <summary><svg class="mapa-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21.5c4.6-4.4 7.5-8 7.5-11.5a7.5 7.5 0 1 0-15 0c0 3.5 2.9 7.1 7.5 11.5z"/><circle cx="12" cy="9.9" r="2.6" fill="currentColor" stroke="none"/></svg> Ubicación y contacto</summary>
         <div class="sala-sec-body">
       <div class="row2">
         <label>Dirección<input id="ps-direccion" maxlength="160"></label>
@@ -304,14 +304,14 @@
         <label>Longitud<input id="ps-lng" inputmode="decimal" placeholder="-64.1888"></label>
       </div>
       <div class="row wrap">
-        <button class="btn btn-sm" id="ps-ubicar">🗺 Ubicar en el mapa</button>
-        <button class="btn btn-sm" id="ps-buscar-direccion">🔎 Buscar por dirección</button>
+        <button class="btn btn-sm" id="ps-ubicar"><svg class="mapa-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21.5c4.6-4.4 7.5-8 7.5-11.5a7.5 7.5 0 1 0-15 0c0 3.5 2.9 7.1 7.5 11.5z"/><circle cx="12" cy="9.9" r="2.6" fill="currentColor" stroke="none"/></svg><span class="mapa-btn-txt"> Ubicar en el mapa</span></button>
+        <button class="btn btn-sm" id="ps-buscar-direccion"><svg class="mapa-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.2 15.2 21 21"/><path d="M7.6 10.5a2.9 2.9 0 0 1 2.9-2.9" opacity=".45"/></svg><span class="mapa-btn-txt"> Buscar por dirección</span></button>
       </div>
       <p class="muted small">Con la ubicación puesta, tu sala aparece en el mapa de Más Música para que los músicos la encuentren.</p>
         </div>
       </details>
       <details class="sala-sec">
-        <summary>🎛️ Equipamiento disponible</summary>
+        <summary><svg class="mapa-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.2 15.2 21 21"/><path d="M7.6 10.5a2.9 2.9 0 0 1 2.9-2.9" opacity=".45"/></svg> Equipamiento disponible</summary>
         <div class="sala-sec-body">
       <div class="row2">
         <label>Instrumentos disponibles<input id="ps-eq-instrumentos" maxlength="300" placeholder="Ej.: Guitarra, Bajo, Batería"></label>
@@ -987,7 +987,7 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-<script src="app.js?v=79"></script>
+<script src="app.js?v=80"></script>
 <script>
   /* Fallback: si a los 1.5s la app no arrancó (init lento o trabado), forzar el arranque.
      Espera a que state esté cargado: llamar a arrancarApp con state en null tiraba
