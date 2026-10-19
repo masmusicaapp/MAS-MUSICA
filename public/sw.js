@@ -1,11 +1,11 @@
 /* Service worker de MÃ¡s MÃºsica â€” cache para funcionamiento offline */
-const CACHE = 'mas-musica-v78';
+const CACHE = 'mas-musica-v79';
 
 const ESTATICOS = [
   './',
   './index.html',
-  './styles.css?v=78',
-  './app.js?v=78',
+  './styles.css?v=79',
+  './app.js?v=79',
   './manifest.webmanifest',
   './assets/logo_musica.png',
   './assets/logo_musica_negro.png',
