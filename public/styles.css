@@ -2893,6 +2893,10 @@ main {
 #mapa img.gm-ui-hover-effect:hover { opacity: 1 !important; }
 #mapa .gm-style-iw .pop-detalle { color: var(--text); }
 
+/* Íconos de los botones del mapa (Mi ubicación y Ver todas) */
+.mapa-ico { width: 20px; height: 20px; display: block; flex: 0 0 auto; }
+.row .btn .mapa-ico { width: 20px; height: 20px; }
+
 /* Marcadores con el logo de la sala */
 .mk-wrap {
   background: transparent !important;
