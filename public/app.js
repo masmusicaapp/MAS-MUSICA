@@ -629,7 +629,8 @@ const ICO_SVG = {
   info: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>',
   flecha: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg>',
   corazon: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>',
-  corazonOn: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path fill="currentColor" d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>'
+  corazonOn: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path fill="currentColor" d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>',
+  basura: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>'
 };
 
 function fichaSala(id) {
@@ -2499,6 +2500,7 @@ const CHAT_STICKERS = [
 ];
 let chatGlobalTimer = null;
 let chatGlobalUltimoFecha = 0;
+let chatGlobalTotal = null;   /* cuántos mensajes hay en el servidor (para detectar borrados) */
 
 /* Ver en el mapa la sala de una invitación del chat (centrada y con su tarjeta) */
 function verSalaEnMapa(salaId) {
@@ -2598,6 +2600,7 @@ async function cargarChatGlobal() {
 
   // Cargar mensajes (desde cero: el hilo se acaba de crear de nuevo)
   chatGlobalUltimoFecha = 0;
+  chatGlobalTotal = null;
   await cargarMensajesGlobal();
 
   // Configurar envío
@@ -2659,6 +2662,30 @@ async function cargarChatGlobal() {
   if (hilo && !hilo._ok) {
     hilo._ok = true;
     hilo.addEventListener('click', async e => {
+      const del = e.target.closest('[data-borrar-msg]');
+      if (del) {
+        if (del.disabled) return;
+        del.disabled = true;
+        try {
+          const ok = await confirmarAccion(
+            '¿Eliminar este mensaje? Se borra del chat para todos.',
+            '¿Eliminar mensaje?',
+            'Sí, eliminar',
+            'No, dejarlo',
+            'peligro'
+          );
+          if (!ok) { del.disabled = false; return; }
+          await api('/api/comunidad/chat-global/borrar', { method: 'POST', body: { mensajeId: del.dataset.borrarMsg } });
+          const fila = del.closest('.chat-global-msg');
+          if (fila) fila.remove();
+          if (typeof chatGlobalTotal === 'number') chatGlobalTotal = Math.max(0, chatGlobalTotal - 1);
+          toast('Mensaje eliminado', 'ok');
+        } catch (err) {
+          toast(err.message || 'No se pudo eliminar el mensaje', 'error');
+          del.disabled = false;
+        }
+        return;
+      }
       const conf = e.target.closest('[data-confirmar-invitacion]');
       if (conf) {
         if (conf.disabled) return;
@@ -2870,6 +2897,15 @@ async function cargarMensajesGlobal(silent) {
     const data = await api('/api/comunidad/chat-global?desde=' + chatGlobalUltimoFecha);
     const mensajes = data.mensajes || [];
 
+    /* Si alguien borró un mensaje, el total del servidor baja: se refresca el hilo entero */
+    if (typeof data.total === 'number') {
+      if (chatGlobalTotal !== null && data.total < chatGlobalTotal) {
+        chatGlobalTotal = data.total;
+        return recargarChat();
+      }
+      chatGlobalTotal = data.total;
+    }
+
     if (!silent && !mensajes.length) {
       hilo.innerHTML = '<p class="muted small" style="text-align:center;padding:20px">Todavía no hay mensajes. Sé el primero en escribir 🎸</p>';
       return;
@@ -2882,13 +2918,18 @@ async function cargarMensajesGlobal(silent) {
         const div = document.createElement('div');
         div.className = 'chat-global-msg' + (m.mio ? ' mio' : '');
         var avatarHtml = m.mio ? "" : "<div class=\"chat-global-avatar\">" + String((m.autor && m.autor.nombre) || "?").charAt(0).toUpperCase() + "</div>";
+        /* El autor puede borrar su mensaje, salvo una invitación con reserva en curso */
+        const puedeBorrar = m.mio && !(m.tipo === 'invitacion' && (m.reservaEstado === 'tentativa' || m.reservaEstado === 'confirmada'));
         div.innerHTML = `
           ${avatarHtml}
           <div class="chat-global-contenido">
             ${m.mio ? '' : `<span class="chat-global-autor">${esc(m.autor?.nombre || 'Músico')}</span>`}
             ${renderCuerpoChat(m)}
             ${m.tipo !== 'texto' && m.texto ? '<p class="chat-global-texto">' + esc(m.texto) + '</p>' : ''}
-            <span class="chat-global-fecha">${fechaChat(m.fecha)}</span>
+            <div class="chat-global-pie">
+              <span class="chat-global-fecha">${fechaChat(m.fecha)}</span>
+              ${puedeBorrar ? `<button type="button" class="chat-global-borrar" data-borrar-msg="${esc(m.id)}" title="Eliminar mensaje" aria-label="Eliminar mensaje">${ICO_SVG.basura}</button>` : ''}
+            </div>
           </div>`;
         hilo.appendChild(div);
         chatGlobalUltimoFecha = m.fecha;
