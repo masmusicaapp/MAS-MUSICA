@@ -2068,6 +2068,16 @@ async function confirmBooking() {
   if (data.pago) {
     const roomP = state.rooms.find(r => r.id === sel.roomId);
     const hasta = new Date(data.pago.venceEn).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+    const pagarUrl = urlSegura(data.pago.url);
+    const okConfirmada = () => `
+      <div class="success">
+        <div class="ok-mark">✔</div>
+        <h3>¡Reserva confirmada!</h3>
+        <p><strong>${esc(name)}</strong></p>
+        <p>${esc(roomP ? roomP.name : '')} · ${data.reservation.start} – ${data.reservation.end}</p>
+        <p class="muted small">Seña pagada (modo prueba). La sala ya recibió el aviso.</p>
+        <button class="btn" id="bk-mine">👤 Ver mis reservas</button>
+      </div>`;
     $('#confirm-body').innerHTML = `
       <div class="success">
         <h3>Falta pagar la seña</h3>
@@ -2076,14 +2086,32 @@ async function confirmBooking() {
         <p class="accent"><strong>Seña a pagar ahora: ${fmtMoney(data.pago.sena)}</strong></p>
         <p class="muted small">Total ${fmtMoney(data.pago.total)} · el saldo de ${fmtMoney(data.pago.saldo)} se paga en la sala.</p>
         <p class="muted small">Tu horario queda reservado hasta las ${hasta}. Si no se paga la seña, se libera.</p>
-        ${data.pago.url && urlSegura(data.pago.url)
-          ? `<a class="btn btn-primary" href="${urlSegura(data.pago.url)}">Pagar la seña con Mercado Pago</a>`
-          : '<p class="muted small">Modo de prueba: el pago no está conectado todavía.</p>'}
+        ${pagarUrl
+          ? `<a class="btn btn-primary" href="${pagarUrl}">Pagar la seña con Mercado Pago</a>`
+          : data.pago.simulado
+            ? `<button class="btn btn-primary" id="bk-pagar-prueba">Pagar la seña (prueba)</button>`
+            : '<p class="muted small">El cobro de la seña no está activo.</p>'}
         <button class="btn" id="bk-mine">👤 Ver mis reservas</button>
       </div>`;
     $('#bk-mine').onclick = () => { mostrarMisReservas(); };
+    const btnPrueba = $('#bk-pagar-prueba');
+    if (btnPrueba) btnPrueba.onclick = async () => {
+      btnPrueba.disabled = true;
+      try {
+        const res = await api('/api/pagos/simular', { method: 'POST', body: { reservaId: data.reservation.id, resultado: 'aprobado' } });
+        if (res && res.state) state = res.state;
+        toast('Seña pagada (prueba) ✓', 'ok');
+        if (yo) cargarNotificaciones();
+        renderMineRapido();
+        $('#confirm-body').innerHTML = okConfirmada();
+        $('#bk-mine').onclick = () => { mostrarMisReservas(); };
+      } catch (err) {
+        toast(err.message || 'No se pudo simular el pago', 'error');
+        btnPrueba.disabled = false;
+      }
+    };
     renderMineRapido();
-    if (urlSegura(data.pago.url)) { toast('Te llevamos a Mercado Pago para pagar la seña…', 'ok'); setTimeout(() => { location.href = urlSegura(data.pago.url); }, 1500); }
+    if (pagarUrl) { toast('Te llevamos a Mercado Pago para pagar la seña…', 'ok'); setTimeout(() => { location.href = pagarUrl; }, 1500); }
     return;
   }
   const room = state.rooms.find(r => r.id === sel.roomId);
