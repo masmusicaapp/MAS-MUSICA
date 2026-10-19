@@ -51,7 +51,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@500;600;700&family=Barlow+Condensed:ital,wght@1,900&display=swap">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
       integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
-<link rel="stylesheet" href="styles.css?v=78">
+<link rel="stylesheet" href="styles.css?v=79">
 </head>
 <body>
 
@@ -192,24 +192,12 @@
         <button class="btn btn-sm" id="btn-mi-ubicacion" title="Mi ubicación" aria-label="Mi ubicación"><svg class="mapa-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21.5c4.6-4.4 7.5-8 7.5-11.5a7.5 7.5 0 1 0-15 0c0 3.5 2.9 7.1 7.5 11.5z"/><circle cx="12" cy="9.9" r="2.6" fill="currentColor" stroke="none"/></svg><span class="mapa-btn-txt"> Mi ubicación</span></button>
         <button class="btn btn-sm" id="btn-ver-todas" title="Ver todas las salas" aria-label="Ver todas las salas"><svg class="mapa-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.2 15.2 21 21"/><path d="M7.6 10.5a2.9 2.9 0 0 1 2.9-2.9" opacity=".45"/></svg><span class="mapa-btn-txt"> Ver todas</span></button>
         <button class="btn btn-sm" id="btn-mapa-fav" title="Ver solo tus favoritas" aria-label="Ver solo tus favoritas">♡<span class="mapa-btn-txt"> Favoritas</span></button>
-        <button class="btn btn-sm" id="mapa-lista-toggle" title="Ocultar la lista de salas" aria-label="Ocultar la lista de salas">✕<span class="mapa-btn-txt"> Salas</span></button>
       </div>
     </div>
     <div id="pane-mapa">
       <div id="mapa" role="application" aria-label="Mapa de salas de ensayo"></div>
-      <p class="muted small mapa-ayuda" id="mapa-fallback" hidden>No se pudo cargar el mapa (hace falta conexión a internet la primera vez). Podés ver las salas igual en la <button class="btn btn-sm" data-ir-lista="1">lista de salas</button>.</p>
-      <p class="muted small mapa-ayuda">Tocá una sala para ver su ficha y sus horarios. Tus reservas aparecen con 🎸 sobre el lugar. Abajo tenés la lista de salas, ordenada por cercanía cuando tocás «Mi ubicación».</p>
-    </div>
-    <div id="mapa-hoja" class="mapa-hoja">
-      <button type="button" class="mapa-hoja-btn" id="mapa-hoja-btn" aria-expanded="false" aria-controls="mapa-hoja-cuerpo" aria-label="Ver salas" title="Deslizá para ver las salas">
-        <span class="mapa-hoja-linea" aria-hidden="true"></span>
-      </button>
-      <div class="mapa-hoja-cuerpo" id="mapa-hoja-cuerpo">
-        <div class="mapa-hoja-card">
-          <div id="mapa-sin-ubicacion"></div>
-          <div id="mapa-lista" class="mapa-lista"></div>
-        </div>
-      </div>
+      <p class="muted small mapa-ayuda" id="mapa-fallback" hidden>No se pudo cargar el mapa (hace falta conexión a internet la primera vez). Podés ver todas las salas en la pestaña Salas.</p>
+      <p class="muted small mapa-ayuda">Tocá una sala para ver su ficha y sus horarios. Tus reservas aparecen con 🎸 sobre el lugar.</p>
     </div>
   </div>
 </main>
@@ -999,7 +987,7 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-<script src="app.js?v=78"></script>
+<script src="app.js?v=79"></script>
 <script>
   /* Fallback: si a los 1.5s la app no arrancó (init lento o trabado), forzar el arranque.
      Espera a que state esté cargado: llamar a arrancarApp con state en null tiraba
