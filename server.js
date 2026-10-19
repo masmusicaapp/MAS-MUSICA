@@ -1169,9 +1169,12 @@ function serveStatic(req, res, url) {
   if (!file.startsWith(PUBLIC_DIR + path.sep)) { res.writeHead(403); return res.end(); }
   fs.readFile(file, (err, data) => {
     if (err) { res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' }); return res.end('No encontrado'); }
+    const ext = path.extname(file).toLowerCase();
     res.writeHead(200, {
-      'Content-Type': MIME[path.extname(file).toLowerCase()] || 'application/octet-stream',
-      'Cache-Control': 'no-cache',
+      'Content-Type': MIME[ext] || 'application/octet-stream',
+      /* El HTML nunca se guarda: así el celular siempre toma la última versión.
+         El CSS/JS llevan ?v=… en index.html para forzar la descarga cuando cambian. */
+      'Cache-Control': ext === '.html' ? 'no-store, no-cache, must-revalidate' : 'no-cache',
       'X-Content-Type-Options': 'nosniff',
       'X-Frame-Options': 'DENY',
       'Referrer-Policy': 'strict-origin-when-cross-origin',
