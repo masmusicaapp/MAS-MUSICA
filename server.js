@@ -1653,6 +1653,31 @@ async function handleApi(req, res, url, parts) {
     return sendJson(res, 200, { state: publicState(state), reservation: r });
   }
 
+  /* Reintentar el pago de una seña pendiente (si el músico cerró la pantalla de pago) */
+  if (method === 'POST' && url.pathname === '/api/pagos/reintentar') {
+    if (MODO_PAGOS === 'apagado') return sendJson(res, 400, { error: 'El cobro de la seña no está activo' });
+    const u = sesionActual(state, req);
+    if (!u) return sendJson(res, 401, { error: 'Iniciá sesión para pagar la seña' });
+    const r = state.reservations.find(x => x.id === body.reservaId);
+    if (!r || !r.pago) return sendJson(res, 404, { error: 'Reserva no encontrada' });
+    const esMia = r.userId === u.id || (r.phone && r.phone === String(u.telefono || '').trim());
+    if (!esMia) return sendJson(res, 403, { error: 'Esa reserva no es tuya' });
+    if (r.estado !== 'pendiente_pago') return sendJson(res, 409, { error: 'Esa reserva no está pendiente de pago' });
+    if (r.venceEn && r.venceEn < Date.now()) return sendJson(res, 409, { error: 'Se venció el tiempo para pagar la seña. La reserva ya no está tomada.' });
+    const info = { sena: r.sena, total: r.total, saldo: r.saldo, venceEn: r.venceEn };
+    if (MODO_PAGOS === 'simulado') return sendJson(res, 200, Object.assign({ simulado: true }, info));
+    const room = state.rooms.find(x => x.id === r.roomId);
+    try {
+      const pref = await crearPreferencia(r, room);
+      r.pago.preferenciaId = pref.id;
+      persist(state);
+      return sendJson(res, 200, Object.assign({ url: pref.url }, info));
+    } catch (e) {
+      console.error('[pagos] reintento:', e.message);
+      return sendJson(res, 502, { error: 'No pudimos iniciar el pago. Probá de nuevo en unos minutos.' });
+    }
+  }
+
   /* Resumen de pagos: administración general (todo) o dueño (solo su sala) */
   if (method === 'GET' && url.pathname === '/api/admin/pagos') {
     const miSala = salaDelUsuario(state, sesionActual(state, req));
