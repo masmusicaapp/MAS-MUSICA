@@ -4154,6 +4154,44 @@ body.modo-control label:has(> #pd-instrumentos) { display: none !important; }
   text-align: right;
 }
 
+.chat-global-pie {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.chat-global-msg.mio .chat-global-pie {
+  justify-content: flex-end;
+}
+
+.chat-global-pie .chat-global-fecha {
+  margin-top: 0;
+}
+
+.chat-global-borrar {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--muted);
+  opacity: .5;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  line-height: 0;
+  transition: opacity .15s, color .15s;
+}
+
+.chat-global-borrar:hover {
+  opacity: 1;
+  color: #ef4444;
+}
+
+.chat-global-borrar svg {
+  width: 13px;
+  height: 13px;
+}
+
 .chat-global-form {
   display: flex;
   gap: 8px;
