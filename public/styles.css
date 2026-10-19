@@ -5424,9 +5424,9 @@ main#view-comunidad:has(.suscripcion-wrap) > .panel {
 /* ===== Reorganización (v3): opciones de salas, secciones de la sala y pie de Ajustes ===== */
 .rooms-toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 14px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
 .sala-sec { border: 1px solid var(--line); border-radius: 12px; background: var(--panel2); margin: 0 0 10px; overflow: hidden; }
-.sala-sec > summary { cursor: pointer; list-style: none; padding: 12px 14px; font-weight: 700; color: var(--text); display: flex; align-items: center; justify-content: space-between; gap: 8px; user-select: none; }
+.sala-sec > summary { cursor: pointer; list-style: none; padding: 12px 14px; font-weight: 700; color: var(--text); display: flex; align-items: center; justify-content: flex-start; gap: 8px; user-select: none; }
 .sala-sec > summary::-webkit-details-marker { display: none; }
-.sala-sec > summary::after { content: '▾'; color: var(--muted); transition: transform .2s; }
+.sala-sec > summary .mapa-ico { width: 18px; height: 18px; color: var(--muted); flex: 0 0 auto; }
 .sala-sec[open] > summary::after { transform: rotate(180deg); }
 .sala-sec > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: 12px; }
 .sala-sec-body { padding: 4px 14px 14px; }
