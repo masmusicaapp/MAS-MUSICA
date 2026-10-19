@@ -2579,7 +2579,7 @@ async function handleApi(req, res, url, parts) {
       return sendJson(res, 201, { ok: true, mensaje: { id: m.id, tipo: m.tipo, texto: m.texto, media: m.media, meta: m.meta, fecha: m.fecha } });
     }
 
-    /* Un músico se anota ("Me interesa") en una invitación de sala del chat global */
+    /* Un músico se anota o se desanota de una invitación de sala del chat global */
     if (method === 'POST' && url.pathname === '/api/comunidad/chat-global/interes') {
       if (!tieneAccesoChat(state, u.id)) {
         return sendJson(res, 403, { error: 'Necesitás una suscripción al Chat Global', requiereSuscripcion: true, planes: CHAT_PLAN_CONFIG });
@@ -2588,10 +2588,18 @@ async function handleApi(req, res, url, parts) {
       const m = (state.chatGlobal || []).find(x => x.id === idMsg && x.tipo === 'invitacion');
       if (!m) return sendJson(res, 404, { error: 'Invitación no encontrada' });
       m.interesados = m.interesados || [];
-      if (!m.interesados.includes(u.id)) {
-        m.interesados.push(u.id);
+      /* Si la reserva tentativa ya está armada, hay que mantener al día su lista de invitados */
+      const tentativa = m.reservaId ? state.reservations.find(x => x.id === m.reservaId && x.estado === 'tentativa') : null;
+      if (tentativa && !Array.isArray(tentativa.invitados)) tentativa.invitados = [];
+      if (m.interesados.includes(u.id)) {
+        m.interesados = m.interesados.filter(id => id !== u.id);
+        if (tentativa && tentativa.userId !== u.id) tentativa.invitados = tentativa.invitados.filter(id => id !== u.id);
         persist(state);
+        return sendJson(res, 200, { ok: true, interesados: m.interesados.length, interesado: false });
       }
+      m.interesados.push(u.id);
+      if (tentativa && tentativa.userId !== u.id && !tentativa.invitados.includes(u.id)) tentativa.invitados.push(u.id);
+      persist(state);
       return sendJson(res, 200, { ok: true, interesados: m.interesados.length, interesado: true });
     }
 
