@@ -2579,6 +2579,26 @@ async function handleApi(req, res, url, parts) {
       return sendJson(res, 201, { ok: true, mensaje: { id: m.id, tipo: m.tipo, texto: m.texto, media: m.media, meta: m.meta, fecha: m.fecha } });
     }
 
+    /* Un músico elimina un mensaje propio del chat global */
+    if (method === 'POST' && url.pathname === '/api/comunidad/chat-global/borrar') {
+      if (!tieneAccesoChat(state, u.id)) {
+        return sendJson(res, 403, { error: 'Necesitás una suscripción al Chat Global', requiereSuscripcion: true, planes: CHAT_PLAN_CONFIG });
+      }
+      const m = (state.chatGlobal || []).find(x => x.id === String(body.mensajeId || ''));
+      if (!m) return sendJson(res, 404, { error: 'El mensaje ya no existe' });
+      if (m.userId !== u.id) return sendJson(res, 403, { error: 'Solo podés eliminar tus propios mensajes' });
+      /* Una invitación con reserva en curso no se puede borrar: primero hay que desistir */
+      const resv = m.reservaId ? state.reservations.find(x => x.id === m.reservaId) : null;
+      if (resv && (resv.estado === 'tentativa' || resv.estado === 'confirmada')) {
+        return sendJson(res, 409, { error: 'Esta invitación tiene una reserva en curso. Desistí de la reserva antes de eliminarla.' });
+      }
+      /* Si era una foto o un video, se borra también el archivo del disco */
+      if ((m.tipo === 'imagen' || m.tipo === 'video') && m.media) borrarEnAssets(m.media, 'comunidad');
+      state.chatGlobal = (state.chatGlobal || []).filter(x => x.id !== m.id);
+      persist(state);
+      return sendJson(res, 200, { ok: true });
+    }
+
     /* Un músico se anota o se desanota de una invitación de sala del chat global */
     if (method === 'POST' && url.pathname === '/api/comunidad/chat-global/interes') {
       if (!tieneAccesoChat(state, u.id)) {
