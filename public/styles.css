@@ -5550,6 +5550,11 @@ main#view-comunidad:has(.suscripcion-wrap) > .panel {
 .ci-estado.no { background: rgba(239, 68, 68, .16); color: #ef4444; }
 .ci-confirmar { background: var(--panel); color: var(--accent2); border-color: var(--accent2); }
 .ci-desistir { background: transparent; color: #ef4444; border-color: rgba(239, 68, 68, .55); }
+.ci-mapa {
+  background: transparent; color: var(--text); border-color: var(--line);
+  display: inline-flex; align-items: center; gap: 6px; font-weight: 500;
+}
+.ci-mapa svg { width: 14px; height: 14px; color: var(--accent2); flex: none; }
 .badge-warn { background: rgba(234, 179, 8, .16); color: #eab308; }
 [data-inv-volver] { margin-top: 2px; }
 
