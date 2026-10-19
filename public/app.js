@@ -2528,12 +2528,15 @@ function renderCuerpoChat(m) {
     const botonConf = (!m.reservaId && m.mio && meta.date)
       ? '<button type="button" class="ci-btn ci-confirmar" data-confirmar-invitacion="' + esc(m.id) + '">Armar reserva tentativa</button>'
       : '';
+    const botonDesistir = (m.reservaId && m.reservaEstado === 'tentativa' && m.mio)
+      ? '<button type="button" class="ci-btn ci-desistir" data-desistir-invitacion="' + esc(m.id) + '">Desistir</button>'
+      : '';
     return '<div class="chat-invitacion">' +
       '<div class="ci-encabezado">' + icono + ' Invitación a sala</div>' +
       '<div class="ci-nombre">' + esc(meta.nombre || 'Sala') + '</div>' +
       (dir ? '<div class="ci-dir">' + esc(dir) + '</div>' : '') +
       (cuando ? '<div class="ci-cuando">' + iconoCal + ' ' + esc(cuando) + '</div>' : '') +
-      boton + botonConf + estado +
+      boton + botonConf + botonDesistir + estado +
       '<span class="ci-count">' + (n ? n + (n === 1 ? ' músico anotado' : ' músicos anotados') : 'Sé el primero en anotarte') + '</span>' +
       '</div>';
   }
@@ -2657,6 +2660,28 @@ async function cargarChatGlobal() {
         } catch (err) {
           toast(err.message || 'No se pudo armar la reserva', 'error');
           conf.disabled = false;
+        }
+        return;
+      }
+      const des = e.target.closest('[data-desistir-invitacion]');
+      if (des) {
+        if (des.disabled) return;
+        des.disabled = true;
+        try {
+          const ok = await confirmarAccion(
+            '¿Desistir de esta reserva? Se avisa a la sala y a los músicos anotados.',
+            '¿Desistir de la reserva?',
+            'Sí, desistir',
+            'No, seguir',
+            'peligro'
+          );
+          if (!ok) { des.disabled = false; return; }
+          await api('/api/comunidad/chat-global/invitacion/desistir', { method: 'POST', body: { mensajeId: des.dataset.desistirInvitacion } });
+          toast('Desististe de la reserva. Podés armar otra cuando quieras.', 'ok');
+          await recargarChat();
+        } catch (err) {
+          toast(err.message || 'No se pudo desistir', 'error');
+          des.disabled = false;
         }
         return;
       }
