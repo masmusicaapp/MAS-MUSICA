@@ -114,6 +114,30 @@ const guardarFotoSala = (id, d, s) => guardarImagen(id, d, s, 'salas');
 const guardarFotoUsuario = (id, d, s) => guardarImagen(id, d, s, 'usuarios');
 const guardarFotoComunidad = (id, d, s) => guardarImagen(id, d, s, 'comunidad');
 
+/* Los videos cortos del chat llegan como data URL (mp4/webm) y se guardan como archivo. */
+function guardarVideo(id, dataUrl, sufijo, subcarpeta) {
+  const s = String(dataUrl || '').trim();
+  const m = /^data:video\/(mp4|webm|quicktime|x-m4v);base64,([A-Za-z0-9+/=]+)$/i.exec(s);
+  if (!m) return null; /* no es data URL de video */
+  const tipo = m[1].toLowerCase();
+  const buf = Buffer.from(m[2], 'base64');
+  if (!buf.length || buf.length > 15 * 1024 * 1024) return null;
+  /* Magic bytes: mp4/mov/m4v llevan "ftyp" en el offset 4; webm arranca con EBML 1A 45 DF A3. */
+  const esMp4 = buf.slice(4, 8).toString('ascii') === 'ftyp';
+  const esWebm = buf[0] === 0x1a && buf[1] === 0x45 && buf[2] === 0xdf && buf[3] === 0xa3;
+  const esVideo = ((tipo === 'mp4' || tipo === 'quicktime' || tipo === 'x-m4v') && esMp4) || (tipo === 'webm' && esWebm);
+  if (!esVideo) return null;
+  const ext = tipo === 'webm' ? 'webm' : 'mp4';
+  const idLimpio = String(id || 'x').replace(/[^a-zA-Z0-9._-]/g, '').slice(0, 80);
+  const sufLimpio = String(sufijo || '').replace(/[^a-zA-Z0-9._-]/g, '').slice(0, 20);
+  fs.mkdirSync(path.join(PUBLIC_DIR, 'assets', subcarpeta), { recursive: true });
+  const sello = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const rel = `assets/${subcarpeta}/${idLimpio}${sufLimpio}-${sello}.${ext}`;
+  fs.writeFileSync(path.join(PUBLIC_DIR, rel), buf);
+  return rel;
+}
+const guardarVideoComunidad = (id, d, s) => guardarVideo(id, d, s, 'comunidad');
+
 function borrarEnAssets(fotos, subcarpeta) {
   const base = path.join(PUBLIC_DIR, 'assets', subcarpeta);
   const prefijo = 'assets/' + subcarpeta + '/';
@@ -1134,7 +1158,7 @@ function readBody(req) {
     req.on('data', c => {
       if (cerrado) return;
       data += c;
-      if (data.length > 8e6) { req.destroy(); terminar(); } // las fotos llegan como data URL
+      if (data.length > 30e6) { req.destroy(); terminar(); } // fotos y videos cortos llegan como data URL
     });
     req.on('end', () => {
       if (!cerrado) {
@@ -1159,6 +1183,10 @@ const MIME = {
   '.gif': 'image/gif',
   '.svg': 'image/svg+xml',
   '.ico': 'image/x-icon',
+  '.mp4': 'video/mp4',
+  '.m4v': 'video/mp4',
+  '.webm': 'video/webm',
+  '.mov': 'video/quicktime',
 };
 
 function serveStatic(req, res, url) {
@@ -2415,6 +2443,9 @@ async function handleApi(req, res, url, parts) {
             tipo: m.tipo || 'texto',
             texto: m.texto || '',
             media: m.media || '',
+            meta: m.meta || null,
+            interesados: (m.interesados || []).length,
+            interesado: (m.interesados || []).includes(u.id),
             fecha: m.fecha,
             mio: m.userId === u.id,
             autor: autor ? { nombre: autor.nombre, usuario: autor.usuario, foto: autor.foto || '' } : { nombre: 'Usuario', usuario: '??', foto: '' },
@@ -2428,26 +2459,52 @@ async function handleApi(req, res, url, parts) {
       if (!tieneAccesoChat(state, u.id)) {
         return sendJson(res, 403, { error: 'Necesitás una suscripción al Chat Global', requiereSuscripcion: true, planes: CHAT_PLAN_CONFIG });
       }
-      const tipo = ['texto', 'imagen', 'sticker'].includes(body.tipo) ? body.tipo : 'texto';
+      const tipo = ['texto', 'imagen', 'sticker', 'video', 'invitacion'].includes(body.tipo) ? body.tipo : 'texto';
       let texto = String(body.texto || '').trim().slice(0, 600);
       let media = '';
+      let meta = null;
       if (tipo === 'imagen') {
         const ruta = guardarFotoComunidad(u.id, body.media, '-img');
         if (!ruta) return sendJson(res, 400, { error: 'No se pudo guardar la imagen' });
+        media = ruta;
+      } else if (tipo === 'video') {
+        const ruta = guardarVideoComunidad(u.id, body.media, '-vid');
+        if (!ruta) return sendJson(res, 400, { error: 'No se pudo guardar el video (usá un clip corto de hasta 15 s)' });
         media = ruta;
       } else if (tipo === 'sticker') {
         const sid = String(body.media || '').slice(0, 12);
         if (!/^s\d{1,2}$/.test(sid)) return sendJson(res, 400, { error: 'Sticker inválido' });
         media = sid;
+      } else if (tipo === 'invitacion') {
+        const sala = (state.rooms || []).find(r => r.id === String(body.media || ''));
+        if (!sala) return sendJson(res, 400, { error: 'Elegí una sala para invitar' });
+        media = sala.id;
+        meta = { nombre: sala.name, direccion: sala.direccion || '', localidad: sala.localidad || '' };
       }
       if (tipo === 'texto' && !texto) return sendJson(res, 400, { error: 'Escribí un mensaje' });
       state.chatGlobal = state.chatGlobal || [];
-      const m = { id: uid(), userId: u.id, tipo, texto, media, fecha: Date.now() };
+      const m = { id: uid(), userId: u.id, tipo, texto, media, meta, interesados: [], fecha: Date.now() };
       state.chatGlobal.push(m);
       /* Mantener solo los últimos 500 mensajes */
       if (state.chatGlobal.length > 500) state.chatGlobal = state.chatGlobal.slice(-500);
       persist(state);
-      return sendJson(res, 201, { ok: true, mensaje: { id: m.id, tipo: m.tipo, texto: m.texto, media: m.media, fecha: m.fecha } });
+      return sendJson(res, 201, { ok: true, mensaje: { id: m.id, tipo: m.tipo, texto: m.texto, media: m.media, meta: m.meta, fecha: m.fecha } });
+    }
+
+    /* Un músico se anota ("Me interesa") en una invitación de sala del chat global */
+    if (method === 'POST' && url.pathname === '/api/comunidad/chat-global/interes') {
+      if (!tieneAccesoChat(state, u.id)) {
+        return sendJson(res, 403, { error: 'Necesitás una suscripción al Chat Global', requiereSuscripcion: true, planes: CHAT_PLAN_CONFIG });
+      }
+      const idMsg = String(body.mensajeId || '');
+      const m = (state.chatGlobal || []).find(x => x.id === idMsg && x.tipo === 'invitacion');
+      if (!m) return sendJson(res, 404, { error: 'Invitación no encontrada' });
+      m.interesados = m.interesados || [];
+      if (!m.interesados.includes(u.id)) {
+        m.interesados.push(u.id);
+        persist(state);
+      }
+      return sendJson(res, 200, { ok: true, interesados: m.interesados.length, interesado: true });
     }
 
     return sendJson(res, 404, { error: 'Endpoint de comunidad no encontrado' });
