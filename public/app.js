@@ -58,6 +58,31 @@ function comprimirImagen(file, maxLado = 420) {
 }
 const ahoraMin = () => { const d = new Date(); return d.getHours() * 60 + d.getMinutes(); };
 
+/* Lee un archivo (foto/video) como data URL */
+function leerDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onerror = () => reject(new Error('No se pudo leer el archivo'));
+    r.onload = () => resolve(r.result);
+    r.readAsDataURL(file);
+  });
+}
+
+/* Duración de un video en segundos (0 si no se puede determinar) */
+function duracionVideo(file) {
+  return new Promise(resolve => {
+    const url = URL.createObjectURL(file);
+    const v = document.createElement('video');
+    v.preload = 'metadata';
+    let listo = false;
+    const fin = d => { if (listo) return; listo = true; try { URL.revokeObjectURL(url); } catch (e) {} resolve(d); };
+    v.onloadedmetadata = () => fin(v.duration || 0);
+    v.onerror = () => fin(0);
+    setTimeout(() => fin(0), 4000);
+    v.src = url;
+  });
+}
+
 /* ================= Capa de API ================= */
 let state = null;              // estado compartido (viene del servidor)
 let adminPin = '';             // PIN de sesión (no se guarda ni se descarga del servidor)
@@ -2397,6 +2422,29 @@ const CHAT_STICKERS = [
 let chatGlobalTimer = null;
 let chatGlobalUltimoFecha = 0;
 
+/* Dibuja el cuerpo de un mensaje del chat según su tipo */
+function renderCuerpoChat(m) {
+  if (m.tipo === 'imagen') return '<img class="chat-msg-img" src="' + esc(m.media) + '" alt="foto" loading="lazy">';
+  if (m.tipo === 'video') return '<video class="chat-msg-video" src="' + esc(m.media) + '" controls preload="metadata"></video>';
+  if (m.tipo === 'sticker') {
+    const st = CHAT_STICKERS.find(function (s) { return s.id === m.media; });
+    return '<span class="chat-msg-sticker">' + (st ? st.svg : '') + '</span>';
+  }
+  if (m.tipo === 'invitacion') {
+    const meta = m.meta || {};
+    const dir = [meta.direccion, meta.localidad].filter(Boolean).join(' · ');
+    const n = Number(m.interesados || 0);
+    return '<div class="chat-invitacion">' +
+      '<div class="ci-encabezado"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-6-5.3-6-10a6 6 0 0 1 12 0c0 4.7-6 10-6 10z"/><circle cx="12" cy="11" r="2.2"/></svg> Invitación a sala</div>' +
+      '<div class="ci-nombre">' + esc(meta.nombre || 'Sala') + '</div>' +
+      (dir ? '<div class="ci-dir">' + esc(dir) + '</div>' : '') +
+      '<button type="button" class="ci-btn' + (m.interesado ? ' on' : '') + '" data-invitacion="' + esc(m.id) + '">' + (m.interesado ? '✓ Anotado' : 'Me interesa') + '</button>' +
+      '<span class="ci-count">' + (n ? n + (n === 1 ? ' músico anotado' : ' músicos anotados') : 'Sé el primero en anotarte') + '</span>' +
+      '</div>';
+  }
+  return m.texto ? '<p class="chat-global-texto">' + esc(m.texto) + '</p>' : '';
+}
+
 /* Cargar el chat global */
 async function cargarChatGlobal() {
   const host = $('#comu-chats');
@@ -2409,14 +2457,21 @@ async function cargarChatGlobal() {
         <button class="chat-global-volver" id="chat-global-volver" type="button" title="Volver" aria-label="Volver a Inicio">←</button>
       </div>
       <div class="chat-global-hilo" id="chat-global-hilo"></div>
+      <div class="chat-sala-picker" id="chat-sala-picker" hidden></div>
       <div class="chat-sticker-picker" id="chat-sticker-picker" hidden></div>
+      <div class="chat-adj-panel" id="chat-adj-panel" hidden>
+        <button class="chat-adj-op" id="chat-op-sticker" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><circle cx="9" cy="9.5" r="1.2" fill="currentColor" stroke="none"/><circle cx="15" cy="9.5" r="1.2" fill="currentColor" stroke="none"/></svg><span>Sticker</span></button>
+        <button class="chat-adj-op" id="chat-op-foto" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="12" cy="12" r="3.5"/><circle cx="17.5" cy="8.5" r="1" fill="currentColor" stroke="none"/></svg><span>Foto</span></button>
+        <button class="chat-adj-op" id="chat-op-video" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-3v10l-6-3z"/></svg><span>Video</span></button>
+        <button class="chat-adj-op" id="chat-op-invitacion" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-6-5.3-6-10a6 6 0 0 1 12 0c0 4.7-6 10-6 10z"/><circle cx="12" cy="11" r="2.2"/></svg><span>Invitación</span></button>
+      </div>
       <div class="chat-global-form">
-        <button class="chat-adj-btn" id="chat-sticker-btn" type="button" title="Stickers" aria-label="Stickers"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><circle cx="9" cy="9.5" r="1.2" fill="currentColor" stroke="none"/><circle cx="15" cy="9.5" r="1.2" fill="currentColor" stroke="none"/></svg></button>
-        <button class="chat-adj-btn" id="chat-foto-btn" type="button" title="Foto" aria-label="Foto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="12" cy="12" r="3.5"/><circle cx="17.5" cy="8.5" r="1" fill="currentColor" stroke="none"/></svg></button>
-        <input type="file" id="chat-foto-input" accept="image/*" hidden>
+        <button class="chat-adj-btn" id="chat-adj-btn" type="button" title="Adjuntar" aria-label="Adjuntar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
         <input type="text" id="chat-global-input" placeholder="Escribí un mensaje..." maxlength="600">
         <button class="btn btn-primary btn-sm" id="chat-global-enviar">Enviar</button>
-      </div>`;
+      </div>
+      <input type="file" id="chat-foto-input" accept="image/*" hidden>
+      <input type="file" id="chat-video-input" accept="video/*" hidden>`;
 
   /* Se ocultan las 5 opciones de abajo: mientras se chatea el chat ocupa toda la pantalla */
   document.body.classList.add('chat-abierto');
@@ -2445,28 +2500,108 @@ async function cargarChatGlobal() {
   };
 
   if (btnEnviar) btnEnviar.onclick = enviar;
+
+  const panel = $('#chat-adj-panel');
+  const adjBtn = $('#chat-adj-btn');
   const picker = $('#chat-sticker-picker');
-  const btnSticker = $('#chat-sticker-btn');
-  const btnFoto = $('#chat-foto-btn');
+  const salaPicker = $('#chat-sala-picker');
   const fotoInput = $('#chat-foto-input');
+  const videoInput = $('#chat-video-input');
+  const hilo = $('#chat-global-hilo');
+
+  const cerrarPaneles = () => {
+    if (panel) panel.hidden = true;
+    if (picker) picker.hidden = true;
+    if (salaPicker) salaPicker.hidden = true;
+  };
+
   if (picker && !picker._ok) {
     picker._ok = true;
-    picker.innerHTML = CHAT_STICKERS.map(s => '<button type="button" class="chat-sticker-item" data-sticker="' + s.id + '">' + s.svg + '</button>').join('');
+    picker.innerHTML = CHAT_STICKERS.map(s => '<button type="button" class="chat-sticker-item" data-sticker="' + s.id + '" aria-label="sticker">' + s.svg + '</button>').join('');
     picker.addEventListener('click', e => {
       const b = e.target.closest('[data-sticker]');
       if (!b) return;
       enviarSticker(b.dataset.sticker);
     });
   }
-  if (btnSticker) btnSticker.onclick = () => { if (picker) picker.hidden = !picker.hidden; };
-  if (btnFoto && fotoInput) {
-    btnFoto.onclick = () => fotoInput.click();
+  if (salaPicker && !salaPicker._ok) {
+    salaPicker._ok = true;
+    salaPicker.addEventListener('click', e => {
+      const b = e.target.closest('[data-sala]');
+      if (!b) return;
+      enviarInvitacion(b.dataset.sala);
+    });
+  }
+  if (hilo && !hilo._ok) {
+    hilo._ok = true;
+    hilo.addEventListener('click', async e => {
+      const b = e.target.closest('[data-invitacion]');
+      if (!b || b.disabled) return;
+      b.disabled = true;
+      try {
+        const r = await api('/api/comunidad/chat-global/interes', { method: 'POST', body: { mensajeId: b.dataset.invitacion } });
+        b.classList.add('on');
+        b.textContent = '✓ Anotado';
+        const card = b.closest('.chat-invitacion');
+        const cnt = card && card.querySelector('.ci-count');
+        const n = r.interesados || 1;
+        if (cnt) cnt.textContent = n + (n === 1 ? ' músico anotado' : ' músicos anotados');
+        toast('Te anotaste en la invitación', 'ok');
+      } catch (err) {
+        toast(err.message || 'No se pudo anotar', 'error');
+        b.disabled = false;
+      }
+    });
+  }
+  if (adjBtn) adjBtn.onclick = () => {
+    const abrir = panel && panel.hidden;
+    cerrarPaneles();
+    if (panel && abrir) panel.hidden = false;
+  };
+  const opSticker = $('#chat-op-sticker');
+  if (opSticker) opSticker.onclick = () => { if (panel) panel.hidden = true; if (salaPicker) salaPicker.hidden = true; if (picker) picker.hidden = !picker.hidden; };
+  const opFoto = $('#chat-op-foto');
+  if (opFoto && fotoInput) opFoto.onclick = () => { cerrarPaneles(); fotoInput.click(); };
+  const opVideo = $('#chat-op-video');
+  if (opVideo && videoInput) opVideo.onclick = () => { cerrarPaneles(); videoInput.click(); };
+  const opInvitacion = $('#chat-op-invitacion');
+  if (opInvitacion) opInvitacion.onclick = () => { if (panel) panel.hidden = true; if (picker) picker.hidden = true; abrirSalaPicker(); };
+
+  if (fotoInput) {
     fotoInput.onchange = () => {
       const f = fotoInput.files && fotoInput.files[0];
       fotoInput.value = '';
       if (f) enviarFoto(f);
     };
   }
+  if (videoInput) {
+    videoInput.onchange = () => {
+      const f = videoInput.files && videoInput.files[0];
+      videoInput.value = '';
+      if (f) enviarVideo(f);
+    };
+  }
+
+  function abrirSalaPicker() {
+    if (!salaPicker) return;
+    const salas = salasPublicas();
+    if (miUbicacion) {
+      salas.sort((a, b) => distKm(miUbicacion[0], miUbicacion[1], Number(a.lat), Number(a.lng)) - distKm(miUbicacion[0], miUbicacion[1], Number(b.lat), Number(b.lng)));
+    }
+    if (!salas.length) {
+      salaPicker.innerHTML = '<p class="muted small" style="padding:10px">No hay salas para invitar.</p>';
+      salaPicker.hidden = false;
+      return;
+    }
+    salaPicker.innerHTML = '<div class="chat-sala-titulo">Invitá a una sala</div><div class="chat-sala-lista">' +
+      salas.map(s => {
+        const dir = [s.direccion, s.localidad].filter(Boolean).join(' · ');
+        const dist = miUbicacion ? ' · a ' + distKm(miUbicacion[0], miUbicacion[1], Number(s.lat), Number(s.lng)).toFixed(1) + ' km' : '';
+        return '<button type="button" class="chat-sala-item" data-sala="' + esc(s.id) + '"><span class="cs-nombre">' + esc(s.name || 'Sala') + '</span><span class="cs-dir">' + esc(dir + dist) + '</span></button>';
+      }).join('') + '</div>';
+    salaPicker.hidden = false;
+  }
+
   if (input) {
     input.onkeydown = e => {
       if (e.key === 'Enter' && !e.shiftKey) {
@@ -2488,9 +2623,30 @@ async function cargarChatGlobal() {
   async function enviarSticker(id) {
     try {
       await api('/api/comunidad/chat-global', { method: 'POST', body: { tipo: 'sticker', media: id } });
-      if (picker) picker.hidden = true;
+      cerrarPaneles();
       await cargarMensajesGlobal();
     } catch (e) { toast(e.message || 'No se pudo enviar el sticker', 'error'); }
+  }
+  async function enviarVideo(file) {
+    if (!file || !/^video\//.test(file.type)) { toast('Ese archivo no es un video', 'error'); return; }
+    if (file.size > 15 * 1024 * 1024) { toast('El video es muy pesado (máximo 15 MB)', 'error'); return; }
+    const dur = await duracionVideo(file);
+    if (Number.isFinite(dur) && dur > 16) { toast('El video puede durar hasta 15 segundos', 'error'); return; }
+    try {
+      const dataUrl = await leerDataUrl(file);
+      await api('/api/comunidad/chat-global', { method: 'POST', body: { tipo: 'video', media: dataUrl } });
+      if (input) input.value = '';
+      await cargarMensajesGlobal();
+    } catch (e) { toast(e.message || 'No se pudo enviar el video', 'error'); }
+  }
+  async function enviarInvitacion(salaId) {
+    const nota = input ? input.value.trim() : '';
+    try {
+      await api('/api/comunidad/chat-global', { method: 'POST', body: { tipo: 'invitacion', media: salaId, texto: nota } });
+      if (input) input.value = '';
+      cerrarPaneles();
+      await cargarMensajesGlobal();
+    } catch (e) { toast(e.message || 'No se pudo enviar la invitación', 'error'); }
   }
   // Polling para nuevos mensajes
   clearInterval(chatGlobalTimer);
@@ -2525,11 +2681,7 @@ async function cargarMensajesGlobal(silent) {
           ${avatarHtml}
           <div class="chat-global-contenido">
             ${m.mio ? '' : `<span class="chat-global-autor">${esc(m.autor?.nombre || 'Músico')}</span>`}
-            ${m.tipo === 'imagen'
-              ? '<img class="chat-msg-img" src="' + esc(m.media) + '" alt="foto" loading="lazy">'
-              : (m.tipo === 'sticker'
-                  ? '<span class="chat-msg-sticker">' + (CHAT_STICKERS.find(function (s) { return s.id === m.media; }) || { svg: '' }).svg + '</span>'
-                  : '<p class="chat-global-texto">' + esc(m.texto) + '</p>')}
+            ${renderCuerpoChat(m)}
             ${m.tipo !== 'texto' && m.texto ? '<p class="chat-global-texto">' + esc(m.texto) + '</p>' : ''}
             <span class="chat-global-fecha">${fechaChat(m.fecha)}</span>
           </div>`;
