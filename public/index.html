@@ -51,7 +51,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@500;600;700&family=Barlow+Condensed:ital,wght@1,900&display=swap">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
       integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
-<link rel="stylesheet" href="styles.css?v=97">
+<link rel="stylesheet" href="styles.css?v=98">
 </head>
 <body>
 
@@ -674,8 +674,18 @@
             <option value="48">Solo hasta 48 horas antes</option>
           </select>
         </label>
+        <label>Recordatorio antes del ensayo
+          <select id="set-recordatorio">
+            <option value="0">No mandar recordatorio</option>
+            <option value="2">2 horas antes</option>
+            <option value="6">6 horas antes</option>
+            <option value="12">12 horas antes</option>
+            <option value="24">24 horas antes (un día)</option>
+            <option value="48">48 horas antes (dos días)</option>
+          </select>
+        </label>
       </div>
-      <p class="muted small">Si la regla está activa, antes del límite el usuario tiene que escribirle a la sala.</p>
+      <p class="muted small">El recordatorio llega al músico que reservó (y a quienes se anotaron) por aviso en la app y por mail, una sola vez por reserva.</p>
 
       <h3 class="sub">🗺 Mapa con Google Maps</h3>
       <label>Clave de Google Maps (API key)
@@ -991,7 +1001,7 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-<script src="app.js?v=97"></script>
+<script src="app.js?v=98"></script>
 <script>
   /* Fallback: si a los 1.5s la app no arrancó (init lento o trabado), forzar el arranque.
      Espera a que state esté cargado: llamar a arrancarApp con state en null tiraba
