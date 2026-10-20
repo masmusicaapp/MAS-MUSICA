@@ -703,7 +703,7 @@ function sesionActual(state, req) {
 }
 
 /* ================= Anti fuerza bruta ================= */
-const INTENTOS_LIMITE = 25;              /* intentos fallidos que se permiten */
+const INTENTOS_LIMITE = 8;               /* intentos fallidos que se permiten */
 const INTENTOS_VENTANA = 15 * 60 * 1000; /* en una ventana de 15 minutos */
 const intentosPorIP = new Map();
 
