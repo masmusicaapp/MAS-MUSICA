@@ -186,11 +186,9 @@ const PLANES_CONFIG = {
   sala_extra:   { id: 'sala_extra',   nombre: 'Sala Adicional',    precioMensual: 5000, moneda: 'ARS' }
 };
 
-/* Suscripción al chat global para músicos */
+/* Suscripción al chat global para músicos: solo plan mensual */
 const CHAT_PLAN_CONFIG = {
-  mensual: { id: 'mensual', nombre: 'Chat Global - Mensual', precioMensual: 2000, moneda: 'ARS', duracionDias: 30 },
-  trimestral: { id: 'trimestral', nombre: 'Chat Global - Trimestral', precioMensual: 5000, moneda: 'ARS', duracionDias: 90 },
-  anual: { id: 'anual', nombre: 'Chat Global - Anual', precioMensual: 15000, moneda: 'ARS', duracionDias: 365 }
+  mensual: { id: 'mensual', nombre: 'Chat Global - Mensual', precioMensual: 5000, moneda: 'ARS', duracionDias: 30 }
 };
 
 /* Versión vigente de los Términos y condiciones: se guarda en la cuenta al registrarse */
