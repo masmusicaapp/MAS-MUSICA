@@ -48,6 +48,8 @@
  *   POST /api/reservations/:id/cancel   cancelar
  *   POST /api/bands                     registrar banda
  *   PUT  /api/bands/:id                 editar banda
+ *   POST /api/resenas                   { roomId, estrellas, texto } escribir/actualizar mi reseña (quien reservó en la sala)
+ *   DELETE /api/resenas/:id             borrar mi reseña
  *
  * ADMINISTRACIÓN GENERAL (SUPER_ADMIN o PIN)
  *   PUT/DELETE /api/rooms[/:id]         salas
@@ -267,7 +269,7 @@ function getSuscripcionUsuario(state, userId) {
   };
 }
 
-const REGlas_DEFAULT = { cancelacionHoras: 0, turnos: [30, 60, 90, 120], avisoHoras: 24, senaPorcentaje: 30, comisionPorcentaje: 8, minutosPago: 15 };
+const REGlas_DEFAULT = { cancelacionHoras: 0, turnos: [30, 60, 90, 120], avisoHoras: 24, recordatorioHoras: 24, senaPorcentaje: 30, comisionPorcentaje: 8, minutosPago: 15 };
 
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 const toMin = t => { const [h, m] = String(t).split(':').map(Number); return h * 60 + (m || 0); };
@@ -367,6 +369,7 @@ function defaultState() {
     notificaciones: [],
     ayuda: [],           /* pedidos de ayuda de los usuarios (olvidé contraseña / cuenta bloqueada) */
     mensajes: [],
+    resenas: [],         /* reseñas de los músicos sobre las salas donde reservaron */
     chatGlobal: [],
     chatSubscriptions: [],
     promociones: demoPromociones(),
@@ -430,6 +433,12 @@ function loadState() {
       if (!Array.isArray(data.notificaciones)) { data.notificaciones = []; cambiado = true; }
       if (!Array.isArray(data.promociones)) { data.promociones = demoPromociones(); cambiado = true; }
       if (!Array.isArray(data.mensajes)) { data.mensajes = []; cambiado = true; }
+      if (!Array.isArray(data.resenas)) { data.resenas = []; cambiado = true; }
+      /* Plazo del recordatorio antes del ensayo (0 = apagado) */
+      if (data.settings.reglas.recordatorioHoras === undefined) {
+        data.settings.reglas.recordatorioHoras = REGlas_DEFAULT.recordatorioHoras;
+        cambiado = true;
+      }
       (data.users || []).forEach(u => { if (!Array.isArray(u.following)) { u.following = []; cambiado = true; } });
       /* Avisos de cuentas que ya no existen (se limpian al borrar una cuenta) */
       const avisosPrevios = (data.notificaciones || []).length;
@@ -512,6 +521,8 @@ function publicState(state, req) {
 
   return {
     ...resto,
+    rooms: (state.rooms || []).map(r => Object.assign({}, r, { puntaje: puntajeSala(state, r.id) })),
+    resenas: (state.resenas || []).slice(-300).map(resenaPublica),
     reservations,
     settings: {
       currency: state.settings.currency,
@@ -1109,7 +1120,98 @@ function expirarPendientes(state) {
     }
   });
   if (cambio) persist(state);
+  /* Aprovechamos cada pedido para revisar también los recordatorios: si toca
+     mandar uno, sale aunque el temporizador todavía no haya pasado. */
+  enviarRecordatorios(state);
 }
+
+/* ================= Recordatorio antes del ensayo ================= */
+
+/* Fecha y hora de una reserva ("2026-10-23" + "16:00") en milisegundos */
+const fechaHoraMs = (ds, hm) => {
+  const [y, m, d] = String(ds || '').split('-').map(Number);
+  const [hh, mm] = String(hm || '').split(':').map(Number);
+  if (!y || !m || !d || isNaN(hh) || isNaN(mm)) return 0;
+  return new Date(y, m - 1, d, hh, mm, 0, 0).getTime();
+};
+
+const mailRecordatorio = (state, r, room) => {
+  const [yy] = String(r.date).split('-');
+  const cuando = `${fmtFechaCorta(r.date)} de ${yy}`;
+  const sala = room ? room.name : 'la sala';
+  const dir = room && (room.direccion || room.localidad)
+    ? [room.direccion, room.localidad].filter(Boolean).join(', ')
+    : '';
+  return {
+    asunto: `Se acerca tu ensayo · ${sala} · ${cuando}`,
+    texto:
+      `Te recordamos tu ensayo en ${sala}.\n\n` +
+      `Día: ${cuando}\n` +
+      `Horario: ${r.start} a ${r.end}\n` +
+      `A nombre de: ${r.name}\n` +
+      (dir ? `Dirección: ${dir}\n` : '') +
+      `\nSi no lo vas a usar, cancelalo desde «Mis reservas» así liberás el horario.\n\n` +
+      `¡Buen ensayo!\nMás Música`,
+  };
+};
+
+/* Avisa al músico que reservó (y a quienes se anotaron) unas horas antes de
+   que empiece. Una sola vez por reserva: queda marcada con recordatorioUsuario.
+   Con recordatorioHoras en 0 está apagado. */
+function enviarRecordatorios(state) {
+  const horas = Number((state.settings.reglas || {}).recordatorioHoras);
+  if (!horas || horas <= 0) return false;
+  const ahora = Date.now();
+  const ventana = horas * 3600 * 1000;
+  let cambio = false;
+  (state.reservations || []).forEach(r => {
+    if (r.estado !== 'confirmada' || r.recordatorioUsuario) return;
+    const inicio = fechaHoraMs(r.date, r.start);
+    if (!inicio) return;
+    const falta = inicio - ahora;
+    if (falta <= 0 || falta > ventana) return;
+
+    r.recordatorioUsuario = ahora;
+    cambio = true;
+
+    const room = state.rooms.find(x => x.id === r.roomId);
+    const detalle = `${room ? room.name : 'Sala'} · ${fmtFechaCorta(r.date)} · ${r.start}–${r.end}`;
+    const cuantas = Math.max(1, Math.round(falta / 3600000));
+    const texto = `${detalle} · empieza en ~${cuantas} h. ¡Ojo con llegar tarde!`;
+
+    /* Aviso en la app: al que reservó y a los que se anotaron */
+    const ids = new Set([r.userId, ...(r.invitados || [])].filter(Boolean));
+    ids.forEach(id => avisar(state, id, 'Se acerca tu ensayo', texto, 'ok', { reservaId: r.id, roomId: r.roomId }));
+
+    /* Y por mail, si el músico tiene email cargado (nunca interrumpe si falla) */
+    const m = mailRecordatorio(state, r, room);
+    ids.forEach(id => {
+      const u = (state.users || []).find(x => x.id === id);
+      if (u) enviarMail(validarEmail(u.email), m.asunto, m.texto).catch(() => {});
+    });
+  });
+  if (cambio) persist(state);
+  return cambio;
+}
+
+/* ================= Reseñas de las salas ================= */
+
+/* Una reseña por cuenta y sala. La puede escribir quien reservó ahí. */
+const resenaPublica = x => ({
+  id: x.id,
+  roomId: x.roomId,
+  estrellas: Number(x.estrellas) || 0,
+  texto: String(x.texto || '').slice(0, 500),
+  usuario: String(x.usuario || '').slice(0, 24),
+  fecha: x.fecha || 0,
+});
+
+const puntajeSala = (state, roomId) => {
+  const lista = (state.resenas || []).filter(x => x.roomId === roomId);
+  if (!lista.length) return { promedio: 0, total: 0 };
+  const suma = lista.reduce((a, b) => a + (Number(b.estrellas) || 0), 0);
+  return { promedio: Math.round((suma / lista.length) * 10) / 10, total: lista.length };
+};
 
 function confirmarPorPago(state, r, pagoId) {
   r.estado = 'confirmada';
@@ -1880,6 +1982,53 @@ async function handleApi(req, res, url, parts) {
     }
   }
 
+  /* ======================= RESEÑAS DE SALAS ======================= */
+  if (P === 'resenas') {
+    const u = sesionActual(state, req);
+    const salaOk = id => (state.rooms || []).find(x => x.id === id && x.estado === 'aprobada');
+
+    /* Escribir o actualizar mi reseña (una por sala) */
+    if (method === 'POST' && url.pathname === '/api/resenas') {
+      if (!u) return sendJson(res, 401, { error: 'Iniciá sesión para dejar una reseña' });
+      const room = salaOk(String(body.roomId || '').trim());
+      if (!room) return sendJson(res, 404, { error: 'Sala no encontrada' });
+      /* Solo opina quien reservó ahí (las canceladas no cuentan) */
+      const reservo = (state.reservations || []).some(r => r.roomId === room.id && r.userId === u.id && r.estado !== 'cancelada');
+      if (!reservo) return sendJson(res, 403, { error: 'Solo podés reseñar salas donde reservaste' });
+      const estrellas = Math.round(Number(body.estrellas));
+      if (!(estrellas >= 1 && estrellas <= 5)) return sendJson(res, 400, { error: 'Elegí de 1 a 5 estrellas' });
+      /* Sin etiquetas: se quitan las completas y cualquier < o > suelto */
+      const texto = String(body.texto || '').replace(/<[^>]*>/g, '').replace(/[<>]/g, '').trim().slice(0, 500);
+
+      let resena = (state.resenas || []).find(x => x.roomId === room.id && x.userId === u.id);
+      if (resena) {
+        resena.estrellas = estrellas;
+        resena.texto = texto;
+        resena.fecha = Date.now();
+      } else {
+        resena = { id: uid(), roomId: room.id, userId: u.id, usuario: u.usuario, estrellas, texto, fecha: Date.now() };
+        state.resenas.push(resena);
+      }
+      persist(state);
+      return sendJson(res, 200, { ok: true, resena: resenaPublica(resena), puntaje: puntajeSala(state, room.id) });
+    }
+
+    /* Borrar una reseña: su autor (o la administración general) */
+    if (method === 'DELETE' && parts[2]) {
+      if (!u) return sendJson(res, 401, { error: 'Iniciá sesión' });
+      const i = (state.resenas || []).findIndex(x => x.id === parts[2]);
+      if (i < 0) return sendJson(res, 404, { error: 'La reseña ya no existe' });
+      const resena = state.resenas[i];
+      if (resena.userId !== u.id && u.rol !== 'SUPER_ADMIN') {
+        return sendJson(res, 403, { error: 'Solo el autor puede borrar su reseña' });
+      }
+      const roomId = resena.roomId;
+      state.resenas.splice(i, 1);
+      persist(state);
+      return sendJson(res, 200, { ok: true, puntaje: puntajeSala(state, roomId) });
+    }
+  }
+
   /* ======================= PANEL DEL DUEÑO DE LA SALA ======================= */
 
   if (P === 'panel') {
@@ -2389,6 +2538,8 @@ async function handleApi(req, res, url, parts) {
       state.settings.reglas = {
         cancelacionHoras: Math.max(0, Math.min(168, parseInt(r.cancelacionHoras, 10) || 0)),
         avisoHoras: Math.max(1, Math.min(72, parseInt(r.avisoHoras, 10) || 24)),
+        /* Horas antes del ensayo para avisar al músico (0 = apagado) */
+        recordatorioHoras: Math.max(0, Math.min(168, parseInt(r.recordatorioHoras, 10) || 0)),
         turnos: Array.isArray(r.turnos) && r.turnos.length ? r.turnos.map(Number) : REGlas_DEFAULT.turnos,
         senaPorcentaje: numEntre(r.senaPorcentaje, 1, 100, reglasPago(state).senaPorcentaje),
         comisionPorcentaje: numEntre(r.comisionPorcentaje, 0, 100, reglasPago(state).comisionPorcentaje),
@@ -2463,7 +2614,7 @@ async function handleApi(req, res, url, parts) {
       sessions: [],
       notificaciones: [],
       mensajes: [],
-      rooms: [], reservations: [], blocks: [], instruments: [], placePhotos: [], bands: [],
+      rooms: [], reservations: [], blocks: [], instruments: [], placePhotos: [], bands: [], resenas: [],
     };
     persist(limpio);
     return sendJson(res, 200, { state: publicState(limpio) });
@@ -2832,6 +2983,15 @@ if (process.argv.includes('--crear-admin')) {
       console.log('   Cambialo YA desde Configuración: cualquiera que lo sepa entra como administrador.');
     }
     console.log(`   Datos guardados en: ${DATA_FILE}`);
+
+    /* Tareas periódicas: liberar reservas vencidas y mandar los recordatorios
+       antes del ensayo. Se repiten aunque no entre ningún pedido, así el aviso
+       sale a la hora aunque la app esté quieta. */
+    setInterval(() => {
+      try {
+        expirarPendientes(loadState());
+      } catch (e) { console.error('[tareas periódicas]', e.message); }
+    }, 5 * 60 * 1000);
     if (creada) {
       console.log('');
       console.log('╔════════════════════════════════════════════════════╗');
