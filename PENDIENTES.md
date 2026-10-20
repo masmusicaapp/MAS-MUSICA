@@ -8,17 +8,18 @@ Actualizado: 20/10/2026. Este archivo es solo una guía de trabajo; la app no lo
       (el clásico `ghp_...` y el fine-grained `github_pat_...`). Mientras estén activos,
       cualquiera que los vea puede escribir en el repositorio.
 - [ ] Una vez revocados, avisarme para generar uno nuevo (o pasar a subir por `git push`).
-- [ ] Revisar quién tiene la cuenta `SUPER_ADMIN` (`admin`, `admin2`) y con qué contraseña.
+- [ ] Revisar quién tiene la cuenta `SUPER_ADMIN` (`admin`) y con qué contraseña.
 
 ## 2. Cuentas de prueba que quedaron en Producción
 
 - [x] **Borradas las 6 cuentas de demo** (`luca_demo`, `ana_guitarra`, `pedro_bateria`,
       `laura_teclado`, `marcos_bajo`, `sofia_canto`): ninguna tenía sala ni reservas.
       También se limpió su rastro (suscripciones al chat y mensajes que quedaban huérfanos).
-- Producción quedó con **4 cuentas**: `admin` y `admin2` (SUPER_ADMIN), `madeinpilar`
-      (ROOM_ADMIN, dueño de la sala) y `marcelo` (USER).
-- [ ] `marcelo` (músico real) → confirmar si se queda.
-- [ ] `admin2` → decidir si se conserva como segunda cuenta de administración.
+- [x] **Borradas `marcelo` (USER) y `admin2` (SUPER_ADMIN)**: no tenían sala; las reservas
+      de producción no les pertenecen (`userId: null`). Se limpió su rastro (7 mensajes de
+      chat y 1 suscripción).
+- Producción quedó con **2 cuentas**: `admin` (SUPER_ADMIN) y `madeinpilar`
+      (ROOM_ADMIN, dueño de la sala "made in pilar").
 - [ ] Contraseñas de prueba: hoy casi todo usa `Test1234!`.
       Cambiar la de `admin` y la de `madeinpilar` (dueño de sala) antes de abrir al público.
 
