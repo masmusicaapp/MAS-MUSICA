@@ -480,6 +480,32 @@ function persist(state) {
   const tmp = DATA_FILE + '.tmp';
   fs.writeFileSync(tmp, JSON.stringify(state, null, 2));
   fs.renameSync(tmp, DATA_FILE);
+  copiaDeSeguridadDiaria();
+}
+
+/* ================= Copia de seguridad de los datos =================
+   Una vez por día (la primera vez que se guarda algo) se guarda una copia
+   de data.json en la carpeta "backups". Se conservan las últimas 7.     */
+const DIAS_BACKUP = 7;
+const CARPETA_BACKUPS = path.join(__dirname, 'backups');
+let ultimoBackup = '';
+
+function copiaDeSeguridadDiaria() {
+  try {
+    const clave = dateStr(new Date());
+    if (clave === ultimoBackup) return;
+    if (!fs.existsSync(CARPETA_BACKUPS)) fs.mkdirSync(CARPETA_BACKUPS);
+    const destino = path.join(CARPETA_BACKUPS, `data-${clave}.json`);
+    if (!fs.existsSync(destino)) {
+      fs.copyFileSync(DATA_FILE, destino);
+      /* Se guardan solo los últimos DIAS_BACKUP archivos */
+      const todos = fs.readdirSync(CARPETA_BACKUPS).filter(n => /^data-\d{4}-\d{2}-\d{2}\.json$/.test(n)).sort();
+      todos.slice(0, Math.max(0, todos.length - DIAS_BACKUP))
+        .forEach(n => { try { fs.unlinkSync(path.join(CARPETA_BACKUPS, n)); } catch (e) {} });
+      console.log('[backup] copia del día guardada: backups/' + path.basename(destino));
+    }
+    ultimoBackup = clave;
+  } catch (e) { console.error('[backup] no se pudo guardar la copia diaria:', e.message); }
 }
 
 /* Estado que se envía al cliente (sin PIN, sin cuentas ni sesiones, y con privacidad en reservas) */
