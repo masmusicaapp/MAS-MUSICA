@@ -88,7 +88,7 @@ let state = null;              // estado compartido (viene del servidor)
 let adminPin = '';             // PIN de sesión (no se guarda ni se descarga del servidor)
 let adminMode = false;
 let currentAdminTab = 'reservas';
-let currentLugarTab = 'instrumentos'; // pestaña activa en "Instrumentos y lugar"
+let currentLugarTab = 'instrumentos'; // (obsoleto: se mantiene por compatibilidad)
 let navActual = 'inicio';             // opción activa de la barra inferior
 
 /* Reservas del día (panel de administración) */
@@ -825,6 +825,7 @@ function fichaSala(id) {
     ${r.descripcion ? `<p class="ficha-desc">${esc(r.descripcion)}</p>` : ''}
     ${(r.features || []).length ? `<div class="ficha-chips">${r.features.map(f => `<span class="chip">${esc(f)}</span>`).join('')}</div>` : ''}
     ${filas.length ? `<h4 class="ficha-titulo">${ICO_SVG.consola}Equipamiento</h4><div class="ficha-equip">${filas.map(f => `<div class="ficha-dato"><span>${f[0]}${f[1]}</span><strong>${esc(f[2])}</strong></div>`).join('')}</div>` : ''}
+    ${catalogoSalaHTML(r)}
     <h4 class="ficha-titulo">${ICO_SVG.reloj}Horario de atención</h4>
     <div class="ficha-horario">${dias}</div>
     ${bloqueResenas(r.id)}
@@ -1513,8 +1514,6 @@ function wireMapa() {
   if (bmf) bmf.onclick = () => { filtroSalas = filtroSalas === 'favoritas' ? 'todas' : 'favoritas'; renderMapa(); encuadrarMapa(); pintarBotonFavMapa(); };
   pintarBotonFavMapa();
   $('#btn-ver-mapa').onclick = irMapa;
-  const bvi = $('#btn-ver-instrumentos');
-  if (bvi) bvi.onclick = irInstrumentos;
   $('#mapa').onclick = accionesMapa;
 }
 
@@ -1680,7 +1679,6 @@ function elegirSala(roomId) {
   if (!room) return;
   $('#view-public').hidden = false;
   $('#view-mine').hidden = true;
-  $('#view-lugar').hidden = true;
   $('#view-panel').hidden = true;
   setNav('inicio');
   sel.roomId = room.id; sel.range = null; sel.slot = null;
@@ -2071,7 +2069,6 @@ function agregarFilaMiembro(mi = {}) {
 /* Refresca lo que esté visible tras guardar el perfil */
 function refrescarVistasTrasBanda() {
   if (!$('#view-mine').hidden) renderMine();
-  else if (!$('#view-lugar').hidden) renderLugarTab(currentLugarTab);
   if (!$('#tab-bandas').hidden) renderBandasAdmin();
   if (!$('#view-public').hidden && curStep === 4 && $('#bk-band')) renderConfirm();
 }
@@ -2117,7 +2114,7 @@ function renderConfirm() {
   const total = horas * room.price;
   const listaBandas = bandas();
   const elegida = bandaPorNombre(sel.bandaNombre);
-  const alquilables = (state.instruments || []).filter(i => i.activo !== false && i.alquiler);
+  const alquilables = ((room && room.catalogo) || []).filter(i => i && i.alquiler);
   $('#confirm-body').innerHTML = `
     <div class="summary">
       <div><span>Fecha</span><strong>${fmtDate(sel.date)}</strong></div>
@@ -2334,7 +2331,6 @@ let filtroMisReservas = '';   /* '' | 'proximas' | 'historial' (se elige en Ajus
 function mostrarMisReservas() {
   ocultarVistas();
   $('#view-public').hidden = true;
-  $('#view-lugar').hidden = true;
   $('#view-mine').hidden = false;
   setNav('perfil');
   renderMine();
@@ -2345,15 +2341,6 @@ function volverAReservar() {
   $('#view-mine').hidden = true;
   $('#view-public').hidden = false;
   setNav('inicio');
-}
-
-function mostrarLugar() {
-  ocultarVistas();
-  $('#view-public').hidden = true;
-  $('#view-mine').hidden = true;
-  $('#view-lugar').hidden = false;
-  setNav('salas');
-  renderLugarTab('instrumentos');
 }
 
 /* ---------- Barra inferior (5 opciones) ---------- */
@@ -2440,7 +2427,6 @@ function irInicio() {
   ocultarVistas();
   $('#view-public').hidden = false;
   $('#view-mine').hidden = true;
-  $('#view-lugar').hidden = true;
   setNav('inicio');
   goStep(1);
   renderCalendar();
@@ -2452,7 +2438,6 @@ function irSalas(vista) {
   ocultarVistas();
   $('#view-public').hidden = false;
   $('#view-mine').hidden = true;
-  $('#view-lugar').hidden = true;
   $('#view-panel').hidden = true;
   setNav('salas');
   filtroSalas = 'todas';
@@ -2510,7 +2495,6 @@ function nuevaReserva() {
   toast('Elegí la sala', 'ok');
 }
 
-function irInstrumentos() { mostrarLugar(); }
 function irMisReservas() { mostrarMisReservas(); }
 
 /* ================= Comunidad (solo músicos) ================= */
@@ -3171,7 +3155,7 @@ function ocultarVistas() {
   clearInterval(chatGlobalTimer);
   chatGlobalTimer = null;
   document.body.classList.remove('chat-abierto');
-  ['view-public', 'view-mine', 'view-lugar', 'view-panel', 'view-admin', 'view-mapa', 'view-comunidad', 'view-auth']
+  ['view-public', 'view-mine', 'view-panel', 'view-admin', 'view-mapa', 'view-comunidad', 'view-auth']
     .forEach(v => { const el = $('#' + v); if (el) el.hidden = true; });
 }
 
@@ -4627,6 +4611,8 @@ let panelDatos = null;
 let panelLogoTmp = '';
 let panelPortadaTmp = '';
 let panelFotosTmp = [];
+/* Catálogo de equipos de la sala que se está editando en el panel (se guarda junto con la sala) */
+let panelCatalogo = [];
 
 async function mostrarPanel() {
   if (!yo || (!esDueño() && !esSuper())) { toast('Iniciá sesión como dueño de sala', 'warn'); return; }
@@ -4909,11 +4895,14 @@ function renderPanelSala() {
   panelLogoTmp = '';
   panelPortadaTmp = '';
   panelFotosTmp = [];
+  /* Catálogo de equipos: arranca con lo guardado; se edita acá y se guarda con "Guardar sala" */
+  panelCatalogo = (r.catalogo || []).map(x => Object.assign({}, x));
   $('#ps-preview-logo').innerHTML = r.foto ? `<img src="${esc(r.foto)}" alt="">` : '<span class="sala-chip-foto" style="width:60px;height:60px;font-size:1.6rem"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg></span>';
   $('#ps-portada-preview').innerHTML = r.fotoPortada
     ? `<img src="${esc(r.fotoPortada)}" alt="Foto horizontal de ${esc(r.name)}">`
     : '<span>Sin foto horizontal</span>';
   renderFotosPanel();
+  renderCatalogoPanel();
   /* Si escribió la dirección pero todavía no está en el mapa, la ubicamos sola */
   autoUbicarSala();
 }
@@ -4923,6 +4912,82 @@ function renderFotosPanel() {
   $('#ps-fotos-grid').innerHTML = (r.fotos || []).map((f, i) => `
     <div class="mini-foto"><img src="${esc(f.foto)}" alt="">
       <button class="btn btn-sm btn-danger" data-quitar-foto="${i}">Quitar</button></div>`).join('');
+}
+
+/* ---------- Catálogo de equipos (panel del dueño) ---------- */
+function renderCatalogoPanel() {
+  const cont = $('#ps-catalogo');
+  if (!cont) return;
+  if (!panelCatalogo.length) {
+    cont.innerHTML = '<p class="muted small">Todavía no cargaste equipos. Podés agregarlos uno por uno con foto y precio de alquiler.</p>';
+    return;
+  }
+  cont.innerHTML = panelCatalogo.map((it, i) => `
+    <div class="catalogo-item" data-cat="${i}">
+      <div class="catalogo-item-head">
+        <strong>${esc(it.nombre || 'Equipo sin nombre')}</strong>
+        <div class="res-actions">
+          <button class="btn btn-sm" data-cat-edit="${i}">Editar</button>
+          <button class="btn btn-sm btn-danger" data-cat-del="${i}">Quitar</button>
+        </div>
+      </div>
+      <div class="catalogo-item-info">
+        ${it.foto ? `<img class="catalogo-item-foto" src="${esc(it.foto)}" alt="${esc(it.nombre)}">` : ''}
+        <div>
+          ${it.descripcion ? `<div>${esc(it.descripcion)}</div>` : ''}
+          ${it.alquiler ? `<div class="muted small">${ICO_SVG.precio} En alquiler · ${fmtMoney(it.precioAlquiler)}/hora</div>` : '<div class="muted small">Solo equipamiento de la sala</div>'}
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+/* Formulario para agregar o editar un equipo del catálogo. La foto se puede
+   subir como archivo (se guarda como data URL hasta que se guarde la sala). */
+function formularioEquipoCatalogo(indice) {
+  const editar = indice != null && indice >= 0;
+  const it = editar ? panelCatalogo[indice] : { nombre: '', descripcion: '', foto: '', alquiler: false, precioAlquiler: 0 };
+  openModal(`
+    <h3>${editar ? 'Editar equipo' : 'Nuevo equipo'}</h3>
+    <label>Nombre *<input id="ce-nombre" maxlength="60" value="${esc(it.nombre)}" placeholder="Ej.: Batería completa"></label>
+    <label>Descripción<input id="ce-desc" maxlength="200" value="${esc(it.descripcion)}" placeholder="Ej.: Pearl Export 5 piezas + platillos"></label>
+    <div class="catalogo-foto-edit" id="ce-foto-preview">${it.foto ? `<img src="${esc(it.foto)}" alt="">` : '<span class="muted small">Sin foto</span>'}</div>
+    <label>Foto del equipo<input type="file" id="ce-foto" accept="image/*"></label>
+    <label class="check"><input type="checkbox" id="ce-alquiler" ${it.alquiler ? 'checked' : ''}> <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v10H4z"/><path d="M9 6V4a3 3 0 0 1 6 0v2"/><path d="M9 14h6"/></svg> Se puede alquilar a los músicos</label>
+    <label>Precio del alquiler por hora<input type="number" id="ce-precio" min="0" step="1" value="${it.precioAlquiler || 0}"></label>
+    <div class="row">
+      <button class="btn btn-primary" id="ce-save">Guardar</button>
+      <button class="btn" id="ce-cancel">Cancelar</button>
+    </div>`);
+  let fotoTmp = it.foto || '';
+  $('#ce-foto').onchange = e => {
+    const f = e.target.files[0];
+    if (!f) return;
+    if (f.size > 3 * 1024 * 1024) { toast('La foto no puede superar los 3 MB', 'warn'); e.target.value = ''; return; }
+    const fr = new FileReader();
+    fr.onload = () => {
+      fotoTmp = fr.result;
+      $('#ce-foto-preview').innerHTML = `<img src="${esc(fotoTmp)}" alt="">`;
+    };
+    fr.readAsDataURL(f);
+  };
+  $('#ce-save').onclick = () => {
+    const nombre = $('#ce-nombre').value.trim();
+    if (!nombre) { toast('Poné un nombre al equipo', 'warn'); return; }
+    const nuevo = {
+      id: (editar && it.id) || '',
+      nombre,
+      descripcion: $('#ce-desc').value.trim(),
+      foto: fotoTmp,
+      alquiler: $('#ce-alquiler').checked,
+      precioAlquiler: Number($('#ce-precio').value) || 0,
+    };
+    if (editar) panelCatalogo[indice] = nuevo;
+    else panelCatalogo.push(nuevo);
+    closeModal();
+    renderCatalogoPanel();
+    toast('Equipo listo. Se guarda con "Guardar sala".', 'ok');
+  };
+  $('#ce-cancel').onclick = closeModal;
 }
 
 /* ---------- Ubicación de la sala en el mapa ----------
@@ -5030,6 +5095,7 @@ async function guardarPanelSala() {
       consola: $('#ps-eq-consola').value.trim(),
       otros: $('#ps-eq-otros').value.trim(),
     },
+    catalogo: panelCatalogo,
     fotos,
   };
   if (panelLogoTmp) body.logo = panelLogoTmp;
@@ -5236,6 +5302,20 @@ function wirePanel() {
       renderPanelTab('sala');
     } catch (err) { toast(err.message, 'error'); }
   };
+  /* Catálogo de equipos: agregar, editar y quitar (se guarda con "Guardar sala") */
+  $('#btn-catalogo-add').onclick = () => formularioEquipoCatalogo(null);
+  $('#ps-catalogo').onclick = e => {
+    const ed = e.target.closest('[data-cat-edit]');
+    if (ed) return formularioEquipoCatalogo(Number(ed.dataset.catEdit));
+    const del = e.target.closest('[data-cat-del]');
+    if (del) {
+      const i = Number(del.dataset.catDel);
+      panelCatalogo.splice(i, 1);
+      renderCatalogoPanel();
+      toast('Equipo quitado. Se guarda con "Guardar sala".', 'ok');
+      return;
+    }
+  };
 
   $('#btn-ps-bloquear').onclick = async () => {
     try {
@@ -5354,57 +5434,31 @@ function editarReservaPanel(id) {
   };
 }
 
-/* ---------- Instrumentos y lugar (vista pública) ---------- */
-function renderLugarTab(tab) {
-  currentLugarTab = tab;
-  $$('.lugar-tab').forEach(b => b.classList.toggle('active', b.dataset.lugarTab === tab));
-  $('#tab-instrumentos').hidden = tab !== 'instrumentos';
-  $('#tab-alquiler').hidden = tab !== 'alquiler';
-  $('#tab-lugar-fotos').hidden = tab !== 'lugar';
-  if (tab === 'instrumentos') renderInstrumentos();
-  else if (tab === 'alquiler') renderAlquiler();
-  else renderFotosLugar();
-}
-
-function fotoInstrumento(i) {
-  return i.foto
-    ? `<img src="${esc(i.foto)}" alt="${esc(i.nombre)}" onerror="this.parentElement.classList.add('inst-sin-foto');this.remove()">`
+/* ---------- Catálogo de equipos por sala (dentro de la ficha) ---------- */
+function fotoEquipo(it) {
+  return it.foto
+    ? `<img src="${esc(it.foto)}" alt="${esc(it.nombre)}" onerror="this.parentElement.classList.add('inst-sin-foto');this.remove()">`
     : '<span class="inst-emoji"></span>';
 }
 
-function renderInstrumentos() {
-  const list = (state.instruments || []).filter(i => i.activo !== false);
-  $('#instruments-grid').innerHTML = list.length ? list.map(i => `
-    <article class="inst-card">
-      <div class="inst-photo">${fotoInstrumento(i)}</div>
-      <h3>${esc(i.nombre)}</h3>
-      ${i.descripcion ? `<p class="muted">${esc(i.descripcion)}</p>` : ''}
-      ${i.alquiler ? `<span class="tag tag-alquiler"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v10H4z"/><path d="M9 6V4a3 3 0 0 1 6 0v2"/><path d="M9 14h6"/></svg> Alquiler ${fmtMoney(i.precioAlquiler)}/hora</span>` : ''}
-    </article>`).join('')
-    : '<p class="muted">No hay instrumentos para mostrar.</p>';
-}
-
-/* Instrumentos que se pueden alquilar */
-function renderAlquiler() {
-  const list = (state.instruments || []).filter(i => i.activo !== false && i.alquiler);
-  $('#alquiler-grid').innerHTML = list.length ? list.map(i => `
-    <article class="inst-card alquiler-card">
-      <div class="inst-photo">${fotoInstrumento(i)}</div>
-      <h3>${esc(i.nombre)}</h3>
-      ${i.descripcion ? `<p class="muted">${esc(i.descripcion)}</p>` : ''}
-      <div class="alquiler-precio">${fmtMoney(i.precioAlquiler)}<span> / hora</span></div>
-    </article>`).join('')
-    : '<p class="muted">Por ahora no hay instrumentos en alquiler.</p>';
-}
-
-function renderFotosLugar() {
-  const list = state.placePhotos || [];
-  $('#place-grid').innerHTML = list.length ? list.map(p => `
-    <figure class="place-photo">
-      <img src="${esc(p.foto)}" alt="${esc(p.titulo || 'Foto del lugar')}">
-      ${p.titulo ? `<figcaption>${esc(p.titulo)}</figcaption>` : ''}
-    </figure>`).join('')
-    : '<p class="muted">Pronto publicaremos fotos del lugar.</p>';
+/* Catálogo de la sala: los equipos con foto/descripción y los que se alquilan. */
+function catalogoSalaHTML(r) {
+  const items = (r.catalogo || []).filter(x => x && x.nombre);
+  if (!items.length) return '';
+  const equipos = items.filter(x => !x.alquiler);
+  const alquiler = items.filter(x => x.alquiler);
+  const tarjeta = it => `
+    <article class="inst-card${it.alquiler ? ' alquiler-card' : ''}">
+      <div class="inst-photo">${fotoEquipo(it)}</div>
+      <h3>${esc(it.nombre)}</h3>
+      ${it.descripcion ? `<p class="muted">${esc(it.descripcion)}</p>` : ''}
+      ${it.alquiler ? `<div class="alquiler-precio">${fmtMoney(it.precioAlquiler)}<span> / hora</span></div>` : ''}
+    </article>`;
+  return `
+    ${equipos.length ? `<h4 class="ficha-titulo">${ICO_SVG.musica}Equipos de la sala</h4>
+      <div class="inst-grid ficha-catalogo">${equipos.map(tarjeta).join('')}</div>` : ''}
+    ${alquiler.length ? `<h4 class="ficha-titulo">${ICO_SVG.precio}Se alquilan (por hora)</h4>
+      <div class="inst-grid ficha-catalogo">${alquiler.map(tarjeta).join('')}</div>` : ''}`;
 }
 
 /* ---------- Wiring vista pública ---------- */
@@ -5502,7 +5556,6 @@ function wirePublic() {
     const b = e.target.closest('[data-band]');
     if (b) verPerfilBanda(b.dataset.band);
   });
-  $$('.lugar-tab').forEach(b => { b.onclick = () => renderLugarTab(b.dataset.lugarTab); });
   /* Sala actual (esquina superior): tocar abre sus horarios */
   $('#sala-actual').onclick = () => elegirSala(sel.roomId);
   /* Barra inferior: 5 opciones */
@@ -5511,7 +5564,6 @@ function wirePublic() {
     salas: irSalas,
     mapa: irMapa,
     comunidad: () => irComunidad(),
-    instrumentos: irInstrumentos,
     perfil: irMisReservas,
     admin: () => (esSuper() ? showAdmin() : enterAdmin()),
     panel: () => { mostrarPanel(); setNav('panel'); },
@@ -5767,7 +5819,7 @@ function salirAdmin() {
   goStep(1);
 }
 
-const TABS_ADMIN = ['inicio', 'solicitudes', 'usuarios', 'ayuda', 'reservas', 'historial', 'salas', 'horarios', 'bloqueos', 'estadisticas', 'promociones', 'pagos', 'ajustes', 'lugar', 'bandas'];
+const TABS_ADMIN = ['inicio', 'solicitudes', 'usuarios', 'ayuda', 'reservas', 'historial', 'salas', 'horarios', 'bloqueos', 'estadisticas', 'promociones', 'pagos', 'ajustes', 'bandas'];
 
 function renderAdminTab(tab) {
   currentAdminTab = tab;
@@ -5787,7 +5839,6 @@ function renderAdminTab(tab) {
     promociones: renderPromocionesAdmin,
     pagos: renderPagosAdmin,
     ajustes: renderAjustes,
-    lugar: renderLugarAdmin,
     bandas: renderBandasAdmin,
   }[tab])();
   /* La pestaña Salas necesita la lista de cuentas para mostrar el dueño de cada sala */
@@ -6636,153 +6687,6 @@ async function eliminarSala(id) {
     state = data.state;
     renderAdminTab('salas');
     toast('Sala eliminada', 'ok');
-  } catch (e) {
-    toast(e.message, 'error');
-  }
-}
-
-/* ---------- Instrumentos y fotos del lugar (admin) ---------- */
-function renderLugarAdmin() {
-  $('#instruments-admin').innerHTML = (state.instruments || []).length ? (state.instruments || []).map(i => `
-    <div class="res-item">
-      <div class="res-info">
-        <strong>${esc(i.nombre)}</strong>
-        <div>${esc(i.descripcion || '—')}</div>
-        ${i.alquiler ? `<div class="muted small"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v10H4z"/><path d="M9 6V4a3 3 0 0 1 6 0v2"/><path d="M9 14h6"/></svg> Alquiler ${fmtMoney(i.precioAlquiler)}/hora</div>` : ''}
-        ${i.foto ? `<div class="muted small"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> ${esc(i.foto)}</div>` : ''}
-      </div>
-      <div class="res-actions">
-        <button class="btn btn-sm" data-edit-inst="${i.id}">Editar</button>
-        <button class="btn btn-sm" data-toggle-inst="${i.id}">${i.activo === false ? 'Activar' : 'Desactivar'}</button>
-        <button class="btn btn-sm btn-danger" data-del-inst="${i.id}">Eliminar</button>
-      </div>
-    </div>`).join('')
-    : '<p class="muted">Aún no hay instrumentos.</p>';
-
-  $('#place-photos-admin').innerHTML = (state.placePhotos || []).length ? (state.placePhotos || []).map(p => `
-    <div class="res-item">
-      <div class="res-info">
-        <strong>${esc(p.titulo || 'Foto')}</strong>
-        <div class="muted small">${esc(p.foto)}</div>
-      </div>
-      <div class="res-actions">
-        <button class="btn btn-sm" data-edit-photo="${p.id}">Editar</button>
-        <button class="btn btn-sm btn-danger" data-del-photo="${p.id}">Eliminar</button>
-      </div>
-    </div>`).join('')
-    : '<p class="muted">Aún no hay fotos del lugar.</p>';
-}
-
-function formularioInstrumento(id) {
-  const i = id ? (state.instruments || []).find(x => x.id === id) : { nombre: '', descripcion: '', foto: '', activo: true };
-  if (id && !i) return;
-  openModal(`
-    <h3>${id ? 'Editar instrumento' : 'Nuevo instrumento'}</h3>
-    <label>Nombre *<input id="fi-name" maxlength="50" value="${esc(i.nombre)}" placeholder="Ej.: Batería completa"></label>
-    <label>Descripción<input id="fi-desc" maxlength="200" value="${esc(i.descripcion)}" placeholder="Ej.: Pearl Export 5 piezas + platillos"></label>
-    <label>Foto (ruta o URL)<input id="fi-foto" maxlength="300" value="${esc(i.foto)}" placeholder="assets/instrumentos/bateria.png o https://..."></label>
-    <p class="muted small">Sin foto se muestra un ícono. Guarda las fotos en <code>public/assets/</code> del servidor o usa un enlace.</p>
-    <label class="check"><input type="checkbox" id="fi-alquiler" ${i.alquiler ? 'checked' : ''}> <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v10H4z"/><path d="M9 6V4a3 3 0 0 1 6 0v2"/><path d="M9 14h6"/></svg> Se puede alquilar a los músicos</label>
-    <label>Precio del alquiler por hora<input type="number" id="fi-precio-alq" min="0" step="1" value="${i.precioAlquiler || 0}"></label>
-    <label class="check"><input type="checkbox" id="fi-active" ${i.activo !== false ? 'checked' : ''}> Visible para los visitantes</label>
-    <div class="row">
-      <button class="btn btn-primary" id="fi-save">Guardar</button>
-      <button class="btn" id="fi-cancel">Cancelar</button>
-    </div>`);
-  $('#fi-save').onclick = async () => {
-    const nombre = $('#fi-name').value.trim();
-    if (!nombre) { toast('El nombre es obligatorio', 'warn'); return; }
-    const body = {
-      nombre,
-      descripcion: $('#fi-desc').value.trim(),
-      foto: $('#fi-foto').value.trim(),
-      alquiler: $('#fi-alquiler').checked,
-      precioAlquiler: $('#fi-precio-alq').value,
-      activo: $('#fi-active').checked,
-    };
-    try {
-      const data = id
-        ? await api(`/api/instruments/${id}`, { method: 'PUT', admin: true, body })
-        : await api('/api/instruments', { method: 'POST', admin: true, body });
-      state = data.state;
-      closeModal();
-      renderLugarAdmin();
-      toast('Instrumento guardado', 'ok');
-    } catch (e) {
-      toast(e.message, 'error');
-    }
-  };
-  $('#fi-cancel').onclick = closeModal;
-}
-
-async function eliminarInstrumento(id) {
-  const i = (state.instruments || []).find(x => x.id === id);
-  if (!i) return;
-  const okEliminarInst = await confirmarAccion(
-    `¿Eliminar "${i.nombre}"?`,
-    '¿Eliminar instrumento?',
-    'Sí, eliminar',
-    'No, mantener',
-    'peligro'
-  );
-  if (!okEliminarInst) return;
-  try {
-    const data = await api(`/api/instruments/${id}`, { method: 'DELETE', admin: true });
-    state = data.state;
-    renderLugarAdmin();
-    toast('Instrumento eliminado', 'ok');
-  } catch (e) {
-    toast(e.message, 'error');
-  }
-}
-
-function formularioFotoLugar(id) {
-  const p = id ? (state.placePhotos || []).find(x => x.id === id) : { titulo: '', foto: '' };
-  if (id && !p) return;
-  openModal(`
-    <h3>${id ? 'Editar foto' : 'Nueva foto del lugar'}</h3>
-    <label>Título<input id="fp-title" maxlength="60" value="${esc(p.titulo)}" placeholder="Ej.: Sala 1"></label>
-    <label>Foto (ruta o URL) *<input id="fp-foto" maxlength="300" value="${esc(p.foto)}" placeholder="assets/lugar/sala-1.png o https://..."></label>
-    <p class="muted small">Guarda las fotos en <code>public/assets/</code> del servidor o usa un enlace https://.</p>
-    <div class="row">
-      <button class="btn btn-primary" id="fp-save">Guardar</button>
-      <button class="btn" id="fp-cancel">Cancelar</button>
-    </div>`);
-  $('#fp-save').onclick = async () => {
-    const foto = $('#fp-foto').value.trim();
-    if (!foto) { toast('La foto es obligatoria', 'warn'); return; }
-    const body = { titulo: $('#fp-title').value.trim(), foto };
-    try {
-      const data = id
-        ? await api(`/api/place-photos/${id}`, { method: 'PUT', admin: true, body })
-        : await api('/api/place-photos', { method: 'POST', admin: true, body });
-      state = data.state;
-      closeModal();
-      renderLugarAdmin();
-      toast('Foto guardada', 'ok');
-    } catch (e) {
-      toast(e.message, 'error');
-    }
-  };
-  $('#fp-cancel').onclick = closeModal;
-}
-
-async function eliminarFotoLugar(id) {
-  const p = (state.placePhotos || []).find(x => x.id === id);
-  if (!p) return;
-  const okEliminarFoto = await confirmarAccion(
-    `¿Eliminar la foto "${p.titulo || 'sin título'}"?`,
-    '¿Eliminar foto?',
-    'Sí, eliminar',
-    'No, mantener',
-    'peligro'
-  );
-  if (!okEliminarFoto) return;
-  try {
-    const data = await api(`/api/place-photos/${id}`, { method: 'DELETE', admin: true });
-    state = data.state;
-    renderLugarAdmin();
-    toast('Foto eliminada', 'ok');
   } catch (e) {
     toast(e.message, 'error');
   }
@@ -7815,8 +7719,6 @@ function refreshVisible() {
     if (curStep === 4 && $('#confirm-body') && $('#bk-name') && !$('#bk-name').value.trim()) renderConfirm();
   } else if (!$('#view-mine').hidden) {
     renderMine();
-  } else if (!$('#view-lugar').hidden) {
-    renderLugarTab(currentLugarTab);
   } else if (!$('#view-mapa').hidden) {
     actualizarMapaSiSeVe();
   } else if (!$('#view-panel').hidden) {
@@ -8050,36 +7952,6 @@ function wireAdmin() {
   $('#import-file').onchange = e => {
     if (e.target.files[0]) importar(e.target.files[0]);
     e.target.value = '';
-  };
-  /* Instrumentos y fotos del lugar */
-  $('#btn-new-instrument').onclick = () => formularioInstrumento(null);
-  $('#instruments-admin').onclick = e => {
-    const ed = e.target.closest('[data-edit-inst]');
-    if (ed) return formularioInstrumento(ed.dataset.editInst);
-    const tg = e.target.closest('[data-toggle-inst]');
-    if (tg) {
-      const i = (state.instruments || []).find(x => x.id === tg.dataset.toggleInst);
-      if (!i) return;
-      api(`/api/instruments/${i.id}`, {
-        method: 'PUT', admin: true,
-        body: {
-          nombre: i.nombre, descripcion: i.descripcion, foto: i.foto,
-          activo: i.activo === false,
-          alquiler: i.alquiler === true, precioAlquiler: i.precioAlquiler || 0,
-        },
-      }).then(data => { state = data.state; renderLugarAdmin(); })
-        .catch(err => toast(err.message, 'error'));
-      return;
-    }
-    const del = e.target.closest('[data-del-inst]');
-    if (del) return eliminarInstrumento(del.dataset.delInst);
-  };
-  $('#btn-new-place-photo').onclick = () => formularioFotoLugar(null);
-  $('#place-photos-admin').onclick = e => {
-    const ed = e.target.closest('[data-edit-photo]');
-    if (ed) return formularioFotoLugar(ed.dataset.editPhoto);
-    const del = e.target.closest('[data-del-photo]');
-    if (del) return eliminarFotoLugar(del.dataset.delPhoto);
   };
   /* Bandas registradas: solo editar o eliminar (desde acá no se registran) */
   $('#bands-admin').onclick = e => {
