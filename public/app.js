@@ -4942,10 +4942,15 @@ function renderCatalogoPanel() {
 }
 
 /* Formulario para agregar o editar un equipo del catálogo. La foto se puede
-   subir como archivo (se guarda como data URL hasta que se guarde la sala). */
-function formularioEquipoCatalogo(indice) {
+   subir como archivo (se guarda como data URL hasta que se guarde la sala).
+   `lista` y `alGuardar` permiten reutilizarlo desde el panel del dueño; `alVolver`
+   lo usa la cuenta madre para volver al formulario de la sala al guardar. */
+function formularioEquipoCatalogo(indice, lista, alGuardar, alVolver) {
+  const items = lista || panelCatalogo;
+  const refrescar = alGuardar || renderCatalogoPanel;
+  const volver = alVolver || null;
   const editar = indice != null && indice >= 0;
-  const it = editar ? panelCatalogo[indice] : { nombre: '', descripcion: '', foto: '', alquiler: false, precioAlquiler: 0 };
+  const it = editar ? items[indice] : { nombre: '', descripcion: '', foto: '', alquiler: false, precioAlquiler: 0 };
   openModal(`
     <h3>${editar ? 'Editar equipo' : 'Nuevo equipo'}</h3>
     <label>Nombre *<input id="ce-nombre" maxlength="60" value="${esc(it.nombre)}" placeholder="Ej.: Batería completa"></label>
@@ -4981,13 +4986,14 @@ function formularioEquipoCatalogo(indice) {
       alquiler: $('#ce-alquiler').checked,
       precioAlquiler: Number($('#ce-precio').value) || 0,
     };
-    if (editar) panelCatalogo[indice] = nuevo;
-    else panelCatalogo.push(nuevo);
+    if (editar) items[indice] = nuevo;
+    else items.push(nuevo);
     closeModal();
-    renderCatalogoPanel();
+    if (volver) volver();
+    else refrescar();
     toast('Equipo listo. Se guarda con "Guardar sala".', 'ok');
   };
-  $('#ce-cancel').onclick = closeModal;
+  $('#ce-cancel').onclick = () => { closeModal(); if (volver) volver(); };
 }
 
 /* ---------- Ubicación de la sala en el mapa ----------
@@ -6511,24 +6517,62 @@ function renderSalasAdmin() {
 }
 
 function formularioSala(id) {
-  const r = id ? state.rooms.find(x => x.id === id) : { name: '', price: 10000, capacity: 4, features: [], activo: true, estado: 'aprobada', foto: '', fotoPortada: '', direccion: '', localidad: '', telefono: '', descripcion: '', equipos: {}, fotos: [] };
+  const r = id ? state.rooms.find(x => x.id === id) : { name: '', price: 10000, capacity: 4, features: [], activo: true, estado: 'aprobada', foto: '', fotoPortada: '', direccion: '', localidad: '', telefono: '', descripcion: '', equipos: {}, fotos: [], catalogo: [] };
   if (id && !r) return;
   let fotoNueva = null;
   let portadaNueva = null;
+  /* Catálogo de equipos de la sala: la cuenta madre lo edita igual que el dueño */
+  let adminCatalogo = (r.catalogo || []).map(x => Object.assign({}, x));
+
+  /* Guarda en `r` lo que el admin escribió (para no perderlo al volver del
+     formulario de un equipo). */
+  function capturarFormulario() {
+    if (!$('#fr-name')) return;
+    r.name = $('#fr-name').value;
+    r.price = $('#fr-price').value;
+    r.capacity = $('#fr-cap').value;
+    r.direccion = $('#fr-direccion').value;
+    r.localidad = $('#fr-localidad').value;
+    r.telefono = $('#fr-tel').value;
+    r.descripcion = $('#fr-desc').value;
+    r.features = $('#fr-feats').value.split(',').map(s => s.trim()).filter(Boolean);
+    r.mapa = $('#fr-mapa').value;
+    r.lat = $('#fr-lat').value;
+    r.lng = $('#fr-lng').value;
+    r.equipos = {
+      instrumentos: $('#fr-eq-instrumentos').value,
+      bateria: $('#fr-eq-bateria').value,
+      amplificadores: $('#fr-eq-amp').value,
+      microfonos: $('#fr-eq-micro').value,
+      consola: $('#fr-eq-consola').value,
+      otros: $('#fr-eq-otros').value,
+    };
+    r.catalogo = adminCatalogo;
+  }
+
+  /* Vuelve al formulario de la sala después de cargar/editar un equipo.
+     Los valores ya se guardaron en `r` al abrir el formulario del equipo. */
+  function volverAlFormularioSala() {
+    pintar();
+  }
+
+  function pintar() {
   const eq = r.equipos || {};
+  const fotoVer = fotoNueva || r.foto;
+  const portadaVer = portadaNueva || r.fotoPortada;
   openModal(`
     <h3>${id ? 'Editar sala' : 'Nueva sala'}</h3>
-    <div class="sala-foto-edit" id="fr-preview">${r.foto
-      ? `<img src="${esc(r.foto)}" alt="${esc(r.name)}">`
+    <div class="sala-foto-edit" id="fr-preview">${fotoVer
+      ? `<img src="${esc(fotoVer)}" alt="${esc(r.name)}">`
       : '<span class="sala-chip-foto" style="width:60px;height:60px;font-size:1.6rem"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span>'}</div>
     <label>Logo o foto de la sala<input type="file" id="fr-foto" accept="image/*"></label>
-    <label class="check" id="fr-quitar-wrap" ${r.foto ? '' : 'hidden'}><input type="checkbox" id="fr-quitar"> Quitar la foto</label>
+    <label class="check" id="fr-quitar-wrap" ${fotoVer ? '' : 'hidden'}><input type="checkbox" id="fr-quitar"> Quitar la foto</label>
     <h3 class="sub">Foto horizontal (la que se ve en el mapa)</h3>
-    <div class="portada-preview" id="fr-portada-preview">${r.fotoPortada
-      ? `<img src="${esc(r.fotoPortada)}" alt="Foto horizontal de ${esc(r.name)}">`
+    <div class="portada-preview" id="fr-portada-preview">${portadaVer
+      ? `<img src="${esc(portadaVer)}" alt="Foto horizontal de ${esc(r.name)}">`
       : '<span>Sin foto horizontal</span>'}</div>
     <label>Cambiar foto horizontal<input type="file" id="fr-portada" accept="image/*"></label>
-    <label class="check" id="fr-portada-quitar-wrap" ${r.fotoPortada ? '' : 'hidden'}><input type="checkbox" id="fr-portada-quitar"> Quitar la foto horizontal</label>
+    <label class="check" id="fr-portada-quitar-wrap" ${portadaVer ? '' : 'hidden'}><input type="checkbox" id="fr-portada-quitar"> Quitar la foto horizontal</label>
     <label>Nombre *<input id="fr-name" maxlength="60" value="${esc(r.name)}" placeholder="Ej.: Sala 1"></label>
     <div class="row2">
       <label>Precio por hora *<input type="number" id="fr-price" min="1" step="1" value="${r.price}"></label>
@@ -6562,6 +6606,12 @@ function formularioSala(id) {
     <div class="row2">
       <label>Consola / sonido<input id="fr-eq-consola" maxlength="300" value="${esc(eq.consola || '')}"></label>
       <label>Otros<input id="fr-eq-otros" maxlength="300" value="${esc(eq.otros || '')}"></label>
+    </div>
+    <h3 class="sub">Catálogo de equipos</h3>
+    <p class="muted small">Los equipos con foto y precio. Los que marques "en alquiler" se ofrecen a los músicos al reservar.</p>
+    <div id="fr-catalogo"></div>
+    <div class="row">
+      <button class="btn btn-sm" type="button" id="fr-catalogo-add"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Agregar equipo</button>
     </div>
     ${(r.fotos || []).length ? `<div class="mini-fotos">${r.fotos.map(f => `<div class="mini-foto"><img src="${esc(f.foto)}" alt=""></div>`).join('')}</div>` : ''}
     <div class="row2">
@@ -6630,6 +6680,7 @@ function formularioSala(id) {
         consola: $('#fr-eq-consola').value.trim(),
         otros: $('#fr-eq-otros').value.trim(),
       },
+      catalogo: adminCatalogo,
     };
     const quitar = $('#fr-quitar-wrap').hidden ? false : $('#fr-quitar').checked;
     if (quitar) body.foto = '';
@@ -6668,6 +6719,54 @@ function formularioSala(id) {
     if (!$('#fr-mapa').value) $('#fr-mapa').value = p.nombre.slice(0, 300);
     toast('Ubicación encontrada', 'ok');
   };
+  /* Catálogo de equipos: la cuenta madre carga los equipos igual que el dueño */
+  const pintarCatalogoAdmin = () => renderCatalogoAdmin($('#fr-catalogo'), adminCatalogo);
+  /* Antes de abrir el formulario de un equipo guardamos lo que ya está escrito en
+     la sala: ese formulario reemplaza al de la sala y hay que poder volver. */
+  const abrirEquipo = i => {
+    capturarFormulario();
+    formularioEquipoCatalogo(i, adminCatalogo, pintarCatalogoAdmin, volverAlFormularioSala);
+  };
+  $('#fr-catalogo-add').onclick = () => abrirEquipo(null);
+  $('#fr-catalogo').onclick = e => {
+    const ed = e.target.closest('[data-cat-edit]');
+    if (ed) return abrirEquipo(Number(ed.dataset.catEdit));
+    const del = e.target.closest('[data-cat-del]');
+    if (del) {
+      const i = Number(del.dataset.catDel);
+      adminCatalogo.splice(i, 1);
+      pintarCatalogoAdmin();
+    }
+  };
+  pintarCatalogoAdmin();
+  }
+  pintar();
+}
+
+/* Dibuja el catálogo de equipos dentro de un contenedor (administración) */
+function renderCatalogoAdmin(cont, items) {
+  if (!cont) return;
+  if (!items.length) {
+    cont.innerHTML = '<p class="muted small">Sin equipos cargados todavía.</p>';
+    return;
+  }
+  cont.innerHTML = items.map((it, i) => `
+    <div class="catalogo-item" data-cat="${i}">
+      <div class="catalogo-item-head">
+        <strong>${esc(it.nombre || 'Equipo sin nombre')}</strong>
+        <div class="res-actions">
+          <button class="btn btn-sm" type="button" data-cat-edit="${i}">Editar</button>
+          <button class="btn btn-sm btn-danger" type="button" data-cat-del="${i}">Quitar</button>
+        </div>
+      </div>
+      <div class="catalogo-item-info">
+        ${it.foto ? `<img class="catalogo-item-foto" src="${esc(it.foto)}" alt="${esc(it.nombre)}">` : ''}
+        <div>
+          ${it.descripcion ? `<div>${esc(it.descripcion)}</div>` : ''}
+          ${it.alquiler ? `<div class="muted small">${ICO_SVG.precio} En alquiler · ${fmtMoney(it.precioAlquiler)}/hora</div>` : '<div class="muted small">Solo equipamiento de la sala</div>'}
+        </div>
+      </div>
+    </div>`).join('');
 }
 
 async function eliminarSala(id) {
