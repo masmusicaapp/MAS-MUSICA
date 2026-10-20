@@ -632,7 +632,17 @@ const ICO_SVG = {
   flecha: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg>',
   corazon: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>',
   corazonOn: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path fill="currentColor" d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>',
-  basura: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>'
+  basura: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>',
+  tarjeta: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>',
+  edificio: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V4a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v17"/><path d="M15 9h3a1 1 0 0 1 1 1v11"/><line x1="8" y1="7" x2="12" y2="7"/><line x1="8" y1="11" x2="12" y2="11"/><line x1="8" y1="15" x2="12" y2="15"/></svg>',
+  relojArena: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h12"/><path d="M6 22h12"/><path d="M6 2v4a6 6 0 0 0 6 6 6 6 0 0 0 6-6V2"/><path d="M6 22v-4a6 6 0 0 1 6-6 6 6 0 0 1 6 6v4"/></svg>',
+  check: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>',
+  ajustes: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>',
+  guardar: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>',
+  refrescar: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/><path d="M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>',
+  lista: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>',
+  transferido: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>',
+  reembolso: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>'
 };
 
 /* ---------- Reseñas de las salas ---------- */
@@ -2590,7 +2600,7 @@ function mostrarSuscripcionChat() {
       if (btnSuscribir.disabled) return;
       const htmlOriginal = btnSuscribir.innerHTML;
       btnSuscribir.disabled = true;
-      btnSuscribir.textContent = '⏳ Procesando…';
+      btnSuscribir.textContent = 'Procesando…';
       try {
         await api('/api/comunidad/chat-suscribirse', { method: 'POST', body: { plan: 'mensual' } });
         toast('¡Suscripción activada! Ya podés chatear.', 'ok');
@@ -7194,12 +7204,12 @@ async function renderPagosAdmin() {
     // Badge del modo de pagos
     const modo = data.modo || 'apagado';
     let modoHtml = '';
-    if (modo === 'mp') {
-      modoHtml = '<span class="pill" style="background: rgba(46,204,113,.15); color: #2ecc71; font-weight: 600;">🟢 Mercado Pago (Producción)</span>';
+    if (modo === 'mercadopago') {
+      modoHtml = `<span class="pill pill-ok">${ICO_SVG.check} Mercado Pago (Producción)</span>`;
     } else if (modo === 'simulado') {
-      modoHtml = '<span class="pill" style="background: rgba(241,196,15,.15); color: #f39c12; font-weight: 600;">🟡 Simulado (Pruebas)</span>';
+      modoHtml = `<span class="pill pill-warn">${ICO_SVG.info} Simulado (Pruebas)</span>`;
     } else {
-      modoHtml = '<span class="pill" style="background: rgba(149,165,166,.15); color: #7f8c8d; font-weight: 600;">⚪ Pagos desactivados (Reserva directa)</span>';
+      modoHtml = `<span class="pill">${ICO_SVG.info} Pagos desactivados (Reserva directa)</span>`;
     }
     if (badge) badge.innerHTML = modoHtml;
 
@@ -7214,13 +7224,13 @@ async function renderPagosAdmin() {
     });
 
     cards.innerHTML = `
-      <div class="stat"><span>💳 Señas cobradas</span><strong>${fmtMoney(totalCobrado)}</strong></div>
-      <div class="stat"><span>💰 Comisión +Música</span><strong>${fmtMoney(totalComision)}</strong></div>
-      <div class="stat"><span>🏢 Asignado a salas</span><strong>${fmtMoney(totalParaSala)}</strong></div>
+      <div class="stat"><span>${ICO_SVG.tarjeta} Señas cobradas</span><strong>${fmtMoney(totalCobrado)}</strong></div>
+      <div class="stat"><span>${ICO_SVG.precio} Comisión +Música</span><strong>${fmtMoney(totalComision)}</strong></div>
+      <div class="stat"><span>${ICO_SVG.edificio} Asignado a salas</span><strong>${fmtMoney(totalParaSala)}</strong></div>
       <div class="stat" style="${totalPorLiquidar > 0 ? 'border: 1px solid var(--warn, #e67e22);' : ''}">
-        <span>⏳ Por liquidar</span><strong style="${totalPorLiquidar > 0 ? 'color: var(--warn, #e67e22);' : ''}">${fmtMoney(totalPorLiquidar)}</strong>
+        <span>${ICO_SVG.relojArena} Por liquidar</span><strong style="${totalPorLiquidar > 0 ? 'color: var(--warn, #e67e22);' : ''}">${fmtMoney(totalPorLiquidar)}</strong>
       </div>
-      <div class="stat"><span>✅ Ya transferido</span><strong>${fmtMoney(totalLiquidado)}</strong></div>
+      <div class="stat"><span>${ICO_SVG.transferido} Ya transferido</span><strong>${fmtMoney(totalLiquidado)}</strong></div>
     `;
 
     // Tabla de liquidación por sala
@@ -7258,9 +7268,9 @@ async function renderPagosAdmin() {
                 <td>
                   ${pendiente > 0 ? `
                     <button class="btn btn-primary btn-sm btn-liquidar-sala" data-room-id="${esc(s.roomId)}" data-room-name="${esc(s.sala)}" data-monto="${pendiente}">
-                      ✓ Marcar liquidado
+                      ${ICO_SVG.check} Marcar liquidado
                     </button>
-                  ` : '<span class="muted small">Al día ✓</span>'}
+                  ` : `<span class="muted small">Al día ${ICO_SVG.check}</span>`}
                 </td>
               </tr>`;
             }).join('')}
@@ -7315,20 +7325,20 @@ async function renderPagosAdmin() {
               const salaNom = room ? room.name : res.roomId;
               let pagoTag = `<span class="pill">${esc(res.pago || '—')}</span>`;
               if (res.pago === 'aprobado') {
-                pagoTag = '<span class="pill" style="background: rgba(46,204,113,.15); color: #2ecc71; font-weight: 600;">✓ Aprobado</span>';
+                pagoTag = `<span class="pill pill-ok">${ICO_SVG.check} Aprobado</span>`;
               } else if (res.pago === 'pendiente') {
-                pagoTag = '<span class="pill" style="background: rgba(241,196,15,.15); color: #f39c12; font-weight: 600;">⏳ Pendiente</span>';
+                pagoTag = `<span class="pill pill-warn">${ICO_SVG.reloj} Pendiente</span>`;
               } else if (res.pago === 'reembolsado' || res.pago === 'reembolso_pendiente') {
-                pagoTag = '<span class="pill" style="background: rgba(231,76,60,.15); color: #e74c3c; font-weight: 600;">↩ Reembolso</span>';
+                pagoTag = `<span class="pill pill-danger">${ICO_SVG.reembolso} Reembolso</span>`;
               }
 
               let liqTag = '—';
               if (res.pago === 'aprobado' && res.estado !== 'cancelada') {
                 if (res.liquidadoEn) {
                   const d = new Date(res.liquidadoEn);
-                  liqTag = `<span class="muted small" title="${d.toLocaleString()}">✓ Transferido (${d.getDate()}/${d.getMonth()+1})</span>`;
+                  liqTag = `<span class="muted small" title="${d.toLocaleString()}">${ICO_SVG.check} Transferido (${d.getDate()}/${d.getMonth()+1})</span>`;
                 } else {
-                  liqTag = '<span class="pill" style="background: rgba(230,126,34,.15); color: #e67e22; font-weight: 600;">Por transferir</span>';
+                  liqTag = `<span class="pill pill-warn">Por transferir</span>`;
                 }
               }
 
