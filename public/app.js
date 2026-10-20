@@ -4435,16 +4435,47 @@ function formularioPassword() {
 /* ---------- Ayuda y contacto ---------- */
 function modalAyuda() {
   const h = (state.settings.reglas && state.settings.reglas.cancelacionHoras) || 0;
+  const c = (state.settings && state.settings.contacto) || {};
+  const ico = (path, size = 17) =>
+    `<svg class="ayuda-ico" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${path}</svg>`;
+  const icoIg = `<svg class="ayuda-ico" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="2.5" y="2.5" width="19" height="19" rx="5.2"></rect>
+          <circle cx="12" cy="12" r="4.1"></circle>
+          <line x1="17.4" y1="6.6" x2="17.4" y2="6.61"></line></svg>`;
+  const icoFb = `<svg class="ayuda-ico" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M15 3h-2.2A4.3 4.3 0 0 0 8.5 7.3V10H6.2v3.6h2.3V21h3.7v-7.4h2.6l.7-3.6h-3.3V7.6c0-.7.3-1.1 1.2-1.1H15z"></path></svg>`;
+
+  /* Canales de contacto cargados en Ajustes: los vacíos no se muestran */
+  const canales = [];
+  const wa = String(c.whatsapp || '').replace(/[^\d+]/g, '');
+  if (wa) canales.push(`<a class="btn btn-sm" target="_blank" rel="noopener" href="https://wa.me/${esc(wa)}">${ico(ICO_AJ.telefono)} WhatsApp</a>`);
+  if (c.email) canales.push(`<a class="btn btn-sm" href="mailto:${esc(c.email)}">${ico(ICO_AJ.buzon)} Email</a>`);
+  if (c.instagram) canales.push(`<a class="btn btn-sm" target="_blank" rel="noopener" href="https://www.instagram.com/${esc(limpiarIdentRed(c.instagram))}">${icoIg} Instagram</a>`);
+  if (c.facebook) canales.push(`<a class="btn btn-sm" target="_blank" rel="noopener" href="https://www.facebook.com/${esc(limpiarIdentRed(c.facebook))}">${icoFb} Facebook</a>`);
+  if (c.tiktok) canales.push(`<a class="btn btn-sm" target="_blank" rel="noopener" href="https://www.tiktok.com/@${esc(limpiarIdentRed(c.tiktok))}">${ico(ICO_AJ.nota)} TikTok</a>`);
+
   openModal(`
     <h3>Ayuda y contacto</h3>
     <ul class="ayuda-lista">
-      <li><strong>1. Elegí la fecha</strong> en el Inicio, después la sala y el horario que querés.</li>
-      <li><strong>2. Confirmá la reserva</strong> con el nombre de tu banda o el tuyo. Te llega un aviso en "Mis avisos".</li>
-      <li><strong>3. ¿Necesitás cancelar?</strong> Podés hacerlo desde "Mis reservas" ${h ? `hasta ${h} horas antes` : 'en cualquier momento'} del horario reservado.</li>
-      <li><strong>4. ¿Hablás con la sala?</strong> Abrí la sala en el Mapa y tocá "📍 Google Maps" o "📞 Llamar".</li>
-      <li><strong>5. ¿Alquilás un instrumento?</strong> Marcalo en el paso de confirmación y se suma a tu reserva.</li>
+      <li><strong>1. Elegí la fecha</strong> en el Inicio, después la sala y el horario. Los horarios ocupados aparecen tachados.</li>
+      <li><strong>2. Confirmá la reserva</strong> con el nombre de tu banda o el tuyo. Si te pide una seña, la abonás en ese paso y el saldo lo pagás en la sala.</li>
+      <li><strong>3. Seguí el aviso</strong> en "Mis avisos": la reserva queda guardada en "Mis reservas" con todos los datos.</li>
+      <li><strong>4. ¿Necesitás cancelar?</strong> Desde "Mis reservas" ${h ? `hasta ${h} horas antes` : 'antes de que empiece el ensayo'} del horario reservado. Al cancelar, el horario se libera.</li>
+      <li><strong>5. ¿Cómo llego o hablo con la sala?</strong> Abrila desde el Mapa y usá "Ver en el mapa", "Google Maps" o "Llamar".</li>
+      <li><strong>6. ¿Alquilás un instrumento?</strong> Marcalo en el paso de confirmación y se suma a tu reserva.</li>
+      <li><strong>7. Comunidad</strong> Con la suscripción al Chat Global podés chatear con otros músicos, invitar a una fecha y anotarte.</li>
     </ul>
-    <div class="row"><button class="btn btn-primary" onclick="closeModal()">Entendido</button></div>`);
+    ${canales.length ? `
+      <p class="ayuda-contacto-tit">¿Te falta algo? Escribinos por:</p>
+      <div class="row wrap ayuda-contacto">${canales.join('')}</div>` : ''}
+    <p class="muted small">Si no podés entrar a tu cuenta, usá "Pedí ayuda" en la pantalla de acceso: la administración recibe tu mensaje.</p>
+    <div class="row wrap">
+      <button class="btn btn-primary" onclick="modalTerminos()">Términos y condiciones</button>
+      <button class="btn" onclick="closeModal()">Entendido</button>
+    </div>`);
 }
 
 /* ---------- Términos y condiciones ---------- */
