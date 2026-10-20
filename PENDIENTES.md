@@ -48,7 +48,11 @@ Producción tiene 10 cuentas, varias de demostración. Se borran desde
 - [ ] Hoy **Producción tiene los pagos apagados**: reservar no cobra nada.
 - [ ] Falta activar **Mercado Pago** (token + URL pública) y probar el camino completo:
       reserva → seña → confirmación → webhook.
-- [ ] Definir si la **suscripción al Chat Global** se cobra de verdad.
+- [x] **Suscripción al Chat Global**: queda **solo el plan mensual de $5.000** (se
+      eliminaron los planes trimestral y anual).
+- [ ] **La suscripción al chat todavía NO se cobra**: al tocar "Suscribirme ahora" se
+      activa directo, sin pasar por Mercado Pago. Si se quiere cobrar de verdad, hay que
+      conectarla al mismo circuito de pago que la seña.
 
 ## 7. Funciones que todavía no existen
 
