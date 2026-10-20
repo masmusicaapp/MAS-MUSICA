@@ -338,6 +338,9 @@ function salaNueva(datos = {}) {
     capacity: 4,
     features: [],
     equipos: { instrumentos: '', amplificadores: '', bateria: '', microfonos: '', consola: '', otros: '' },
+    /* Catálogo de equipos propio de la sala (con foto, descripción y si se alquila).
+       Cada ítem: { id, nombre, descripcion, foto, alquiler, precioAlquiler } */
+    catalogo: [],
     fotos: [],
     foto: '',
     fotoPortada: '',   /* foto horizontal que se ve en el mapa */
@@ -386,6 +389,21 @@ function defaultState() {
   };
 }
 
+/* Normaliza el catálogo de equipos de una sala (lista de ítems con nombre,
+   descripción, foto y, si se alquila, el precio por hora). */
+const MAX_CATALOGO_POR_SALA = 40;
+function normalizarCatalogo(lista) {
+  if (!Array.isArray(lista)) return [];
+  return lista.slice(0, MAX_CATALOGO_POR_SALA).map(it => ({
+    id: String((it && it.id) || uid()).slice(0, 40),
+    nombre: String((it && it.nombre) || '').trim().slice(0, 60),
+    descripcion: String((it && it.descripcion) || '').trim().slice(0, 200),
+    foto: String((it && it.foto) || '').slice(0, 300),
+    alquiler: !!(it && it.alquiler),
+    precioAlquiler: Math.max(0, parseInt(it && it.precioAlquiler, 10) || 0),
+  })).filter(it => it.nombre);
+}
+
 /* Amplía las salas viejas con los campos nuevos (migración) */
 function migrarSala(r) {
   const base = salaNueva({ id: r.id, estado: r.estado || 'aprobada' });
@@ -396,6 +414,7 @@ function migrarSala(r) {
   out.capacity = Math.max(1, parseInt(r.capacity, 10) || 1);
   out.features = Array.isArray(r.features) ? r.features.map(String).slice(0, 20) : [];
   out.equipos = Object.assign(base.equipos, r.equipos || {});
+  out.catalogo = normalizarCatalogo(r.catalogo);
   out.fotos = Array.isArray(r.fotos) ? r.fotos : [];
   out.fotoPortada = String(r.fotoPortada || '').slice(0, 300);
   out.telefono = String(r.telefono || '').slice(0, 30);
@@ -576,12 +595,15 @@ function normalizarIntegrantes(arr) {
 const listaTexto = (v, max = 20, largo = 60) =>
   Array.isArray(v) ? v.map(x => String(x).trim().slice(0, largo)).filter(Boolean).slice(0, max) : [];
 
-/* Alquiler de instrumentos: el servidor calcula el precio (es la autoridad) */
-function calcularAlquiler(state, ids, horas) {
+/* Alquiler de equipos: el servidor calcula el precio (es la autoridad).
+   El catálogo es el de la sala elegida. */
+function calcularAlquiler(state, ids, horas, roomId) {
   if (!Array.isArray(ids) || !ids.length) return [];
+  const room = (state.rooms || []).find(r => r.id === roomId);
+  const catalogo = (room && Array.isArray(room.catalogo)) ? room.catalogo : [];
   const h = Math.max(1, Math.round(horas));
   return ids.slice(0, 12).map(id => {
-    const inst = (state.instruments || []).find(i => i.id === id && i.alquiler);
+    const inst = catalogo.find(i => i.id === id && i.alquiler);
     if (!inst) return null;
     const precio = Math.max(0, parseInt(inst.precioAlquiler, 10) || 0);
     return { id: inst.id, nombre: String(inst.nombre).slice(0, 60), horas: h, precio, total: precio * h };
@@ -1734,7 +1756,7 @@ async function handleApi(req, res, url, parts) {
     if (!rangoDisponible(state, date, roomId, startMin, endMin)) {
       return sendJson(res, 409, { error: 'Ese horario ya no está disponible' });
     }
-    const alquilerCalc = calcularAlquiler(state, body.alquiler, (endMin - startMin) / 60);
+    const alquilerCalc = calcularAlquiler(state, body.alquiler, (endMin - startMin) / 60, roomId);
     const cobrar = MODO_PAGOS !== 'apagado';
     const reservation = {
       id: uid(), roomId, date, start, end,
@@ -2919,6 +2941,16 @@ function datosDeSala(body, prev = {}) {
       consola: String(e.consola || '').slice(0, 300),
       otros: String(e.otros || '').slice(0, 300),
     };
+  }
+  /* Catálogo de equipos de la sala: cada ítem puede traer su foto como data URL,
+     que se guarda como archivo. */
+  if (body.catalogo !== undefined) {
+    const items = normalizarCatalogo(body.catalogo);
+    const idSala = prev.id || uid();
+    out.catalogo = items.map((it, i) => {
+      const guardada = guardarFotoSala(idSala, it.foto, '-eq' + (i + 1));
+      return Object.assign({}, it, { foto: fotoORuta(it.foto, guardada) });
+    });
   }
   if (body.horario && typeof body.horario === 'object') {
     const limpio = Object.assign(horarioVacio(), prev.horario || {});
