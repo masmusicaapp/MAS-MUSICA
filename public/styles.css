@@ -652,7 +652,7 @@ textarea:focus {
   border: 1px solid rgba(0, 160, 56, .5);
   box-shadow: 0 6px 18px rgba(0, 160, 56, .22);
 }
-/* El logo de la sala en el encabezado del panel (reemplaza el ícono 🎛️) */
+/* El logo de la sala en el encabezado del panel (reemplaza el ícono ) */
 #panel-head-logo { overflow: hidden; }
 #panel-head-logo img { width: 100%; height: 100%; object-fit: cover; object-position: center; display: block; border-radius: inherit; }
 .admin-head h1 { font-size: 1.45rem; line-height: 1.05; margin: 0; }
@@ -1076,7 +1076,7 @@ tr:hover td {
   border-radius: 14px;
 }
 
-/* ---------- Asignar / cambiar dueño (Administración central → Salas) ---------- */
+/* ---------- Asignar / cambiar dueño (Administración central Salas) ---------- */
 .own-ctx { margin: 4px 0 12px; font-size: .88rem; color: var(--muted); }
 .own-ctx b { color: var(--text); }
 .own-lista { display: grid; gap: 6px; max-height: 42vh; overflow-y: auto; margin: 8px 0 4px; padding-right: 2px; }
@@ -1254,7 +1254,17 @@ main {
   border: 1px solid var(--line);
 }
 .inst-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.inst-emoji { font-size: 3rem; }
+.inst-emoji {
+  display: inline-block;
+  width: 3rem; height: 3rem;
+  background: no-repeat center/contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23111' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 18V5l12-2v13'/%3E%3Ccircle cx='6' cy='18' r='3'/%3E%3Ccircle cx='18' cy='16' r='3'/%3E%3C/svg%3E");
+}
+.inst-photo.inst-sin-foto { display: grid; place-items: center; }
+.inst-photo.inst-sin-foto::before {
+  content: '';
+  width: 3rem; height: 3rem;
+  background: no-repeat center/contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23111' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 18V5l12-2v13'/%3E%3Ccircle cx='6' cy='18' r='3'/%3E%3Ccircle cx='18' cy='16' r='3'/%3E%3C/svg%3E");
+}
 .place-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
 .place-photo {
   margin: 0; border-radius: 14px; overflow: hidden;
@@ -2092,7 +2102,15 @@ main {
 
 .campo.error .campo-msg { display: block; color: var(--danger); }
 .campo.ok .campo-msg { display: block; color: var(--ok); }
-.campo.ok .campo-msg::before { content: '✓ '; }
+.campo.ok .campo-msg::before {
+  content: '';
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-right: 4px;
+  vertical-align: -2px;
+  background: no-repeat center/contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232e7d32' stroke-width='3' stroke-linecap='round' stroke-linejoin='round' width='12' height='12'%3E%3Cpath d='M20 6L9 17l-5-5'/%3E%3C/svg%3E");
+}
 .campo.checking .campo-msg { display: block; color: var(--muted); }
 
 /* Contraseña: mostrar / ocultar */
@@ -3169,7 +3187,7 @@ main {
 
 /* ---------- Mapa a pantalla completa (escritorio) ----------
    En pantallas anchas el mapa también cubre toda la ventana: el riel
-   lateral flota sobre el mapa, los botones 📍/🔎 van abajo a la derecha
+   lateral flota sobre el mapa, los botones / van abajo a la derecha
    sobre el mapa y la lista de salas es un panel lateral siempre visible. */
 @media (min-width: 960px) {
   body.nav-mapa #app-header { display: none; }
@@ -5527,7 +5545,7 @@ main#view-comunidad:has(.suscripcion-wrap) > .panel {
   .mt-cover { height: 100px; }
   .mt-cuerpo { padding: 0 14px 14px; }
   .mt-nombre { font-size: 1rem; }
-  /* En pantalla chica el botón principal ocupa todo el ancho y "Ficha" + ♥ van abajo */
+  /* En pantalla chica el botón principal ocupa todo el ancho y "Ficha" + van abajo */
   .mt-acciones { flex-wrap: wrap; }
   .mt-acciones #tarjeta-reservar { flex: 1 1 100%; }
   .mt-acciones #tarjeta-ficha { flex: 1 1 auto; }
@@ -5647,3 +5665,23 @@ main#view-comunidad:has(.suscripcion-wrap) > .panel {
   .chat-invitacion { max-width: 100%; }
   .chat-msg-video, .chat-msg-img { max-width: 100%; }
 }
+
+/* Los íconos SVG heredan el tamaño de letra en los contenedores que antes
+   mostraban un emoji grande (encabezados, arte de estados vacíos, marcas). */
+.admin-head-ico svg,
+.sol-crown svg,
+.sol-empty-art svg,
+.cuentas-vacio-art svg,
+.salas-vacio-art svg,
+.notif-vacio-icon svg,
+.confirmar-icono svg,
+.ok-mark svg,
+.notif-cerrar svg,
+.notif-chip svg,
+.perfil-sin-foto svg,
+.band-emoji svg,
+.crop-empty svg,
+.inst-emoji svg { width: 1em; height: 1em; display: block; }
+/* Íconos que acompañan texto en títulos y etiquetas: alineados con la letra */
+h1 svg, h2 svg, h3 svg, .sub svg, .tag svg, .badge svg, .stat span svg { vertical-align: -0.14em; }
+
