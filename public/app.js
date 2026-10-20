@@ -3321,7 +3321,7 @@ function pantallaAuth(vista = 'inicio') {
   if (vista === 'ayuda') {
     const c = (state.settings && state.settings.contacto) || {};
     const botones = [];
-    const wa = String(c.whatsapp || '').replace(/[^\d+]/g, '');
+    const wa = String(c.whatsapp || '').replace(/[^\d]/g, '');
     if (wa) botones.push(`<a class="btn btn-sm" target="_blank" rel="noopener" href="https://wa.me/${esc(wa)}">💬 WhatsApp</a>`);
     if (c.facebook) botones.push(`<a class="btn btn-sm" target="_blank" rel="noopener" href="https://www.facebook.com/${esc(limpiarIdentRed(c.facebook))}">👍 Facebook</a>`);
     if (c.tiktok) botones.push(`<a class="btn btn-sm" target="_blank" rel="noopener" href="https://www.tiktok.com/@${esc(limpiarIdentRed(c.tiktok))}">🎵 TikTok</a>`);
@@ -4450,7 +4450,7 @@ function modalAyuda() {
 
   /* Canales de contacto cargados en Ajustes: los vacíos no se muestran */
   const canales = [];
-  const wa = String(c.whatsapp || '').replace(/[^\d+]/g, '');
+  const wa = String(c.whatsapp || '').replace(/[^\d]/g, '');
   if (wa) canales.push(`<a class="btn btn-sm" target="_blank" rel="noopener" href="https://wa.me/${esc(wa)}">${ico(ICO_AJ.telefono)} WhatsApp</a>`);
   if (c.email) canales.push(`<a class="btn btn-sm" href="mailto:${esc(c.email)}">${ico(ICO_AJ.buzon)} Email</a>`);
   if (c.instagram) canales.push(`<a class="btn btn-sm" target="_blank" rel="noopener" href="https://www.instagram.com/${esc(limpiarIdentRed(c.instagram))}">${icoIg} Instagram</a>`);
