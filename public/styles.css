@@ -2785,6 +2785,13 @@ main {
   background: var(--accent); color: #fff;
   border-radius: 999px; padding: 0 6px; font-size: .7rem; font-weight: 800;
 }
+/* Variantes de color para estados (pagos, reservas, etc.) */
+.pill-ok, .pill-warn, .pill-danger { display: inline-flex; align-items: center; gap: 4px; }
+.pill-ok { background: rgba(46, 204, 113, .16); color: #2ecc71; }
+.pill-warn { background: rgba(230, 126, 34, .16); color: #e67e22; }
+.pill-danger { background: rgba(231, 76, 60, .16); color: #e74c3c; }
+.pill svg { width: 13px; height: 13px; }
+.stat span svg { width: 15px; height: 15px; vertical-align: -2px; margin-right: 4px; }
 .sol-card {
   background: var(--panel2); border: 1px solid var(--line);
   border-radius: 14px; padding: 14px; margin-bottom: 12px;
