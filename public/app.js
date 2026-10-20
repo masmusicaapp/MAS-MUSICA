@@ -600,6 +600,7 @@ function renderRooms() {
       </div>
       <div class="room-info">
         <h3>${esc(r.name)}</h3>
+        ${puntajeSalaHTML(r, true)}
         ${r.localidad || r.direccion ? `<div class="room-ubic">📍 ${esc([r.localidad, [r.direccion, r.numero].filter(Boolean).join(' ')].filter(Boolean).join(' · '))}</div>` : ''}
         <div class="price">${fmtMoney(r.price)}<span> /hora</span></div>
       </div>
@@ -626,12 +627,144 @@ const ICO_SVG = {
   amplis: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>',
   micro: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>',
   estrella: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
+  estrellaOn: '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
   info: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>',
   flecha: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg>',
   corazon: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>',
   corazonOn: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path fill="currentColor" d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>',
   basura: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>'
 };
+
+/* ---------- Reseñas de las salas ---------- */
+/* Solo pueden reseñar las cuentas que reservaron en la sala (el servidor lo controla). */
+const resenasDeSala = id => (state.resenas || []).filter(x => x.roomId === id).sort((a, b) => (b.fecha || 0) - (a.fecha || 0));
+const puntajeDe = id => {
+  const lista = resenasDeSala(id);
+  if (!lista.length) return { promedio: 0, total: 0 };
+  const suma = lista.reduce((a, b) => a + (Number(b.estrellas) || 0), 0);
+  return { promedio: Math.round((suma / lista.length) * 10) / 10, total: lista.length };
+};
+const miResena = id => (yo ? resenasDeSala(id).find(x => x.usuario === yo.usuario) : null);
+const puedeResenar = id => !!yo && (state.reservations || [])
+  .some(r => r.roomId === id && r.userId === yo.id && r.estado !== 'cancelada');
+
+/* Cinco estrellas, pintadas hasta la nota que se pasa */
+function estrellasHTML(nota, tam = 16) {
+  const n = Math.max(0, Math.min(5, Math.round(Number(nota) || 0)));
+  let out = `<span class="estrellas" aria-label="${n} de 5 estrellas">`;
+  for (let i = 1; i <= 5; i++) {
+    out += `<span class="est${i <= n ? ' on' : ''}">${i <= n ? ICO_SVG.estrellaOn : ICO_SVG.estrella}</span>`;
+  }
+  return out + '</span>';
+}
+
+/* Puntaje de una sala: estrellas + promedio + cantidad (vacío si no tiene reseñas) */
+function puntajeSalaHTML(r, compacto = false) {
+  const p = (r && r.puntaje) || { promedio: 0, total: 0 };
+  if (!p.total) return '';
+  return `<span class="sala-puntaje${compacto ? ' mini' : ''}">${estrellasHTML(p.promedio)}
+    <b>${p.promedio.toFixed(1)}</b><small>(${p.total})</small></span>`;
+}
+
+/* Bloque de reseñas para la ficha de la sala */
+function bloqueResenas(id) {
+  const lista = resenasDeSala(id);
+  const p = (state.rooms.find(x => x.id === id) || {}).puntaje || { promedio: 0, total: 0 };
+  const mia = miResena(id);
+  const puede = puedeResenar(id);
+  const inicial = mia ? mia.estrellas : 0;
+
+  const aviso = !yo
+    ? '<p class="muted small">Iniciá sesión para dejar tu reseña.</p>'
+    : (!puede && !mia
+      ? '<p class="muted small">Podés reseñar esta sala cuando tengas una reserva en ella.</p>'
+      : '');
+
+  const estrellas = [1, 2, 3, 4, 5].map(n =>
+    `<button type="button" class="est-btn${inicial >= n ? ' on' : ''}" data-n="${n}" aria-label="${n} estrella${n > 1 ? 's' : ''}">${ICO_SVG.estrellaOn}</button>`).join('');
+
+  const items = lista.length
+    ? lista.map(x => `
+      <article class="resena">
+        <div class="resena-top">
+          ${estrellasHTML(x.estrellas)}
+          <strong>${esc(x.usuario || 'músico')}</strong>
+          <span class="muted small">${x.fecha ? new Date(x.fecha).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' }) : ''}</span>
+        </div>
+        ${x.texto ? `<p>${esc(x.texto)}</p>` : ''}
+      </article>`).join('')
+    : '<p class="muted small">Todavía no hay reseñas. Si reservaste en esta sala, ¡sé el primero en contar cómo es!</p>';
+
+  return `
+    <h4 class="ficha-titulo">${ICO_SVG.estrella}Reseñas ${p.total ? `<span class="muted small">· ${p.promedio.toFixed(1)} de 5 (${p.total})</span>` : ''}</h4>
+    <div class="resenas-lista">${items}</div>
+    ${aviso}
+    ${(puede || mia) ? `
+      <form id="f-resena" class="resena-form" novalidate>
+        <input type="hidden" id="resena-nota" value="${inicial}">
+        <div class="resena-estrellas" id="resena-estrellas">${estrellas}</div>
+        <textarea id="resena-texto" maxlength="500" rows="3" placeholder="Contá cómo es la sala: el sonido, el equipo, la atención…">${mia ? esc(mia.texto) : ''}</textarea>
+        <div class="row wrap">
+          <button class="btn btn-primary btn-sm" type="submit">${mia ? 'Actualizar mi reseña' : 'Publicar reseña'}</button>
+          ${mia ? `<button class="btn btn-sm" type="button" id="resena-borrar">${ICO_SVG.basura} Borrar mi reseña</button>` : ''}
+        </div>
+        <p class="muted small">Una reseña por cuenta. Si volvés a publicar, se reemplaza la anterior.</p>
+      </form>` : ''}`;
+}
+
+/* Conecta el formulario de reseña que está abierto en la ficha */
+function wireResenas(id) {
+  const form = $('#f-resena');
+  if (!form) return;
+  const oculto = $('#resena-nota');
+  const botones = [...form.querySelectorAll('.est-btn')];
+  const pintar = n => botones.forEach(b => b.classList.toggle('on', Number(b.dataset.n) <= n));
+  botones.forEach(b => { b.onclick = () => { oculto.value = b.dataset.n; pintar(Number(b.dataset.n)); }; });
+
+  const borrar = $('#resena-borrar');
+  if (borrar) borrar.onclick = async () => {
+    const mia = miResena(id);
+    if (!mia) return;
+    try {
+      const data = await api('/api/resenas/' + mia.id, { method: 'DELETE' });
+      state.resenas = (state.resenas || []).filter(x => x.id !== mia.id);
+      const room = state.rooms.find(x => x.id === id);
+      if (room && data.puntaje) room.puntaje = data.puntaje;
+      toast('Tu reseña se borró', 'ok');
+      fichaSala(id);
+      renderRooms();
+      renderSalasStrip();
+    } catch (e) { toast(e.message, 'error'); }
+  };
+
+  form.onsubmit = async e => {
+    e.preventDefault();
+    const nota = Number(oculto.value);
+    if (!nota) { toast('Elegí cuántas estrellas le ponés', 'warn'); return; }
+    const btn = form.querySelector('button[type=submit]');
+    const txt = btn.textContent;
+    btn.disabled = true; btn.textContent = 'Guardando…';
+    try {
+      const data = await api('/api/resenas', {
+        method: 'POST',
+        body: { roomId: id, estrellas: nota, texto: $('#resena-texto').value },
+      });
+      state.resenas = (state.resenas || []).filter(x => !(x.roomId === id && x.usuario === yo.usuario));
+      state.resenas.push(data.resena);
+      const room = state.rooms.find(x => x.id === id);
+      if (room && data.puntaje) room.puntaje = data.puntaje;
+      toast('Gracias por tu reseña', 'ok');
+      fichaSala(id);
+      renderRooms();
+      renderSalasStrip();
+      if (mapa) renderMapa();
+    } catch (e) {
+      toast(e.message, 'error');
+    } finally {
+      btn.disabled = false; btn.textContent = txt;
+    }
+  };
+}
 
 function fichaSala(id) {
   const r = state.rooms.find(x => x.id === id);
@@ -655,6 +788,7 @@ function fichaSala(id) {
       <div class="ficha-dato"><span>${ICO_SVG.precio}Precio</span><strong>${fmtMoney(r.price)} /hora</strong></div>
       ${r.telefono ? `<div class="ficha-dato"><span>${ICO_SVG.telefono}Teléfono</span><strong>${esc(r.telefono)}</strong></div>` : ''}
       ${r.localidad ? `<div class="ficha-dato"><span>${ICO_SVG.pin}Zona</span><strong>${esc(r.localidad)}</strong></div>` : ''}
+      ${(r.puntaje && r.puntaje.total) ? `<div class="ficha-dato"><span>${ICO_SVG.estrella}Reseñas</span><strong>${r.puntaje.promedio.toFixed(1)} / 5 <span class="muted small">(${r.puntaje.total})</span></strong></div>` : ''}
     </div>
     ${r.direccion ? `<p class="ficha-dir">${ICO_SVG.pin}${esc([r.direccion, r.numero].filter(Boolean).join(' '))}${linkMapaSala(r) ? ` · <a href="${linkMapaSala(r)}" target="_blank" rel="noopener">ver en el mapa</a>` : ''}</p>` : ''}
     ${(r.fotos || []).length ? `<h4 class="ficha-titulo">${ICO_SVG.camara}Fotos</h4><div class="ficha-fotos">${(r.fotos || []).map(f => `<figure class="ficha-foto">${f.foto ? `<img src="${esc(f.foto)}" alt="${esc(f.titulo || r.name)}" onclick="verFoto('${esc(f.foto)}', 'Foto de la sala')" title="Ver en grande">` : ''}${f.titulo ? `<figcaption>${esc(f.titulo)}</figcaption>` : ''}</figure>`).join('')}</div>` : ''}
@@ -663,6 +797,7 @@ function fichaSala(id) {
     ${filas.length ? `<h4 class="ficha-titulo">${ICO_SVG.consola}Equipamiento</h4><div class="ficha-equip">${filas.map(f => `<div class="ficha-dato"><span>${f[0]}${f[1]}</span><strong>${esc(f[2])}</strong></div>`).join('')}</div>` : ''}
     <h4 class="ficha-titulo">${ICO_SVG.reloj}Horario de atención</h4>
     <div class="ficha-horario">${dias}</div>
+    ${bloqueResenas(r.id)}
     <div class="row">
       <button class="btn btn-primary" id="ficha-reservar">Ver horarios ${ICO_SVG.flecha}</button>
       <button class="btn" id="ficha-fav">${esFavorita(r.id) ? `${ICO_SVG.corazonOn} Quitar de favoritas` : `${ICO_SVG.corazon} Guardar como favorita`}</button>
@@ -671,6 +806,7 @@ function fichaSala(id) {
   $('#ficha-cerrar').onclick = closeModal;
   $('#ficha-reservar').onclick = () => { closeModal(); elegirSala(r.id); };
   $('#ficha-fav').onclick = () => { alternarFavorita(r.id); fichaSala(r.id); };
+  wireResenas(r.id);
 }
 
 /* El horario de la sala para ver en la ficha (propio o general) */
@@ -883,6 +1019,7 @@ function popupSala(r) {
       </div>
       <div class="pop-datos">
         <strong class="pop-nombre">${esc(r.name)}</strong>
+        ${puntajeSalaHTML(r, true)}
         <span class="pop-linea">📍 ${dir ? esc(dir) : 'Dirección sin cargar'}</span>
         ${tel
           ? `<a class="pop-linea pop-tel" href="tel:${esc(telHref)}">📞 ${esc(tel)}</a>`
@@ -4541,6 +4678,25 @@ function renderPanelTab(tab) {
   ({ inicio: renderPanelInicio, sala: renderPanelSala, disponibilidad: renderPanelDisponibilidad, reservas: renderPanelReservas, movimientos: renderPanelMovimientos, datos: renderPanelDatos }[tab])();
 }
 
+/* Reseñas de la sala, para la tarjeta de inicio del panel */
+function panelResenasSala() {
+  const id = panelDatos && panelDatos.room ? panelDatos.room.id : (miSala && miSala.id);
+  if (!id) return '';
+  const lista = resenasDeSala(id);
+  const p = puntajeDe(id);
+  const cuerpo = lista.length
+    ? `<div class="inicio-puntaje">${estrellasHTML(p.promedio)}<b>${p.promedio.toFixed(1)}</b>
+         <span class="muted small">· ${lista.length} reseña${lista.length === 1 ? '' : 's'}</span></div>
+       <ul class="inicio-prox">${lista.slice(0, 4).map(x => `
+         <li><span class="nom">${estrellasHTML(x.estrellas)} ${esc(x.usuario || 'músico')}</span>
+             <span class="sala">${esc(String(x.texto || '').slice(0, 90))}</span></li>`).join('')}</ul>`
+    : '<p class="muted small">Todavía no hay reseñas. Las escriben los músicos que reservaron en tu sala.</p>';
+  return `<section class="inicio-card">
+      <h3>Reseñas de tu sala</h3>
+      ${cuerpo}
+    </section>`;
+}
+
 /* Inicio del panel de sala: resumen del día de su sala */
 function renderPanelInicio() {
   const cont = $('#panel-inicio');
@@ -4574,6 +4730,7 @@ function renderPanelInicio() {
           : '<p class="muted small">No hay reservas para hoy.</p>'}
         <div class="inicio-pie"><button class="btn btn-sm" data-goto-ptab="reservas">Ver todas las reservas</button></div>
       </section>
+      ${panelResenasSala()}
     </div>`;
 
   cont.onclick = e => {
@@ -7269,6 +7426,8 @@ function renderAjustes() {
   }
   const selCancel = $('#set-cancelacion');
   if (selCancel) selCancel.value = String((state.settings.reglas && state.settings.reglas.cancelacionHoras) || 0);
+  const selRec = $('#set-recordatorio');
+  if (selRec) selRec.value = String((state.settings.reglas && state.settings.reglas.recordatorioHoras) || 0);
   $('#admin-device-info').innerHTML = esDispositivoAdmin()
     ? '✅ Este dispositivo está autorizado como <strong>administrador</strong>: el botón 🔒 aparece en el inicio. En otros dispositivos no se ve.'
     : '🔒 Este dispositivo <strong>no</strong> es de administración. Para entrar: doble toque en el logo (o URL con <code>#admin</code>) y escribí tu usuario y contraseña.';
@@ -7332,6 +7491,8 @@ async function guardarAjustes() {
   }
   const selCancel = $('#set-cancelacion');
   if (selCancel) body.reglas = Object.assign({}, state.settings.reglas, { cancelacionHoras: Number(selCancel.value) });
+  const selRec = $('#set-recordatorio');
+  if (selRec) body.reglas = Object.assign({}, body.reglas || state.settings.reglas, { recordatorioHoras: Number(selRec.value) });
   /* Contacto: redes + email de avisos */
   const contacto = {
     whatsapp: ($('#set-whatsapp') || {}).value,
