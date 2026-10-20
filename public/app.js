@@ -611,7 +611,7 @@ function renderRooms() {
 /* ---------- Ficha completa de una sala ---------- */
 function pintarBotonFav() {
   const b = $('#btn-filtro-fav');
-  if (b) b.textContent = filtroSalas === 'favoritas' ? '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path fill="currentColor" d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> Favoritas' : '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> Favoritas';
+  if (b) b.innerHTML = filtroSalas === 'favoritas' ? '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path fill="currentColor" d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> Favoritas' : '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> Favoritas';
 }
 
 /* Íconos SVG compartidos (ficha de sala y tarjeta del mapa) */
@@ -1701,7 +1701,7 @@ function elegirSala(roomId) {
 function renderSlots() {
   const room = salasPublicas().find(r => r.id === sel.roomId);
   if (!room) { goStep(2); renderRooms(); return; }
-  $('#slots-title').textContent = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> ${room.name} · ${fmtDate(sel.date)}`;
+  $('#slots-title').innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> ${esc(room.name)} · ${fmtDate(sel.date)}`;
   const { closed, slots } = slotsFor(sel.date, sel.roomId);
   const grid = $('#slots-grid');
   const bar = $('#range-bar');
@@ -1739,7 +1739,7 @@ function renderSlots() {
 
   if (sel.range) {
     const horas = (rEnd - rStart) / 60;
-    $('#range-text').textContent = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> ${sel.range.start} – ${sel.range.end} · ${horas} hora${horas > 1 ? 's' : ''} · Total: ${fmtMoney(horas * room.price)}`;
+    $('#range-text').innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> ${sel.range.start} – ${sel.range.end} · ${horas} hora${horas > 1 ? 's' : ''} · Total: ${fmtMoney(horas * room.price)}`;
     bar.hidden = false;
   } else {
     bar.hidden = true;
