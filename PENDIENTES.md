@@ -12,11 +12,11 @@ Actualizado: 20/10/2026. Este archivo es solo una guía de trabajo; la app no lo
 
 ## 2. Cuentas de prueba que quedaron en Producción
 
-Producción tiene 10 cuentas, varias de demostración. Se borran desde
-**Administración → Usuarios** (no hace falta tocar `data.json`).
-
-- [ ] `luca_demo`, `ana_guitarra`, `pedro_bateria`, `laura_teclado`, `marcos_bajo`,
-      `sofia_canto` → parecen de demo, borrar si no son reales.
+- [x] **Borradas las 6 cuentas de demo** (`luca_demo`, `ana_guitarra`, `pedro_bateria`,
+      `laura_teclado`, `marcos_bajo`, `sofia_canto`): ninguna tenía sala ni reservas.
+      También se limpió su rastro (suscripciones al chat y mensajes que quedaban huérfanos).
+- Producción quedó con **4 cuentas**: `admin` y `admin2` (SUPER_ADMIN), `madeinpilar`
+      (ROOM_ADMIN, dueño de la sala) y `marcelo` (USER).
 - [ ] `marcelo` (músico real) → confirmar si se queda.
 - [ ] `admin2` → decidir si se conserva como segunda cuenta de administración.
 - [ ] Contraseñas de prueba: hoy casi todo usa `Test1234!`.
