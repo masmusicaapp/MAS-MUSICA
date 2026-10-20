@@ -2750,6 +2750,28 @@ main {
 .ficha-dir svg { width: 15px; height: 15px; flex: 0 0 auto; }
 .row .btn svg { width: 17px; height: 17px; flex: 0 0 auto; }
 
+/* ===== Reseñas de las salas ===== */
+.estrellas { display: inline-flex; align-items: center; gap: 1px; color: #f5a623; }
+.estrellas .est { display: inline-flex; }
+.estrellas .est svg { width: 15px; height: 15px; }
+.estrellas .est:not(.on) { color: var(--line); }
+.sala-puntaje { display: inline-flex; align-items: center; gap: 6px; margin: 0 0 6px; font-size: .84rem; color: var(--text); }
+.sala-puntaje b { font-weight: 800; }
+.sala-puntaje small { color: var(--muted); }
+.sala-puntaje.mini { font-size: .8rem; margin: 0 0 4px; }
+.resenas-lista { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+.resena { background: var(--panel2); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
+.resena-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.resena-top strong { font-size: .88rem; }
+.resena p { margin: 6px 0 0; font-size: .9rem; color: var(--text); white-space: pre-wrap; }
+.resena-form { display: flex; flex-direction: column; gap: 8px; margin: 4px 0 6px; }
+.resena-form textarea { width: 100%; resize: vertical; }
+.resena-estrellas { display: flex; gap: 2px; }
+.est-btn { background: none; border: 0; padding: 2px; cursor: pointer; color: var(--line); display: inline-flex; border-radius: 6px; }
+.est-btn svg { width: 26px; height: 26px; }
+.est-btn.on { color: #f5a623; }
+.est-btn:hover { transform: scale(1.08); }
+
 /* ================= SOLICITUDES DE SALAS ================= */
 .pill {
   background: var(--accent); color: #fff;
@@ -3601,6 +3623,8 @@ main {
 .inicio-prox time { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .inicio-prox .nom { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .inicio-prox .sala { font-size: .8rem; color: var(--muted); white-space: nowrap; }
+.inicio-puntaje { display: flex; align-items: center; gap: 6px; margin: 0 0 8px; font-size: .9rem; }
+.inicio-puntaje b { font-weight: 800; }
 
 /* Accesos rápidos: botones que reparten el alto de la tarjeta */
 .inicio-links { display: grid; grid-auto-rows: 1fr; gap: 8px; flex: 1; }
