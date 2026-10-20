@@ -644,7 +644,7 @@ const puntajeDe = id => {
   const suma = lista.reduce((a, b) => a + (Number(b.estrellas) || 0), 0);
   return { promedio: Math.round((suma / lista.length) * 10) / 10, total: lista.length };
 };
-const miResena = id => (yo ? resenasDeSala(id).find(x => x.usuario === yo.usuario) : null);
+const misResenasDeSala = id => (yo ? resenasDeSala(id).filter(x => x.usuario === yo.usuario) : []);
 const puedeResenar = id => !!yo && (state.reservations || [])
   .some(r => r.roomId === id && r.userId === yo.id && r.estado !== 'cancelada');
 
@@ -670,28 +670,35 @@ function puntajeSalaHTML(r, compacto = false) {
 function bloqueResenas(id) {
   const lista = resenasDeSala(id);
   const p = (state.rooms.find(x => x.id === id) || {}).puntaje || { promedio: 0, total: 0 };
-  const mia = miResena(id);
   const puede = puedeResenar(id);
-  const inicial = mia ? mia.estrellas : 0;
+  const mias = misResenasDeSala(id);
+  /* Las reseñas de una misma cuenta se juntan: la primera con sus estrellas y,
+     debajo, las demás visitas con su fecha. Así el número de reseñas cuenta
+     cuántas veces se reservó, y no se repite el nombre en cada línea. */
+  const grupos = [];
+  lista.forEach(x => {
+    const g = grupos.find(y => y.usuario === (x.usuario || 'músico'));
+    if (g) g.items.push(x);
+    else grupos.push({ usuario: x.usuario || 'músico', items: [x] });
+  });
 
   const aviso = !yo
     ? '<p class="muted small">Iniciá sesión para dejar tu reseña.</p>'
-    : (!puede && !mia
+    : (!puede
       ? '<p class="muted small">Podés reseñar esta sala cuando tengas una reserva en ella.</p>'
       : '');
 
   const estrellas = [1, 2, 3, 4, 5].map(n =>
-    `<button type="button" class="est-btn${inicial >= n ? ' on' : ''}" data-n="${n}" aria-label="${n} estrella${n > 1 ? 's' : ''}">${ICO_SVG.estrellaOn}</button>`).join('');
+    `<button type="button" class="est-btn" data-n="${n}" aria-label="${n} estrella${n > 1 ? 's' : ''}">${ICO_SVG.estrellaOn}</button>`).join('');
 
-  const items = lista.length
-    ? lista.map(x => `
+  const items = grupos.length
+    ? grupos.map(g => `
       <article class="resena">
         <div class="resena-top">
-          ${estrellasHTML(x.estrellas)}
-          <strong>${esc(x.usuario || 'músico')}</strong>
-          <span class="muted small">${x.fecha ? new Date(x.fecha).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' }) : ''}</span>
+          ${estrellasHTML(g.items[0].estrellas)}
+          <strong>${esc(g.usuario)}</strong>
         </div>
-        ${x.texto ? `<p>${esc(x.texto)}</p>` : ''}
+        ${g.items.map(x => `<p class="resena-visita"><span class="muted small">${x.fecha ? new Date(x.fecha).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' }) : ''}</span>${x.texto ? ' ' + esc(x.texto) : ''}</p>`).join('')}
       </article>`).join('')
     : '<p class="muted small">Todavía no hay reseñas. Si reservaste en esta sala, ¡sé el primero en contar cómo es!</p>';
 
@@ -699,21 +706,55 @@ function bloqueResenas(id) {
     <h4 class="ficha-titulo">${ICO_SVG.estrella}Reseñas ${p.total ? `<span class="muted small">· ${p.promedio.toFixed(1)} de 5 (${p.total})</span>` : ''}</h4>
     <div class="resenas-lista">${items}</div>
     ${aviso}
-    ${(puede || mia) ? `
+    ${puede ? `
       <form id="f-resena" class="resena-form" novalidate>
-        <input type="hidden" id="resena-nota" value="${inicial}">
+        <input type="hidden" id="resena-nota" value="0">
         <div class="resena-estrellas" id="resena-estrellas">${estrellas}</div>
-        <textarea id="resena-texto" maxlength="500" rows="3" placeholder="Contá cómo es la sala: el sonido, el equipo, la atención…">${mia ? esc(mia.texto) : ''}</textarea>
+        <textarea id="resena-texto" maxlength="500" rows="3" placeholder="Contá cómo es la sala: el sonido, el equipo, la atención…"></textarea>
         <div class="row wrap">
-          <button class="btn btn-primary btn-sm" type="submit">${mia ? 'Actualizar mi reseña' : 'Publicar reseña'}</button>
-          ${mia ? `<button class="btn btn-sm" type="button" id="resena-borrar">${ICO_SVG.basura} Borrar mi reseña</button>` : ''}
+          <button class="btn btn-primary btn-sm" type="submit">Publicar reseña</button>
         </div>
-        <p class="muted small">Una reseña por cuenta. Si volvés a publicar, se reemplaza la anterior.</p>
-      </form>` : ''}`;
+        <p class="muted small">Podés dejar una reseña por cada vez que reserves. No se reemplaza ninguna.</p>
+        ${mias.length ? `<p class="muted small" id="resena-mias">${mias.length === 1 ? 'Dejaste 1 reseña' : `Dejaste ${mias.length} reseñas`} en esta sala. Abajo de todo tenés cuál borrar.</p>` : ''}
+      </form>` : ''}
+    ${mias.length ? `
+      <details class="resena-borrar-caja">
+        <summary>${ICO_SVG.basura} Borrar una de mis reseñas</summary>
+        <ul class="resena-mias">${mias.map(x => `
+          <li>
+            <span>${x.fecha ? new Date(x.fecha).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' }) : ''} · ${x.estrellas}★ ${esc(String(x.texto || '').slice(0, 60))}</span>
+            <button class="btn btn-sm" type="button" data-borrar-resena="${x.id}">Borrar</button>
+          </li>`).join('')}</ul>
+      </details>` : ''}`;
 }
 
 /* Conecta el formulario de reseña que está abierto en la ficha */
 function wireResenas(id) {
+  const redibujar = () => {
+    fichaSala(id);
+    renderRooms();
+    renderSalasStrip();
+  };
+
+  /* Borrar una reseña puntual (de las mías) */
+  document.querySelectorAll('[data-borrar-resena]').forEach(b => {
+    b.onclick = async () => {
+      const resenaId = b.dataset.borrarResena;
+      b.disabled = true;
+      try {
+        const data = await api('/api/resenas/' + resenaId, { method: 'DELETE' });
+        state.resenas = (state.resenas || []).filter(x => x.id !== resenaId);
+        const room = state.rooms.find(x => x.id === id);
+        if (room && data.puntaje) room.puntaje = data.puntaje;
+        toast('Tu reseña se borró', 'ok');
+        redibujar();
+      } catch (e) {
+        toast(e.message, 'error');
+        b.disabled = false;
+      }
+    };
+  });
+
   const form = $('#f-resena');
   if (!form) return;
   const oculto = $('#resena-nota');
@@ -721,46 +762,25 @@ function wireResenas(id) {
   const pintar = n => botones.forEach(b => b.classList.toggle('on', Number(b.dataset.n) <= n));
   botones.forEach(b => { b.onclick = () => { oculto.value = b.dataset.n; pintar(Number(b.dataset.n)); }; });
 
-  const borrar = $('#resena-borrar');
-  if (borrar) borrar.onclick = async () => {
-    const mia = miResena(id);
-    if (!mia) return;
-    try {
-      const data = await api('/api/resenas/' + mia.id, { method: 'DELETE' });
-      state.resenas = (state.resenas || []).filter(x => x.id !== mia.id);
-      const room = state.rooms.find(x => x.id === id);
-      if (room && data.puntaje) room.puntaje = data.puntaje;
-      toast('Tu reseña se borró', 'ok');
-      fichaSala(id);
-      renderRooms();
-      renderSalasStrip();
-    } catch (e) { toast(e.message, 'error'); }
-  };
-
   form.onsubmit = async e => {
     e.preventDefault();
     const nota = Number(oculto.value);
     if (!nota) { toast('Elegí cuántas estrellas le ponés', 'warn'); return; }
     const btn = form.querySelector('button[type=submit]');
     const txt = btn.textContent;
-    btn.disabled = true; btn.textContent = 'Guardando…';
+    btn.disabled = true; btn.textContent = 'Publicando…';
     try {
       const data = await api('/api/resenas', {
         method: 'POST',
         body: { roomId: id, estrellas: nota, texto: $('#resena-texto').value },
       });
-      state.resenas = (state.resenas || []).filter(x => !(x.roomId === id && x.usuario === yo.usuario));
-      state.resenas.push(data.resena);
+      state.resenas = (state.resenas || []).concat([data.resena]);
       const room = state.rooms.find(x => x.id === id);
       if (room && data.puntaje) room.puntaje = data.puntaje;
       toast('Gracias por tu reseña', 'ok');
-      fichaSala(id);
-      renderRooms();
-      renderSalasStrip();
-      if (mapa) renderMapa();
+      redibujar();
     } catch (e) {
       toast(e.message, 'error');
-    } finally {
       btn.disabled = false; btn.textContent = txt;
     }
   };
