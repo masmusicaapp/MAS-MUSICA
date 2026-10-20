@@ -2622,6 +2622,7 @@ main {
 
 /* Enlaces a los términos: casilla del registro y pie del inicio */
 .link-term { color: var(--accent); font-weight: 600; text-decoration: underline; }
+.auth-terminos { margin: 14px 0 0; text-align: center; font-size: .84rem; color: var(--muted); }
 .pie-legal { text-align: center; padding: 18px 16px 12px; }
 .pie-legal a { color: var(--muted); font-size: .84rem; text-decoration: underline; }
 .pie-legal a:hover { color: var(--accent); }
