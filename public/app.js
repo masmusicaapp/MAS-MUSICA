@@ -280,8 +280,6 @@ function goStep(n) {
 /* ---------- Acceso rápido a Mis reservas desde el inicio ---------- */
 /* Reservas de esta cuenta: las de este dispositivo + las vinculadas al usuario */
 const misReservas = () => state.reservations.filter(r => mineIds.includes(r.id) || (yo && r.userId === yo.id));
-/* Reservas que se marcan en el mapa: solo las de hoy en adelante (las viejas ya no). */
-const reservasEnMapa = () => misReservas().filter(r => r.estado !== 'cancelada' && r.date >= todayStr());
 
 function renderMineRapido() {
   const host = $('#home-mine');
@@ -1065,7 +1063,6 @@ function huellaDelMapa() {
   return JSON.stringify([
     salasPublicas().filter(tieneUbicacion).map(r => [r.id, r.lat, r.lng, r.foto, r.name, r.price, r.capacity]),
     salasPublicas().filter(r => !tieneUbicacion(r)).map(r => r.id),
-    reservasEnMapa().map(r => [r.id, r.roomId, r.date, r.start, r.end, r.estado]),
     miUbicacion,
     claveGoogle(),
   ]);
@@ -1258,21 +1255,7 @@ function renderMapaLeaflet() {
       });
   });
 
-  /* 2. Las reservas del usuario, sobre el lugar de cada sala */
-  reservasEnMapa().forEach(res => {
-    const sala = (state.rooms || []).find(x => x.id === res.roomId);
-    if (!sala || !tieneUbicacion(sala)) return;
-    const icono = L.divIcon({
-      className: 'mk-wrap',
-      html: '<div class="mk-res">🎸</div>',
-      iconSize: [24, 24], iconAnchor: [12, 12], popupAnchor: [0, -14],
-    });
-    L.marker([Number(sala.lat), Number(sala.lng)], { icon: icono, title: 'Tu reserva' })
-      .addTo(capaMarcas)
-      .on('click', () => abrirTarjetaReserva(res.id));
-  });
-
-  /* 3. Dónde está el usuario: círculo verde con el logo negro */
+  /* 2. Dónde está el usuario: círculo verde con el logo negro */
   if (miUbicacion) {
     const iconoYo = L.divIcon({
       className: 'mk-wrap',
@@ -1344,24 +1327,7 @@ async function renderMapaGoogle() {
       gmarcadores.push(m);
     });
 
-    /* 2. Reservas del usuario, con 🎸 sobre la sala */
-    const iconoRes = await iconoCircularGoogle('', 24, '🎸');
-    if (gmapaFallo || !gmap) return;
-    reservasEnMapa().forEach(res => {
-      const sala = (state.rooms || []).find(x => x.id === res.roomId);
-      if (!sala || !tieneUbicacion(sala)) return;
-      const m = new google.maps.Marker({
-        map: gmap,
-        position: { lat: Number(sala.lat), lng: Number(sala.lng) },
-        title: 'Tu reserva · ' + sala.name,
-        zIndex: 6,
-        icon: { url: iconoRes, scaledSize: new google.maps.Size(24, 24), anchor: new google.maps.Point(12, 12) },
-      });
-      m.addListener('click', () => abrirTarjetaReserva(res.id));
-      gmarcadores.push(m);
-    });
-
-    /* 3. Dónde está el usuario: círculo verde con el logo negro */
+    /* 2. Dónde está el usuario: círculo verde con el logo negro */
     if (miUbicacion) {
       const iconoYo = await iconoCircularGoogle('assets/marca-agua-negro.png', 12, '');
       if (!gmapaFallo && gmap) {
