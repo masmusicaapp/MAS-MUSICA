@@ -1075,6 +1075,8 @@ async function reembolsarSena(r) {
 }
 
 /* Reservas sin seña pagada a tiempo: se cancelan y el horario vuelve a quedar libre */
+/* Máximo de reseñas que una misma cuenta puede dejar en la misma sala */
+const MAX_RESENAS_POR_SALA = 10;
 /* Una reserva tentativa (armada desde el chat) se libera sola si la sala no la confirma */
 const HORAS_TENTATIVA = Number(process.env.TENTATIVA_HORAS) > 0 ? Number(process.env.TENTATIVA_HORAS) : 24;
 const MS_TENTATIVA = HORAS_TENTATIVA * 3600 * 1000;
@@ -1987,7 +1989,9 @@ async function handleApi(req, res, url, parts) {
     const u = sesionActual(state, req);
     const salaOk = id => (state.rooms || []).find(x => x.id === id && x.estado === 'aprobada');
 
-    /* Escribir o actualizar mi reseña (una por sala) */
+    /* Publicar mi reseña.
+       Puedo dejar varias en la misma sala (una por cada visita): no se reemplaza
+       ninguna. Sí se evita el duplicado exacto si toca dos veces el botón. */
     if (method === 'POST' && url.pathname === '/api/resenas') {
       if (!u) return sendJson(res, 401, { error: 'Iniciá sesión para dejar una reseña' });
       const room = salaOk(String(body.roomId || '').trim());
@@ -1999,16 +2003,18 @@ async function handleApi(req, res, url, parts) {
       if (!(estrellas >= 1 && estrellas <= 5)) return sendJson(res, 400, { error: 'Elegí de 1 a 5 estrellas' });
       /* Sin etiquetas: se quitan las completas y cualquier < o > suelto */
       const texto = String(body.texto || '').replace(/<[^>]*>/g, '').replace(/[<>]/g, '').trim().slice(0, 500);
-
-      let resena = (state.resenas || []).find(x => x.roomId === room.id && x.userId === u.id);
-      if (resena) {
-        resena.estrellas = estrellas;
-        resena.texto = texto;
-        resena.fecha = Date.now();
-      } else {
-        resena = { id: uid(), roomId: room.id, userId: u.id, usuario: u.usuario, estrellas, texto, fecha: Date.now() };
-        state.resenas.push(resena);
+      const listas = (state.resenas || []).filter(x => x.roomId === room.id && x.userId === u.id);
+      /* Cuántas reseñas puede dejar la misma cuenta en la misma sala */
+      if (listas.length >= MAX_RESENAS_POR_SALA) {
+        return sendJson(res, 400, { error: `Ya dejaste ${MAX_RESENAS_POR_SALA} reseñas en esta sala` });
       }
+      /* El mismo comentario ya está puesto: no lo duplicamos */
+      if (listas.some(x => x.estrellas === estrellas && x.texto === texto)) {
+        return sendJson(res, 400, { error: 'Esa reseña ya la dejaste' });
+      }
+
+      const resena = { id: uid(), roomId: room.id, userId: u.id, usuario: u.usuario, estrellas, texto, fecha: Date.now() };
+      state.resenas.push(resena);
       persist(state);
       return sendJson(res, 200, { ok: true, resena: resenaPublica(resena), puntaje: puntajeSala(state, room.id) });
     }
