@@ -328,11 +328,11 @@ function renderMineRapido() {
         ${banda && banda.foto ? `<img class="quick-avatar" src="${esc(banda.foto)}" alt="" data-foto="${esc(banda.foto)}" data-foto-alt="${esc(banda.nombre)}">` : ''}
         <div class="quick-when">
           <strong>${fmtDate(r.date)}</strong>
-          <span>🕐 ${r.start} – ${r.end}</span>
+          <span><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> ${r.start} – ${r.end}</span>
         </div>
         <div class="quick-what">
           <strong>${esc(sala)} <span class="badge ${cancelada ? 'badge-past' : pasada ? 'badge-past' : 'badge-next'}">${cancelada ? 'Cancelada' : pasada ? 'Pasada' : r.estado === 'pendiente_pago' ? 'Falta pagar la seña' : 'Próxima'}</span></strong>
-          <span class="muted small">${esc(r.name)} · 💰 ${fmtMoney(precioReserva(r))}${alq ? ' · 🎒 ' + alq : ''}</span>
+          <span class="muted small">${esc(r.name)} · <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> ${fmtMoney(precioReserva(r))}${alq ? ' · <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v10H4z"/><path d="M9 6V4a3 3 0 0 1 6 0v2"/><path d="M9 14h6"/></svg> ' + alq : ''}</span>
         </div>
         ${(!pasada && !cancelada && esMia && r.estado === 'pendiente_pago') ? `<button class="btn btn-sm btn-primary" data-mine-pagar="${r.id}">Pagar seña</button>` : ''}
         ${(!pasada && !cancelada && esMia) ? `<button class="btn btn-sm btn-danger" data-mine-cancel="${r.id}">Cancelar</button>` : ''}
@@ -381,7 +381,7 @@ async function pagarSenaDesde(r) {
       closeModal();
       renderMineRapido();
       renderMine();
-      toast('Seña pagada (prueba) ✓ La reserva quedó confirmada', 'ok');
+      toast('Seña pagada (prueba) La reserva quedó confirmada', 'ok');
     } catch (err) {
       toast(err.message || 'No se pudo simular el pago', 'error');
       btn.disabled = false;
@@ -407,12 +407,12 @@ function renderPerfilMine() {
     host.hidden = false;
     host.innerHTML = `
     <div class="perfil-mini">
-      <div class="perfil-avatar-circular perfil-sin-foto">🎭</div>
+      <div class="perfil-avatar-circular perfil-sin-foto"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4h20v8a10 10 0 0 1-20 0z"/><circle cx="8" cy="10" r="1.4"/><circle cx="16" cy="10" r="1.4"/></svg></div>
       <div class="perfil-mini-info">
-        <h3>🎭 Registra tu banda</h3>
+        <h3><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4h20v8a10 10 0 0 1-20 0z"/><circle cx="8" cy="10" r="1.4"/><circle cx="16" cy="10" r="1.4"/></svg> Registra tu banda</h3>
           <p class="muted small">Registra tu banda para guardar tu logo, sus integrantes y el instrumento que toca cada uno. Todo es opcional.</p>
           <div class="row wrap">
-            <button class="btn btn-primary btn-sm" id="bp-new">🎭 Registrar mi banda</button>
+            <button class="btn btn-primary btn-sm" id="bp-new"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4h20v8a10 10 0 0 1-20 0z"/><circle cx="8" cy="10" r="1.4"/><circle cx="16" cy="10" r="1.4"/></svg> Registrar mi banda</button>
           </div>
         </div>
       </div>`;
@@ -426,18 +426,18 @@ function renderPerfilMine() {
       ${banda.fotoGrupal ? `<img class="perfil-fondo" src="${esc(banda.fotoGrupal)}" alt="">` : ''}
       ${banda.foto
         ? `<img class="perfil-avatar-circular" src="${esc(banda.foto)}" alt="${esc(banda.nombre)}" data-foto="${esc(banda.foto)}" data-foto-alt="${esc(banda.nombre)}" title="Tocá para ver en grande">`
-        : '<div class="perfil-avatar-circular perfil-sin-foto">🎭</div>'}
+        : '<div class="perfil-avatar-circular perfil-sin-foto"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4h20v8a10 10 0 0 1-20 0z"/><circle cx="8" cy="10" r="1.4"/><circle cx="16" cy="10" r="1.4"/></svg></div>'}
       <div class="perfil-mini-info">
         <h3>${esc(banda.nombre)}</h3>
         <div class="perfil-tags">
-          ${banda.genero ? `<span class="tag">🎸 ${esc(banda.genero)}</span>` : ''}
-          <span class="tag">👥 ${ints.length} ${ints.length === 1 ? 'integrante' : 'integrantes'}</span>
-          ${banda.telefono ? `<span class="tag">📞 ${esc(banda.telefono)}</span>` : ''}
+          ${banda.genero ? `<span class="tag"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg> ${esc(banda.genero)}</span>` : ''}
+          <span class="tag"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> ${ints.length} ${ints.length === 1 ? 'integrante' : 'integrantes'}</span>
+          ${banda.telefono ? `<span class="tag"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg> ${esc(banda.telefono)}</span>` : ''}
         </div>
         <div class="row wrap perfil-acciones">
           <button class="btn btn-sm" data-band="${banda.id}">Ver perfil completo</button>
-          ${banda.fotoGrupal ? `<button class="btn btn-sm" data-foto="${esc(banda.fotoGrupal)}" data-foto-alt="Foto grupal">🖼 Ver foto grupal</button>` : ''}
-          <button class="btn btn-sm" id="bp-edit">✏️ Editar perfil</button>
+          ${banda.fotoGrupal ? `<button class="btn btn-sm" data-foto="${esc(banda.fotoGrupal)}" data-foto-alt="Foto grupal"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> Ver foto grupal</button>` : ''}
+          <button class="btn btn-sm" id="bp-edit"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg> Editar perfil</button>
         </div>
       </div>
     </div>`;
@@ -449,7 +449,7 @@ function renderPerfilSala() {
   const host = $('#mine-band-profile');
   if (!host || !miSala) return;
   const r = miSala;
-  const etq = r.estado === 'aprobada' ? '✅ Aprobada' : r.estado === 'rechazada' ? '✖ Rechazada' : '⏳ En revisión';
+  const etq = r.estado === 'aprobada' ? '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Aprobada' : r.estado === 'rechazada' ? '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Rechazada' : '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h12"/><path d="M6 22h12"/><path d="M6 2v4a6 6 0 0 0 6 6 6 6 0 0 0 6-6V2"/><path d="M6 22v-4a6 6 0 0 1 6-6 6 6 0 0 1 6 6v4"/></svg> En revisión';
   const zona = [r.localidad, [r.direccion, r.numero].filter(Boolean).join(' ')].filter(Boolean).join(' · ');
   host.hidden = false;
   host.innerHTML = `
@@ -457,16 +457,16 @@ function renderPerfilSala() {
       ${r.foto ? `<img class="perfil-fondo" src="${esc(r.foto)}" alt="">` : ''}
       ${r.foto
         ? `<img class="perfil-avatar-circular" src="${esc(r.foto)}" alt="${esc(r.name)}" data-foto="${esc(r.foto)}" data-foto-alt="${esc(r.name)}" title="Tocá para ver en grande">`
-        : '<div class="perfil-avatar-circular perfil-sin-foto">🎛️</div>'}
+        : '<div class="perfil-avatar-circular perfil-sin-foto"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg></div>'}
       <div class="perfil-mini-info">
         <h3>${esc(r.name)}</h3>
         <div class="perfil-tags">
           <span class="tag">${etq}</span>
-          ${zona ? `<span class="tag">📍 ${esc(zona)}</span>` : ''}
-          <span class="tag">💰 ${fmtMoney(r.price)}/h · 👥 ${r.capacity}</span>
+          ${zona ? `<span class="tag"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> ${esc(zona)}</span>` : ''}
+          <span class="tag"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> ${fmtMoney(r.price)}/h · <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> ${r.capacity}</span>
         </div>
         <div class="row wrap perfil-acciones">
-          <button class="btn btn-sm" id="sp-panel">🎛️ Mi panel de sala</button>
+          <button class="btn btn-sm" id="sp-panel"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg> Mi panel de sala</button>
           <button class="btn btn-sm" id="sp-ver">Ver sala</button>
         </div>
       </div>
@@ -492,14 +492,14 @@ function renderIntegrantesBanda() {
   host.hidden = false;
   host.innerHTML = `
     <div class="panel-head">
-      <h2>👥 Integrantes y instrumentos</h2>
+      <h2><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Integrantes y instrumentos</h2>
       <button class="btn btn-sm" data-band="${banda.id}">Ver perfil</button>
     </div>
     <ul class="perfil-lista">
       ${ints.map(m => `
         <li>
           <strong>${esc(m.nombre || 'Sin nombre')}</strong>
-          <span>${m.instrumento ? '🎸 ' + esc(m.instrumento) : '<span class="muted">sin instrumento</span>'}</span>
+          <span>${m.instrumento ? '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg> ' + esc(m.instrumento) : '<span class="muted">sin instrumento</span>'}</span>
         </li>`).join('')}
     </ul>`;
 }
@@ -584,7 +584,7 @@ function renderRooms() {
     const favs = rooms.filter(r => esFavorita(r.id));
     if (favs.length) rooms = favs;
     else {
-      grid.innerHTML = `<p class="muted">No marcaste ninguna sala como favorita todavía. Tocá el ♥ en una sala para guardarla acá.</p>
+      grid.innerHTML = `<p class="muted">No marcaste ninguna sala como favorita todavía. Tocá el <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path fill="currentColor" d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> en una sala para guardarla acá.</p>
         <div class="row"><button class="btn" data-filtro-salas="todas">Ver todas las salas</button></div>`;
       return;
     }
@@ -596,12 +596,12 @@ function renderRooms() {
     <article class="room-card" data-room="${r.id}">
       <div class="room-top">
         ${r.foto ? `<div class="room-foto"><img src="${esc(r.foto)}" alt="${esc(r.name)}"></div>` : ''}
-        <button class="fav-btn ${esFavorita(r.id) ? 'on' : ''}" data-fav="${r.id}" title="Guardar como favorita">${esFavorita(r.id) ? '♥' : '♡'}</button>
+        <button class="fav-btn ${esFavorita(r.id) ? 'on' : ''}" data-fav="${r.id}" title="Guardar como favorita">${esFavorita(r.id) ? '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path fill="currentColor" d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>' : '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>'}</button>
       </div>
       <div class="room-info">
         <h3>${esc(r.name)}</h3>
         ${puntajeSalaHTML(r, true)}
-        ${r.localidad || r.direccion ? `<div class="room-ubic">📍 ${esc([r.localidad, [r.direccion, r.numero].filter(Boolean).join(' ')].filter(Boolean).join(' · '))}</div>` : ''}
+        ${r.localidad || r.direccion ? `<div class="room-ubic"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> ${esc([r.localidad, [r.direccion, r.numero].filter(Boolean).join(' ')].filter(Boolean).join(' · '))}</div>` : ''}
         <div class="price">${fmtMoney(r.price)}<span> /hora</span></div>
       </div>
     </article>`;
@@ -611,7 +611,7 @@ function renderRooms() {
 /* ---------- Ficha completa de una sala ---------- */
 function pintarBotonFav() {
   const b = $('#btn-filtro-fav');
-  if (b) b.textContent = filtroSalas === 'favoritas' ? '♥ Favoritas' : '♡ Favoritas';
+  if (b) b.textContent = filtroSalas === 'favoritas' ? '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path fill="currentColor" d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> Favoritas' : '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> Favoritas';
 }
 
 /* Íconos SVG compartidos (ficha de sala y tarjeta del mapa) */
@@ -732,7 +732,7 @@ function bloqueResenas(id) {
         <summary>${ICO_SVG.basura} Borrar una de mis reseñas</summary>
         <ul class="resena-mias">${mias.map(x => `
           <li>
-            <span>${x.fecha ? new Date(x.fecha).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' }) : ''} · ${x.estrellas}★ ${esc(String(x.texto || '').slice(0, 60))}</span>
+            <span>${x.fecha ? new Date(x.fecha).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' }) : ''} · ${x.estrellas}<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> ${esc(String(x.texto || '').slice(0, 60))}</span>
             <button class="btn btn-sm" type="button" data-borrar-resena="${x.id}">Borrar</button>
           </li>`).join('')}</ul>
       </details>` : ''}`;
@@ -855,7 +855,7 @@ async function alternarFavorita(id) {
     renderSalasStrip();
     renderMapa();
     if (!$('#view-mine').hidden) renderPerfil();
-    toast(data.favoritos.includes(id) ? 'Sala guardada en favoritas ♥' : 'Sala quitada de favoritas', 'ok');
+    toast(data.favoritos.includes(id) ? 'Sala guardada en favoritas' : 'Sala quitada de favoritas', 'ok');
   } catch (e) {
     toast(e.message, 'error');
   }
@@ -896,7 +896,7 @@ function linkMapaSala(r) {
 let gmap = null;            /* mapa de Google */
 let ginfo = null;           /* ventana de información de Google */
 let gmarcadores = [];       /* marcas actuales en Google */
-let gmapaFallo = false;     /* la clave de Google no sirvió → seguimos con OpenStreetMap */
+let gmapaFallo = false;     /* la clave de Google no sirvió  seguimos con OpenStreetMap */
 let cargandoGoogle = null;  /* promesa de la API de Google */
 let huellaMapa = '';        /* qué había dibujado la última vez */
 
@@ -915,7 +915,7 @@ function cargarGoogleMaps() {
     /* Clave inválida o API no habilitada */
     window.gm_authFailure = () => {
       gmapaFallo = true;
-      toast('⚠️ La clave de Google Maps no funciona. Se muestra el mapa de OpenStreetMap.', 'warn');
+      toast('La clave de Google Maps no funciona. Se muestra el mapa de OpenStreetMap.', 'warn');
       listo(false);
       /* Si ya estábamos dibujando con Google, volvemos a OpenStreetMap */
       if (gmap) {
@@ -933,7 +933,7 @@ function cargarGoogleMaps() {
     s.async = true;
     s.onerror = () => {
       gmapaFallo = true;
-      toast('⚠️ No pude cargar Google Maps. Se muestra el mapa de OpenStreetMap.', 'warn');
+      toast('No pude cargar Google Maps. Se muestra el mapa de OpenStreetMap.', 'warn');
       listo(false);
     };
     document.head.appendChild(s);
@@ -987,7 +987,7 @@ function iconoCircularGoogle(src, tam, emoji) {
           g.font = 'bold ' + Math.round(radio * 1.05) + 'px sans-serif';
           g.textAlign = 'center';
           g.textBaseline = 'middle';
-          g.fillText(emoji || '🎸', centro, centro + 1);
+          g.fillText('♪', centro, centro + 1);
         }
         g.restore();
         g.beginPath();
@@ -1050,17 +1050,17 @@ function popupSala(r) {
       <div class="pop-datos">
         <strong class="pop-nombre">${esc(r.name)}</strong>
         ${puntajeSalaHTML(r, true)}
-        <span class="pop-linea">📍 ${dir ? esc(dir) : 'Dirección sin cargar'}</span>
+        <span class="pop-linea"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> ${dir ? esc(dir) : 'Dirección sin cargar'}</span>
         ${tel
-          ? `<a class="pop-linea pop-tel" href="tel:${esc(telHref)}">📞 ${esc(tel)}</a>`
-          : '<span class="pop-linea muted">📞 Teléfono sin cargar</span>'}
-        <span class="muted small">${fmtMoney(r.price)}/hora · 👥 ${r.capacity}${dist}${eq ? ` · 🎚 ${eq} elemento(s)` : ''}</span>
+          ? `<a class="pop-linea pop-tel" href="tel:${esc(telHref)}"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg> ${esc(tel)}</a>`
+          : '<span class="pop-linea muted"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg> Teléfono sin cargar</span>'}
+        <span class="muted small">${fmtMoney(r.price)}/hora · <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> ${r.capacity}${dist}${eq ? ` · <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg> ${eq} elemento(s)` : ''}</span>
         <div class="row pop-acciones">
           <button class="btn btn-primary btn-sm" data-mapa-sala="${r.id}">Ver horarios</button>
-          <button class="btn btn-primary btn-sm" data-mapa-ficha="${r.id}">ℹ️ Ficha</button>
-          ${urlSegura(gmaps) ? `<a class="btn btn-sm" href="${urlSegura(gmaps)}" target="_blank" rel="noopener">📍 Google Maps</a>` : ''}
-          ${tel ? `<a class="btn btn-sm" href="tel:${esc(telHref)}">📞 Llamar</a>` : ''}
-          ${yo ? `<button class="btn btn-sm" data-mapa-fav="${r.id}">${esFavorita(r.id) ? '♥' : '♡'}</button>` : ''}
+          <button class="btn btn-primary btn-sm" data-mapa-ficha="${r.id}">undefined Ficha</button>
+          ${urlSegura(gmaps) ? `<a class="btn btn-sm" href="${urlSegura(gmaps)}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> Google Maps</a>` : ''}
+          ${tel ? `<a class="btn btn-sm" href="tel:${esc(telHref)}"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg> Llamar</a>` : ''}
+          ${yo ? `<button class="btn btn-sm" data-mapa-fav="${r.id}">${esFavorita(r.id) ? '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path fill="currentColor" d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>' : '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>'}</button>` : ''}
         </div>
       </div>
     </div>`;
@@ -1074,11 +1074,11 @@ function popupReserva(res, sala) {
     <div class="pop pop-detalle">
       ${portada ? `<div class="pop-cover pop-cover-chica"><img class="pop-cover-img" src="${esc(portada)}" alt="Foto de ${esc(sala.name)}" data-pop-foto="${esc(portada)}"></div>` : ''}
       <div class="pop-datos">
-        <strong class="pop-nombre">🎸 ${esc(sala.name)}</strong>
+        <strong class="pop-nombre"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg> ${esc(sala.name)}</strong>
         <span class="pop-linea">${fmtDate(res.date)} · ${res.start}–${res.end}</span>
         <span class="pop-linea">${esc(res.name)}</span>
-        ${dir ? `<span class="pop-linea muted small">📍 ${esc(dir)}</span>` : ''}
-        ${sala.telefono ? `<a class="pop-linea pop-tel small" href="tel:${esc(String(sala.telefono).replace(/[^0-9+]/g, ''))}">📞 ${esc(sala.telefono)}</a>` : ''}
+        ${dir ? `<span class="pop-linea muted small"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> ${esc(dir)}</span>` : ''}
+        ${sala.telefono ? `<a class="pop-linea pop-tel small" href="tel:${esc(String(sala.telefono).replace(/[^0-9+]/g, ''))}"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg> ${esc(sala.telefono)}</a>` : ''}
         ${pasada ? '<span class="badge badge-past">Pasada</span>' : '<span class="badge badge-next">Tu reserva</span>'}
         <div class="row pop-acciones">
           <button class="btn btn-primary btn-sm" data-mapa-sala="${sala.id}">Ver sala</button>
@@ -1120,12 +1120,12 @@ function abrirTarjetaSala(id) {
   if (!r) return;
   const equ = r.equipos || {};
   const filas = [
-    ['🎸 Instrumentos', equ.instrumentos],
-    ['🥁 Batería', equ.bateria],
-    ['🔊 Amplificadores', equ.amplificadores],
-    ['🎤 Micrófonos', equ.microfonos],
-    ['🎛️ Consola / sonido', equ.consola],
-    ['✨ Otros', equ.otros],
+    ['<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg> Instrumentos', equ.instrumentos],
+    ['<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="7" rx="8" ry="3"/><path d="M4 7v8c0 1.7 3.6 3 8 3s8-1.3 8-3V7"/><path d="M4 11c1.5 1.2 4.5 2 8 2s6.5-.8 8-2"/></svg> Batería', equ.bateria],
+    ['<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg> Amplificadores', equ.amplificadores],
+    ['<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg> Micrófonos', equ.microfonos],
+    ['<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg> Consola / sonido', equ.consola],
+    ['<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l1.9 5.8L20 9.7l-4.9 3.5L16 19l-4-3-4 3 1-5.8L4 9.7l6.1-1.9z"/></svg> Otros', equ.otros],
   ].filter(f => f[1]);
   const dias = [1, 2, 3, 4, 5, 6, 0].map(d => {
     const h = horarioSalaDe(r)[String(d)];
@@ -1341,7 +1341,7 @@ async function renderMapaGoogle() {
 
     /* 1. Salas publicadas (logo en un círculo, igual que en OpenStreetMap) */
     const salas = salasPublicas().filter(tieneUbicacion);
-    const iconos = await Promise.all(salas.map(r => iconoCircularGoogle(r.foto || 'assets/marca-agua-negro.png', 28, '🎸')));
+    const iconos = await Promise.all(salas.map(r => iconoCircularGoogle(r.foto || 'assets/marca-agua-negro.png', 28, '♪')));
     if (gmapaFallo || !gmap) return;   /* la clave falló mientras cargaban los íconos */
     salas.forEach((r, i) => {
       const m = new google.maps.Marker({
@@ -1466,13 +1466,13 @@ function promosBloqueHTML(lista, vacio) {
     </article>`).join('')}</div>`;
 }
 
-/* El Inicio del músico ya no muestra el bloque "🛎 Resumen" (estadísticas)
-   ni "🎉 Promociones y novedades". Solo queda el ingreso si no hay sesión. */
+/* El Inicio del músico ya no muestra el bloque " Resumen" (estadísticas)
+   ni " Promociones y novedades". Solo queda el ingreso si no hay sesión. */
 function renderResumenInicio() {
   const box = $('#inicio-resumen');
   if (!box || !state) return;
   const contenido = !yo
-    ? `<div class="row wrap"><button class="btn btn-sm" id="sum-login">👤 Iniciar sesión</button></div>`
+    ? `<div class="row wrap"><button class="btn btn-sm" id="sum-login"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Iniciar sesión</button></div>`
     : '';
   /* Sin novedades ni botón, se oculta el panel para no dejar una tarjeta vacía */
   box.hidden = !contenido.trim();
@@ -1489,7 +1489,7 @@ function pedirMiUbicacion() {
       miUbicacion = [pos.coords.latitude, pos.coords.longitude];
       centrarMapa(miUbicacion, 13);
       renderMapa();
-      toast('Ubicación detectada 📍', 'ok');
+      toast('Ubicación detectada', 'ok');
     },
     () => toast('No pude obtener tu ubicación. Revisá los permisos.', 'warn'),
     { timeout: 8000 }
@@ -1502,7 +1502,7 @@ function pintarBotonFavMapa() {
   if (!b) return;
   const on = filtroSalas === 'favoritas';
   b.classList.toggle('on', on);
-  b.innerHTML = `${on ? '♥' : '♡'}<span class="mapa-btn-txt"> Favoritas</span>`;
+  b.innerHTML = `${on ? '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path fill="currentColor" d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>' : '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>'}<span class="mapa-btn-txt"> Favoritas</span>`;
 }
 
 /* Acciones dentro de los popups del mapa */
@@ -1544,12 +1544,12 @@ async function cancelarReservaMia(id) {
 function abrirSelectorUbicacion(lat, lng, titulo) {
   return new Promise(resolve => {
     openModal(`
-      <h3>🗺 ${esc(titulo || 'Ubicar en el mapa')}</h3>
+      <h3><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg> ${esc(titulo || 'Ubicar en el mapa')}</h3>
       <p class="muted small">Tocá el mapa para marcar el punto exacto de la sala.</p>
       <div id="mapa-picker"></div>
       <p class="muted small" id="picker-texto"></p>
       <div class="row wrap">
-        <button class="btn btn-primary" id="picker-ok">✔ Guardar ubicación</button>
+        <button class="btn btn-primary" id="picker-ok"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Guardar ubicación</button>
         <button class="btn" id="picker-cancel">Cancelar</button>
       </div>`);
     const hayPunto = lat !== null && lat !== undefined && lat !== ''
@@ -1637,7 +1637,7 @@ async function buscarDireccion(direccion) {
         ]);
         if (rta.est === 'OK' && Array.isArray(rta.res) && rta.res.length) {
           const loc = rta.res[0].geometry.location;
-          toast('Dirección encontrada ✓', 'ok');
+          toast('Dirección encontrada', 'ok');
           return { lat: loc.lat(), lng: loc.lng(), nombre: rta.res[0].formatted_address };
         }
       } catch (e) { /* si Google falla, probamos con OpenStreetMap */ }
@@ -1668,7 +1668,7 @@ function renderSalasStrip() {
   box.title = `Ver horarios de ${room.name}`;
   box.innerHTML = (room.foto
     ? `<img class="sala-chip-foto" src="${esc(room.foto)}" alt="${esc(room.name)}">`
-    : '<span class="sala-chip-foto">🎸</span>')
+    : '<span class="sala-chip-foto"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span>')
     + `<span>${esc(room.name)}</span>`;
 }
 
@@ -1703,7 +1703,7 @@ function elegirSala(roomId) {
 function renderSlots() {
   const room = salasPublicas().find(r => r.id === sel.roomId);
   if (!room) { goStep(2); renderRooms(); return; }
-  $('#slots-title').textContent = `🕐 ${room.name} · ${fmtDate(sel.date)}`;
+  $('#slots-title').textContent = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> ${room.name} · ${fmtDate(sel.date)}`;
   const { closed, slots } = slotsFor(sel.date, sel.roomId);
   const grid = $('#slots-grid');
   const bar = $('#range-bar');
@@ -1728,10 +1728,10 @@ function renderSlots() {
       label = `${s.start} – ${s.end}<small>Disponible · ${fmtMoney(room.price)}/h</small>`;
     } else if (s.status === 'reserved') {
       cls = 'reserved';
-      label = `${s.start} – ${s.end}<small>🔒 Reservado</small>`;
+      label = `${s.start} – ${s.end}<small><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Reservado</small>`;
     } else if (s.status === 'blocked') {
       cls = 'blocked';
-      label = `${s.start} – ${s.end}<small>🚫 Bloqueado</small>`;
+      label = `${s.start} – ${s.end}<small><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg> Bloqueado</small>`;
     } else {
       cls = 'past';
       label = `${s.start} – ${s.end}<small>Ya pasó</small>`;
@@ -1741,7 +1741,7 @@ function renderSlots() {
 
   if (sel.range) {
     const horas = (rEnd - rStart) / 60;
-    $('#range-text').textContent = `⏱ ${sel.range.start} – ${sel.range.end} · ${horas} hora${horas > 1 ? 's' : ''} · Total: ${fmtMoney(horas * room.price)}`;
+    $('#range-text').textContent = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> ${sel.range.start} – ${sel.range.end} · ${horas} hora${horas > 1 ? 's' : ''} · Total: ${fmtMoney(horas * room.price)}`;
     bar.hidden = false;
   } else {
     bar.hidden = true;
@@ -1754,14 +1754,14 @@ function verFoto(src, alt) {
   const v = document.createElement('div');
   v.className = 'viewer';
   v.innerHTML = `
-    <button class="viewer-close" type="button" aria-label="Cerrar">✕</button>
+    <button class="viewer-close" type="button" aria-label="Cerrar"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
     <img class="viewer-img" src="${esc(src)}" alt="${esc(alt || '')}">
     <div class="viewer-controls">
-      <button class="btn btn-sm" data-v="out" title="Alejar">➖</button>
-      <button class="btn btn-sm" data-v="reset" title="Centrar">🎯</button>
-      <button class="btn btn-sm" data-v="in" title="Acercar">➕</button>
+      <button class="btn btn-sm" data-v="out" title="Alejar"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+      <button class="btn btn-sm" data-v="reset" title="Centrar"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></button>
+      <button class="btn btn-sm" data-v="in" title="Acercar"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
     </div>
-    <p class="viewer-hint">Arrastra la foto hacia abajo o arriba para moverla · ➕➖ para acercar · toca fuera para cerrar</p>`;
+    <p class="viewer-hint">Arrastra la foto hacia abajo o arriba para moverla · <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/></svg> para acercar · toca fuera para cerrar</p>`;
   document.body.appendChild(v);
   const img = v.querySelector('.viewer-img');
   let nivel = 1, ox = 0, oy = 0, arr = null;
@@ -1809,14 +1809,14 @@ function montarRecortador(host, opciones = {}) {
     <div class="crop-frame ${formato === 'horizontal' ? 'ancho' : ''} ${formato === 'cuadrado' ? 'circulo' : ''}" style="aspect-ratio:${ratio}">
       <canvas class="crop-canvas"></canvas>
       <div class="crop-grid"></div>
-      <div class="crop-empty">📷<br>Elegí una imagen</div>
+      <div class="crop-empty"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><br>Elegí una imagen</div>
     </div>
     <div class="crop-controls">
-      <button class="btn btn-sm" data-crop="out" title="Achicar">➖</button>
-      <button class="btn btn-sm" data-crop="reset" title="Centrar y llenar el cuadro">🎯</button>
-      <button class="btn btn-sm" data-crop="in" title="Agrandar">➕</button>
+      <button class="btn btn-sm" data-crop="out" title="Achicar"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+      <button class="btn btn-sm" data-crop="reset" title="Centrar y llenar el cuadro"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></button>
+      <button class="btn btn-sm" data-crop="in" title="Agrandar"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
     </div>
-    <p class="muted small crop-hint">Ajusta a mano: arrastra para mover · ➕➖ acercar o alejar · 🎯 llena todo el cuadro</p>`;
+    <p class="muted small crop-hint">Ajusta a mano: arrastra para mover · <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/></svg> acercar o alejar · <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg> llena todo el cuadro</p>`;
 
   const frame = host.querySelector('.crop-frame');
   const canvas = host.querySelector('.crop-canvas');
@@ -1930,13 +1930,13 @@ function formularioBanda(id, alGuardar) {
   const fotoActual = b.foto || '';
   const grupoActual = b.fotoGrupal || '';
   openModal(`
-    <h3>${id ? 'Editar banda' : '🎭 Registrar mi banda'}</h3>
+    <h3>${id ? 'Editar banda' : '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4h20v8a10 10 0 0 1-20 0z"/><circle cx="8" cy="10" r="1.4"/><circle cx="16" cy="10" r="1.4"/></svg> Registrar mi banda'}</h3>
     <div id="bd-crop"></div>
     <label>Logo / foto de perfil (círculo)<input type="file" id="bd-file" accept="image/*"></label>
     <label class="check" id="bd-quitar-wrap" ${fotoActual ? '' : 'hidden'}><input type="checkbox" id="bd-quitar"> Quitar la foto</label>
     <div class="grupo-foto">
       <div class="miembros-head">
-        <strong>🖼 Foto grupal <span class="muted small">(opcional)</span></strong>
+        <strong><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> Foto grupal <span class="muted small">(opcional)</span></strong>
         <button class="btn btn-sm" id="bd-toggle-grupo" type="button">${grupoActual ? 'Ver editor' : '＋ Agregar'}</button>
       </div>
       <div id="bd-grupo-caja" hidden>
@@ -1951,18 +1951,18 @@ function formularioBanda(id, alGuardar) {
     <label>Género / estilo <span class="muted">(opcional)</span><input id="bd-genero" maxlength="40" value="${esc(b.genero || '')}" placeholder="Ej.: Rock, cumbia, pop"></label>
     <div class="miembros">
       <div class="miembros-head">
-        <strong>👥 Integrantes <span class="muted small">(opcional)</span></strong>
+        <strong><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Integrantes <span class="muted small">(opcional)</span></strong>
         <button class="btn btn-sm" id="bd-add-miembro" type="button">＋ Agregar</button>
       </div>
       <div id="bd-miembros"></div>
       <p class="muted small">Pon el nombre de cada integrante y qué instrumento toca.</p>
     </div>
     <div class="row modal-acciones">
-      <button class="btn btn-primary" id="bd-save">💾 Guardar cambios</button>
+      <button class="btn btn-primary" id="bd-save"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Guardar cambios</button>
       <button class="btn" id="bd-cancel">Cancelar</button>
     </div>`);
 
-  const rec = montarRecortador($('#bd-crop'), { titulo: '🔵 Logo de la banda', formato: 'cuadrado' });
+  const rec = montarRecortador($('#bd-crop'), { titulo: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/></svg> Logo de la banda', formato: 'cuadrado' });
   /* Si ya tiene foto, se puede volver a encuadrar (detectando su orientación) */
   if (fotoActual) {
     rec.cargar(fotoActual, 'auto', false).catch(() => toast('No se pudo abrir la foto actual', 'warn'));
@@ -1976,7 +1976,7 @@ function formularioBanda(id, alGuardar) {
     cajaGrupo.hidden = false;
     btnGrupo.textContent = 'Ocultar';
     if (recGrupo) return;
-    recGrupo = montarRecortador($('#bd-crop-grupo'), { titulo: '🖼 Foto grupal', formato: 'horizontal' });
+    recGrupo = montarRecortador($('#bd-crop-grupo'), { titulo: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> Foto grupal', formato: 'horizontal' });
     if (grupoActual) {
       recGrupo.cargar(grupoActual, 'horizontal', false).catch(() => toast('No se pudo abrir la foto grupal', 'warn'));
     }
@@ -1986,7 +1986,7 @@ function formularioBanda(id, alGuardar) {
       if (!/^image\//.test(f.type)) { toast('Ese archivo no es una imagen', 'error'); return; }
       const lector = new FileReader();
       lector.onload = () => recGrupo.cargar(lector.result)
-        .then(() => toast('Encuadra la foto grupal con ➕➖', 'ok'))
+        .then(() => toast('Encuadra la foto grupal con', 'ok'))
         .catch(err => toast(err.message || 'No se pudo leer la imagen', 'error'));
       lector.onerror = () => toast('No se pudo leer el archivo', 'error');
       lector.readAsDataURL(f);
@@ -2009,7 +2009,7 @@ function formularioBanda(id, alGuardar) {
     if (!/^image\//.test(f.type)) { toast('Ese archivo no es una imagen', 'error'); return; }
     const lector = new FileReader();
     lector.onload = () => rec.cargar(lector.result)
-      .then(() => toast('Encuadra tu foto con ➕➖ y arrastrando', 'ok'))
+      .then(() => toast('Encuadra tu foto cony arrastrando', 'ok'))
       .catch(err => toast(err.message || 'No se pudo leer la imagen', 'error'));
     lector.onerror = () => toast('No se pudo leer el archivo', 'error');
     lector.readAsDataURL(f);
@@ -2042,7 +2042,7 @@ function formularioBanda(id, alGuardar) {
         : await api('/api/bands', { method: 'POST', body });
       state = data.state;
       closeModal();
-      toast(id ? 'Banda actualizada ✓' : `¡${nombre} registrada! ✓`, 'ok');
+      toast(id ? 'Banda actualizada' : `¡${nombre} registrada!`, 'ok');
       const creada = bandaPorNombre(nombre);
       if (alGuardar) alGuardar(creada);
       else refrescarVistasTrasBanda();
@@ -2063,7 +2063,7 @@ function agregarFilaMiembro(mi = {}) {
   fila.innerHTML = `
     <input maxlength="40" placeholder="Nombre" value="${esc(mi.nombre || '')}" data-m-nombre aria-label="Nombre del integrante">
     <input maxlength="60" placeholder="Instrumento" value="${esc(mi.instrumento || '')}" data-m-instrumento aria-label="Instrumento">
-    <button class="btn btn-sm btn-danger" type="button" title="Quitar integrante" data-m-del>✕</button>`;
+    <button class="btn btn-sm btn-danger" type="button" title="Quitar integrante" data-m-del><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>`;
   fila.querySelector('[data-m-del]').onclick = () => fila.remove();
   cont.appendChild(fila);
 }
@@ -2086,25 +2086,25 @@ function verPerfilBanda(id) {
       ${b.fotoGrupal ? `<img class="perfil-fondo" src="${esc(b.fotoGrupal)}" alt="">` : ''}
       ${b.foto
         ? `<img class="perfil-avatar-circular grande" src="${esc(b.foto)}" alt="${esc(b.nombre)}" data-foto="${esc(b.foto)}" data-foto-alt="${esc(b.nombre)}" title="Tocá para ver en grande">`
-        : '<div class="perfil-avatar-circular grande perfil-sin-foto">🎭</div>'}
+        : '<div class="perfil-avatar-circular grande perfil-sin-foto"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4h20v8a10 10 0 0 1-20 0z"/><circle cx="8" cy="10" r="1.4"/><circle cx="16" cy="10" r="1.4"/></svg></div>'}
       <h3>${esc(b.nombre)}</h3>
       <div class="perfil-tags">
-        ${b.genero ? `<span class="tag">🎸 ${esc(b.genero)}</span>` : ''}
-        <span class="tag">👥 ${ints.length} ${ints.length === 1 ? 'integrante' : 'integrantes'}</span>
-        ${b.telefono ? `<span class="tag">📞 ${esc(b.telefono)}</span>` : ''}
+        ${b.genero ? `<span class="tag"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg> ${esc(b.genero)}</span>` : ''}
+        <span class="tag"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> ${ints.length} ${ints.length === 1 ? 'integrante' : 'integrantes'}</span>
+        ${b.telefono ? `<span class="tag"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg> ${esc(b.telefono)}</span>` : ''}
       </div>
       <h4 class="sub">Integrantes y instrumentos</h4>
       ${ints.length
         ? `<ul class="perfil-lista">${ints.map(m => `
             <li>
               <strong>${esc(m.nombre || 'Sin nombre')}</strong>
-              <span>${m.instrumento ? '🎸 ' + esc(m.instrumento) : '<span class="muted">sin instrumento</span>'}</span>
+              <span>${m.instrumento ? '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg> ' + esc(m.instrumento) : '<span class="muted">sin instrumento</span>'}</span>
             </li>`).join('')}</ul>`
         : '<p class="muted small">Esta banda aún no registró sus integrantes.</p>'}
     </div>
     <div class="row">
-      ${b.fotoGrupal ? `<button class="btn btn-primary" data-foto="${esc(b.fotoGrupal)}" data-foto-alt="Foto grupal">🖼 Ver foto grupal</button>` : ''}
-      <button class="btn ${b.fotoGrupal ? '' : 'btn-primary'}" id="pf-edit">✏️ Editar perfil</button>
+      ${b.fotoGrupal ? `<button class="btn btn-primary" data-foto="${esc(b.fotoGrupal)}" data-foto-alt="Foto grupal"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> Ver foto grupal</button>` : ''}
+      <button class="btn ${b.fotoGrupal ? '' : 'btn-primary'}" id="pf-edit"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg> Editar perfil</button>
       <button class="btn" id="pf-close">Cerrar</button>
     </div>`);
   $('#pf-edit').onclick = () => formularioBanda(id, () => verPerfilBanda(id));
@@ -2131,7 +2131,7 @@ function renderConfirm() {
     ${alquilables.length ? `
     <div class="alquiler-box">
       <div class="alquiler-box-head">
-        <strong>🎒 ¿Alquilas instrumentos?</strong>
+        <strong><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v10H4z"/><path d="M9 6V4a3 3 0 0 1 6 0v2"/><path d="M9 14h6"/></svg> ¿Alquilas instrumentos?</strong>
         <span class="muted small">Se cobra por hora de ensayo (${horas}h)</span>
       </div>
       ${alquilables.map(i => `
@@ -2146,7 +2146,7 @@ function renderConfirm() {
       <div id="band-preview" class="band-preview" ${elegida ? `data-band="${elegida.id}"` : ''} ${elegida ? '' : 'hidden'}>
         ${elegida ? (elegida.foto
           ? `<img class="band-avatar" src="${esc(elegida.foto)}" alt="${esc(elegida.nombre)}">`
-          : `<span class="band-avatar band-emoji">🎭</span>`) : ''}
+          : `<span class="band-avatar band-emoji"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4h20v8a10 10 0 0 1-20 0z"/><circle cx="8" cy="10" r="1.4"/><circle cx="16" cy="10" r="1.4"/></svg></span>`) : ''}
         <div class="mine-band-info">
           <strong>${elegida ? esc(elegida.nombre) : ''}</strong>
           <span class="muted small">Banda registrada</span>
@@ -2158,12 +2158,12 @@ function renderConfirm() {
           ${listaBandas.map(b => `<option value="${esc(b.nombre)}" ${elegida && b.id === elegida.id ? 'selected' : ''}>${esc(b.nombre)}</option>`).join('')}
         </select>
       </label>
-      ${esCuentaControl() ? '' : '<button class="btn btn-sm" id="bk-register-band">🎭 Registrar mi banda</button>'}
+      ${esCuentaControl() ? '' : '<button class="btn btn-sm" id="bk-register-band"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4h20v8a10 10 0 0 1-20 0z"/><circle cx="8" cy="10" r="1.4"/><circle cx="16" cy="10" r="1.4"/></svg> Registrar mi banda</button>'}
     </div>
     <label>Nombre o banda *<input id="bk-name" maxlength="60" placeholder="Ej.: Banda Luna" autocomplete="name" value="${yo ? esc(yo.nombre) : ''}"></label>
     <label>Teléfono (opcional)${yo ? '' : ' <span class="muted small">(creá una cuenta para no escribirlo cada vez)</span>'}<input id="bk-phone" type="tel" maxlength="20" placeholder="Ej.: +56 9 1234 5678" value="${yo ? esc(yo.telefono || '') : ''}"></label>
-    ${yo ? '' : `<button class="btn btn-sm btn-block" id="bk-login">👤 Iniciar sesión / crear cuenta</button>`}
-    <button class="btn btn-primary btn-big" id="bk-confirm">✔ Confirmar reserva</button>
+    ${yo ? '' : `<button class="btn btn-sm btn-block" id="bk-login"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Iniciar sesión / crear cuenta</button>`}
+    <button class="btn btn-primary btn-big" id="bk-confirm"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Confirmar reserva</button>
     <p class="muted small">Al confirmar, estos horarios quedan bloqueados automáticamente para otros usuarios.</p>`;
 
   /* Selector de banda: rellena el nombre y muestra el logo */
@@ -2177,7 +2177,7 @@ function renderConfirm() {
       preview.dataset.band = b.id;
       preview.innerHTML = (b.foto
         ? `<img class="band-avatar" src="${esc(b.foto)}" alt="${esc(b.nombre)}">`
-        : `<span class="band-avatar band-emoji">🎭</span>`) +
+        : `<span class="band-avatar band-emoji"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4h20v8a10 10 0 0 1-20 0z"/><circle cx="8" cy="10" r="1.4"/><circle cx="16" cy="10" r="1.4"/></svg></span>`) +
         `<div class="mine-band-info"><strong>${esc(b.nombre)}</strong><span class="muted small">Banda registrada · ver perfil ›</span></div>`;
       $('#bk-name').value = b.nombre;
       if (b.telefono && !$('#bk-phone').value) $('#bk-phone').value = b.telefono;
@@ -2257,12 +2257,12 @@ async function confirmBooking() {
     const pagarUrl = urlSegura(data.pago.url);
     const okConfirmada = () => `
       <div class="success">
-        <div class="ok-mark">✔</div>
+        <div class="ok-mark"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div>
         <h3>¡Reserva confirmada!</h3>
         <p><strong>${esc(name)}</strong></p>
         <p>${esc(roomP ? roomP.name : '')} · ${data.reservation.start} – ${data.reservation.end}</p>
         <p class="muted small">Seña pagada (modo prueba). La sala ya recibió el aviso.</p>
-        <button class="btn" id="bk-mine">👤 Ver mis reservas</button>
+        <button class="btn" id="bk-mine"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Ver mis reservas</button>
       </div>`;
     $('#confirm-body').innerHTML = `
       <div class="success">
@@ -2277,7 +2277,7 @@ async function confirmBooking() {
           : data.pago.simulado
             ? `<button class="btn btn-primary" id="bk-pagar-prueba">Pagar la seña (prueba)</button>`
             : '<p class="muted small">El cobro de la seña no está activo.</p>'}
-        <button class="btn" id="bk-mine">👤 Ver mis reservas</button>
+        <button class="btn" id="bk-mine"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Ver mis reservas</button>
       </div>`;
     $('#bk-mine').onclick = () => { mostrarMisReservas(); };
     const btnPrueba = $('#bk-pagar-prueba');
@@ -2286,7 +2286,7 @@ async function confirmBooking() {
       try {
         const res = await api('/api/pagos/simular', { method: 'POST', body: { reservaId: data.reservation.id, resultado: 'aprobado' } });
         if (res && res.state) state = res.state;
-        toast('Seña pagada (prueba) ✓', 'ok');
+        toast('Seña pagada (prueba)', 'ok');
         if (yo) cargarNotificaciones();
         renderMineRapido();
         $('#confirm-body').innerHTML = okConfirmada();
@@ -2306,25 +2306,25 @@ async function confirmBooking() {
   const totalAlq = alquilados.reduce((s, a) => s + a.total, 0);
   $('#confirm-body').innerHTML = `
     <div class="success">
-      <div class="ok-mark">✔</div>
+      <div class="ok-mark"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div>
       <h3>¡Reserva confirmada!</h3>
       <p><strong>${esc(name)}</strong></p>
       <p>${fmtDate(sel.date)}</p>
       <p>${esc(room.name)} · ${data.reservation.start} – ${data.reservation.end} (${horas} hora${horas > 1 ? 's' : ''})</p>
       ${alquilados.length ? `
         <div class="alquiler-confirmado">
-          <strong>🎒 Alquiler</strong>
+          <strong><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v10H4z"/><path d="M9 6V4a3 3 0 0 1 6 0v2"/><path d="M9 14h6"/></svg> Alquiler</strong>
           ${alquilados.map(a => `<div class="muted small">${esc(a.nombre)} · ${a.horas}h · ${fmtMoney(a.total)}</div>`).join('')}
         </div>` : ''}
       <p class="accent"><strong>Total: ${fmtMoney(horas * room.price + totalAlq)}</strong></p>
       <p class="muted small">Estos horarios ya no están disponibles para otros usuarios.</p>
       <button class="btn btn-primary" id="bk-again">Hacer otra reserva</button>
-      <button class="btn" id="bk-mine">👤 Ver mi perfil</button>
+      <button class="btn" id="bk-mine"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Ver mi perfil</button>
     </div>`;
   $('#bk-again').onclick = () => { sel.range = null; sel.roomId = null; sel.slot = null; sel.bandaNombre = ''; goStep(1); renderCalendar(); };
   $('#bk-mine').onclick = () => { mostrarMisReservas(); };
   renderMineRapido();   /* la reserva nueva ya figura en "Mis reservas" */
-  toast('Reserva registrada ✓', 'ok');
+  toast('Reserva registrada', 'ok');
 }
 
 /* ---------- Mis reservas (cliente) ---------- */
@@ -2425,11 +2425,11 @@ function prepararSwipeNavegacion() {
     if (idx < 0) return;
 
     if (dx < 0 && idx < tabs.length - 1) {
-      /* Swipe IZQUIERDA → siguiente pestaña */
+      /* Swipe IZQUIERDA  siguiente pestaña */
       const btn = [...document.querySelectorAll('.admin-tab')].find(t => t.dataset.tab === tabs[idx + 1]);
       if (btn) btn.click();
     } else if (dx > 0 && idx > 0) {
-      /* Swipe DERECHA → pestaña anterior */
+      /* Swipe DERECHA  pestaña anterior */
       const btn = [...document.querySelectorAll('.admin-tab')].find(t => t.dataset.tab === tabs[idx - 1]);
       if (btn) btn.click();
     }
@@ -2507,7 +2507,7 @@ function irMapa() {
 function nuevaReserva() {
   sel.roomId = null; sel.range = null; sel.slot = null; sel.bandaNombre = '';
   irSalas();
-  toast('Elegí la sala 👇', 'ok');
+  toast('Elegí la sala', 'ok');
 }
 
 function irInstrumentos() { mostrarLugar(); }
@@ -2672,7 +2672,7 @@ function renderCuerpoChat(m) {
     const grupo = m.reservaNombre ? ('«' + esc(m.reservaNombre) + '» · ') : '';
     let estado = '';
     if (m.reservaEstado === 'tentativa') estado = '<span class="ci-estado espera">' + grupo + 'Reserva pedida · esperando que la sala confirme</span>';
-    else if (m.reservaEstado === 'confirmada') estado = '<span class="ci-estado ok">✓ ' + grupo + 'Reserva confirmada por la sala</span>';
+    else if (m.reservaEstado === 'confirmada') estado = '<span class="ci-estado ok"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> ' + grupo + 'Reserva confirmada por la sala</span>';
     else if (m.reservaEstado === 'cancelada') estado = '<span class="ci-estado no">' + grupo + 'La sala no pudo confirmar</span>';
     /* Anotarse / desanotarse: se puede mientras la invitación siga abierta */
     const boton = (!m.reservaId || (m.reservaEstado === 'tentativa' && !m.mio))
@@ -2708,7 +2708,7 @@ async function cargarChatGlobal() {
   host.innerHTML = `
     <div class="chat-global">
       <div class="chat-global-head">
-        <button class="chat-global-volver" id="chat-global-volver" type="button" title="Volver" aria-label="Volver a Inicio">←</button>
+        <button class="chat-global-volver" id="chat-global-volver" type="button" title="Volver" aria-label="Volver a Inicio"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg></button>
       </div>
       <div class="chat-global-hilo" id="chat-global-hilo"></div>
       <div class="chat-sala-picker" id="chat-sala-picker" hidden></div>
@@ -2956,7 +2956,7 @@ async function cargarChatGlobal() {
         ? libres.map(s => '<button type="button" class="chat-slot" data-slot data-start="' + esc(s.start) + '" data-end="' + esc(s.end) + '">' + esc(s.start) + '–' + esc(s.end) + '</button>').join('')
         : '<p class="muted small">No hay horarios libres ese día.</p>') +
       '</div>' +
-      '<button type="button" class="btn btn-sm" data-inv-volver>← Cambiar sala</button>';
+      '<button type="button" class="btn btn-sm" data-inv-volver><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg> Cambiar sala</button>';
     salaPicker.hidden = false;
   }
 
@@ -3042,7 +3042,7 @@ async function cargarMensajesGlobal(silent) {
     }
 
     if (!silent && !mensajes.length) {
-      hilo.innerHTML = '<p class="muted small" style="text-align:center;padding:20px">Todavía no hay mensajes. Sé el primero en escribir 🎸</p>';
+      hilo.innerHTML = '<p class="muted small" style="text-align:center;padding:20px">Todavía no hay mensajes. Sé el primero en escribir <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></p>';
       return;
     }
 
@@ -3382,7 +3382,7 @@ function campoArea(id, etiqueta, opts = {}) {
 function pantallaAuth(vista = 'inicio') {
   mostrarAcceso();
   const b = $('#auth-body');
-  const vol = '<button class="btn btn-sm btn-ghost auth-volver" data-vista="inicio">← Volver</button>';
+  const vol = '<button class="btn btn-sm btn-ghost auth-volver" data-vista="inicio"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg> Volver</button>';
 
   if (vista === 'inicio') {
     b.innerHTML = `
@@ -3457,10 +3457,10 @@ function pantallaAuth(vista = 'inicio') {
     const c = (state.settings && state.settings.contacto) || {};
     const botones = [];
     const wa = String(c.whatsapp || '').replace(/[^\d]/g, '');
-    if (wa) botones.push(`<a class="btn btn-sm" target="_blank" rel="noopener" href="https://wa.me/${esc(wa)}">💬 WhatsApp</a>`);
-    if (c.facebook) botones.push(`<a class="btn btn-sm" target="_blank" rel="noopener" href="https://www.facebook.com/${esc(limpiarIdentRed(c.facebook))}">👍 Facebook</a>`);
-    if (c.tiktok) botones.push(`<a class="btn btn-sm" target="_blank" rel="noopener" href="https://www.tiktok.com/@${esc(limpiarIdentRed(c.tiktok))}">🎵 TikTok</a>`);
-    if (c.email) botones.push(`<a class="btn btn-sm" href="mailto:${esc(c.email)}">✉️ Email</a>`);
+    if (wa) botones.push(`<a class="btn btn-sm" target="_blank" rel="noopener" href="https://wa.me/${esc(wa)}"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8z"/></svg> WhatsApp</a>`);
+    if (c.facebook) botones.push(`<a class="btn btn-sm" target="_blank" rel="noopener" href="https://www.facebook.com/${esc(limpiarIdentRed(c.facebook))}"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg> Facebook</a>`);
+    if (c.tiktok) botones.push(`<a class="btn btn-sm" target="_blank" rel="noopener" href="https://www.tiktok.com/@${esc(limpiarIdentRed(c.tiktok))}"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg> TikTok</a>`);
+    if (c.email) botones.push(`<a class="btn btn-sm" href="mailto:${esc(c.email)}"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/><polyline points="22,6 12,13 2,6"/></svg> Email</a>`);
     b.innerHTML = `
       ${vol}
       <div class="auth-card">
@@ -3510,9 +3510,9 @@ function pantallaAuth(vista = 'inicio') {
         <p class="auth-sub">Para buscar y reservar salas de ensayo.</p>
         <form id="f-musico" class="auth-form" novalidate>
           <div class="auth-foto">
-            <div class="sala-foto-edit" id="mu-preview">${fotoTemporal ? `<img src="${fotoTemporal}" alt="previsualización">` : '<span class="sala-chip-foto" style="width:60px;height:60px;font-size:1.6rem">🎸</span>'}</div>
+            <div class="sala-foto-edit" id="mu-preview">${fotoTemporal ? `<img src="${fotoTemporal}" alt="previsualización">` : '<span class="sala-chip-foto" style="width:60px;height:60px;font-size:1.6rem"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span>'}</div>
             <div class="auth-foto-txt">
-              <label class="btn btn-sm">📷 Foto de perfil<input type="file" id="mu-foto" accept="image/*" hidden></label>
+              <label class="btn btn-sm"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> Foto de perfil<input type="file" id="mu-foto" accept="image/*" hidden></label>
               <span class="muted small">Opcional</span>
             </div>
           </div>
@@ -3551,7 +3551,7 @@ function pantallaAuth(vista = 'inicio') {
             ${campoPassword('sg-pass', 'Contraseña', { fuerza: true, ph: 'Mínimo 6 caracteres' })}
             <label class="check"><input type="checkbox" id="sg-soy"> Soy responsable de esta sala</label>
             <label class="check"><input type="checkbox" id="du-terms"> <span>Acepto los <a class="link-term" href="terminos.html" target="_blank" rel="noopener">términos y condiciones</a></span></label>
-            <button class="btn btn-primary btn-block btn-lg" type="submit">Continuar →</button>
+            <button class="btn btn-primary btn-block btn-lg" type="submit">Continuar <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button>
           </form>
           <p class="auth-cuenta">¿Olvidaste tu contraseña o tu cuenta está bloqueada?
             <button type="button" class="auth-link" data-vista="ayuda">Pedí ayuda</button>
@@ -3575,8 +3575,8 @@ function pantallaAuth(vista = 'inicio') {
               ${campoAuth('sa-lng', 'Longitud', { ph: '-64.1888', extra: ' inputmode="decimal"' })}
             </div>
             <div class="row wrap">
-              <button type="button" class="btn btn-sm" data-accion-ubicacion="ubicar">🗺 Ubicar en el mapa</button>
-              <button type="button" class="btn btn-sm" data-accion-ubicacion="buscar">🔎 Buscar por dirección</button>
+              <button type="button" class="btn btn-sm" data-accion-ubicacion="ubicar"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg> Ubicar en el mapa</button>
+              <button type="button" class="btn btn-sm" data-accion-ubicacion="buscar"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> Buscar por dirección</button>
             </div>
             <p class="muted small">Es lo primero que ven los músicos: con la ubicación, tu sala aparece en el mapa de Más Música.</p>
             <h3 class="sub">Horario de atención</h3>
@@ -3601,9 +3601,9 @@ function pantallaAuth(vista = 'inicio') {
             ${campoAuth('sa-eq-consola', 'Consola / sonido', { max: 300 })}
             ${campoAuth('sa-eq-otros', 'Otros', { max: 300 })}
             <div class="auth-foto">
-              <div class="sala-foto-edit" id="sa-preview">${fotoTemporal ? `<img src="${fotoTemporal}" alt="previsualización">` : '<span class="sala-chip-foto" style="width:60px;height:60px;font-size:1.6rem">🎛️</span>'}</div>
+              <div class="sala-foto-edit" id="sa-preview">${fotoTemporal ? `<img src="${fotoTemporal}" alt="previsualización">` : '<span class="sala-chip-foto" style="width:60px;height:60px;font-size:1.6rem"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg></span>'}</div>
               <div class="auth-foto-txt">
-                <label class="btn btn-sm">🏷️ Logo de la sala<input type="file" id="sa-logo" accept="image/*" hidden></label>
+                <label class="btn btn-sm"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg> Logo de la sala<input type="file" id="sa-logo" accept="image/*" hidden></label>
                 <span class="muted small">Opcional</span>
               </div>
             </div>
@@ -3692,14 +3692,14 @@ function wireAuth() {
         if (!p) return;
         $('#sa-lat').value = p.lat.toFixed(5);
         $('#sa-lng').value = p.lng.toFixed(5);
-        toast('Ubicación puesta 📍', 'ok');
+        toast('Ubicación puesta', 'ok');
       });
     } else if (accion === 'buscar') {
       buscarDireccion($('#sa-direccion').value + ' ' + $('#sa-loc').value).then(p => {
         if (!p) return;
         $('#sa-lat').value = p.lat.toFixed(5);
         $('#sa-lng').value = p.lng.toFixed(5);
-        toast('Dirección encontrada 📍', 'ok');
+        toast('Dirección encontrada', 'ok');
       });
     }
   });
@@ -3763,7 +3763,7 @@ async function registrarMusico(form) {
   });
   fotoTemporal = '';
   await iniciarSesionConToken(data);
-  toast('¡Bienvenido a Más Música! 🎸', 'ok');
+  toast('¡Bienvenido a Más Música!', 'ok');
   irInicio();
 }
 
@@ -3827,7 +3827,7 @@ async function enviarPedidoAyuda() {
       mensaje: $('#ay-msj').value.trim(),
     },
   });
-  toast(data.mensaje || 'Pedido enviado ✓', 'ok');
+  toast(data.mensaje || 'Pedido enviado', 'ok');
   pantallaAuth('inicio');
 }
 
@@ -3942,11 +3942,11 @@ function renderPanelNotif() {
   /* Renderizar: la campana ya no muestra promociones, solo avisos */
   bod.innerHTML = (lista.length
     ? lista.map(itemNotif).join('')
-    : `<div class="notif-vacio"><div class="notif-vacio-icon">🔔</div><h3>Todo al día</h3><p>Aquí aparecerán tus nuevas reservas y avisos.</p></div>`);
+    : `<div class="notif-vacio"><div class="notif-vacio-icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div><h3>Todo al día</h3><p>Aquí aparecerán tus nuevas reservas y avisos.</p></div>`);
 }
 
 function itemNotif(n) {
-  const icono = n.tipo === 'ok' ? '✓' : n.tipo === 'warn' ? '⚠' : '📬';
+  const icono = n.tipo === 'ok' ? '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>' : n.tipo === 'warn' ? '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>' : '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>';
   const cls = n.leida ? '' : 'unread';
   return `
   <article class="notif-card ${cls}" data-notif-id="${n.id}" role="button" tabindex="0">
@@ -3961,7 +3961,7 @@ function itemNotif(n) {
         ${n.leida ? '' : `<button class="notif-link" data-leer-notif="${n.id}">Marcar como leída</button>`}
       </div>
     </div>
-    <button class="notif-dismiss" aria-label="Borrar aviso" data-borrar-notif="${n.id}">✕</button>
+    <button class="notif-dismiss" aria-label="Borrar aviso" data-borrar-notif="${n.id}"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
   </article>`;
 }
 
@@ -3975,13 +3975,13 @@ function promosActivas() {
 function abrirPromo(id) {
   const p = (state.promociones || []).find(x => x.id === id);
   if (!p) return;
-  /* Promos de registro → panel de administración (super admin) */
+  /* Promos de registro  panel de administración (super admin) */
   if (/registro|registr/i.test(p.titulo || '') && esSuper()) {
     cerrarPanelNotif();
     showAdmin();
     return;
   }
-  /* Promos de bienvenida → solo cerrar, no navegar */
+  /* Promos de bienvenida  solo cerrar, no navegar */
   if (/bienvenido/i.test(p.titulo || '')) {
     cerrarPanelNotif();
     return;
@@ -3994,8 +3994,8 @@ function abrirPromo(id) {
 }
 
 function itemNotif(n) {
-  const chip = n.tipo === 'ok' ? '<span class="notif-chip ok">✓</span>'
-    : n.tipo === 'warn' ? '<span class="notif-chip warn">✕</span>'
+  const chip = n.tipo === 'ok' ? '<span class="notif-chip ok"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>'
+    : n.tipo === 'warn' ? '<span class="notif-chip warn"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span>'
       : '<span class="notif-chip info">!</span>';
   return `<div class="notif-item ${n.leida ? '' : 'nueva'}" data-notif-id="${n.id}" role="button" tabindex="0" title="Ver la reserva">
     ${chip}
@@ -4004,7 +4004,7 @@ function itemNotif(n) {
       <span>${esc(n.texto)}</span>
       <small class="${n.leida ? 'muted' : ''}">${fechaNotif(n.fecha)}</small>
     </div>
-    <button class="notif-borrar" data-borrar-notif="${n.id}" title="Borrar aviso" aria-label="Borrar aviso">✕</button>
+    <button class="notif-borrar" data-borrar-notif="${n.id}" title="Borrar aviso" aria-label="Borrar aviso"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
     <svg class="notif-flecha" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg>
   </div>`;
 }
@@ -4103,7 +4103,7 @@ function prepararSwipeNotif() {
     if (!activo) return;
     dx = e.touches[0].clientX - x0;
     dy = e.touches[0].clientY - y0;
-    /* Swipe horizontal → borrar */
+    /* Swipe horizontal  borrar */
     if (Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy)) {
       activo.style.transform = `translateX(${Math.max(-90, Math.min(90, dx))}px)`;
       activo.classList.add('swipe-borrando');
@@ -4123,7 +4123,7 @@ function prepararSwipeNotif() {
     }
   });
 
-  /* Swipe hacia arriba en el panel → cerrar */
+  /* Swipe hacia arriba en el panel  cerrar */
   if (sheet && !sheet._swipeUpOk) {
     sheet._swipeUpOk = true;
     let yStart = 0, yEnd = 0;
@@ -4154,7 +4154,7 @@ async function irANotificacion(id) {
   } catch (e) { /* offline: usar el estado local */ }
   const r = n.reservaId ? state.reservations.find(x => x.id === n.reservaId) : null;
 
-  /* Avisos dirigidos al dueño de una sala → su panel de administración, pestaña Reservas */
+  /* Avisos dirigidos al dueño de una sala  su panel de administración, pestaña Reservas */
   if (n.para === 'dueno' && esDueño() && n.roomId) {
     const room = state.rooms.find(x => x.id === n.roomId);
     if (room) {
@@ -4166,14 +4166,14 @@ async function irANotificacion(id) {
     }
   }
 
-  /* Avisos de reservas propias → "Mis reservas" filtradas (próximas / historial) */
+  /* Avisos de reservas propias  "Mis reservas" filtradas (próximas / historial) */
   if (r) {
     irReservasFiltradas(/cancelada/i.test(n.titulo || '') ? 'historial' : 'proximas');
     setTimeout(() => resaltarReserva(r.id, '#home-mine-body'), 180);
     return;
   }
 
-  /* Avisos de pedido de ayuda → panel de administración, pestaña Ayuda */
+  /* Avisos de pedido de ayuda  panel de administración, pestaña Ayuda */
   if (/pedido de ayuda/i.test(n.titulo || '') && esSuper()) {
     window.__ayuda = null;      /* fuerza recargar los pedidos */
     showAdmin();
@@ -4181,13 +4181,13 @@ async function irANotificacion(id) {
     return;
   }
 
-  /* Avisos de nuevo registro → panel de administración */
+  /* Avisos de nuevo registro  panel de administración */
   if (/registro|registr/i.test(n.titulo || '') && esSuper()) {
     showAdmin();
     return;
   }
 
-  /* Avisos de cuenta / perfil / bienvenida → solo mostrar, no navegar, se borran solos */
+  /* Avisos de cuenta / perfil / bienvenida  solo mostrar, no navegar, se borran solos */
   if (/bienvenido/i.test(n.titulo || '')) {
     const itemEl = document.querySelector(`[data-notif-id="${n.id}"]`);
     borrarNotificacion(n.id, itemEl);
@@ -4195,7 +4195,7 @@ async function irANotificacion(id) {
     return;
   }
 
-  /* Otros avisos sin reserva → Inicio */
+  /* Otros avisos sin reserva  Inicio */
   cerrarPanelNotif();
   const navInicio = document.getElementById('nav-inicio');
   if (navInicio) navInicio.click();
@@ -4354,7 +4354,7 @@ function renderPerfilCuenta() {
         <strong>${esc(yo.nombre)}</strong>
         <span>@${esc(yo.usuario)}${yo.localidad ? ' · ' + esc(yo.localidad) : ''}</span>
         <span class="aj-badges">
-          <span class="badge">${esDueño() ? '🎛️ Dueño de sala' : esSuper() ? '👑 Administración general' : '🎸 Músico'}</span>
+          <span class="badge">${esDueño() ? '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg> Dueño de sala' : esSuper() ? '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 7l4 4 6-7 6 7 4-4-2 12H4z"/></svg> Administración general' : '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg> Músico'}</span>
           ${miSala ? `<span class="badge ${miSala.estado === 'aprobada' ? '' : 'badge-next'}">Sala: ${esc(miSala.name)} · ${miSala.estado}</span>` : ''}
         </span>
       </div>
@@ -4367,7 +4367,7 @@ function renderPerfilCuenta() {
     </div>
 
     <div class="row wrap" style="gap:12px;margin-bottom:14px">
-      <button class="aj-editar" id="btn-editar-perfil">✏️ Editar perfil</button>
+      <button class="aj-editar" id="btn-editar-perfil"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg> Editar perfil</button>
     </div>
 
     <p class="aj-lbl">Datos</p>
@@ -4396,14 +4396,14 @@ function renderPerfilCuenta() {
     const salones = salasPublicas().filter(r => (yo.favoritos || []).includes(r.id));
     fav.hidden = false;
     fav.innerHTML = `
-    <div class="panel-head"><h2>♥️ Mis salas favoritas</h2>
+    <div class="panel-head"><h2><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path fill="currentColor" d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> Mis salas favoritas</h2>
       <button class="btn btn-sm" id="fav-ver">Ver salas</button>
     </div>
     ${salones.length
       ? `<div class="mini-fotos">${salones.map(r => `<button class="fav-item" data-ir-sala="${r.id}">
-          ${r.foto ? `<img src="${esc(r.foto)}" alt="">` : '<span class="sala-chip-foto">🎸</span>'}
+          ${r.foto ? `<img src="${esc(r.foto)}" alt="">` : '<span class="sala-chip-foto"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span>'}
           <span>${esc(r.name)}<small>${fmtMoney(r.price)}/h</small></span></button>`).join('')}</div>`
-      : '<p class="muted small">Todavía no guardaste ninguna sala. Tocá el ♡ en una sala para guardarla acá.</p>'}`;
+      : '<p class="muted small">Todavía no guardaste ninguna sala. Tocá el <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> en una sala para guardarla acá.</p>'}`;
   }
 
   /* Los avisos viven en la campana y en el panel de Ajustes del engranaje */
@@ -4426,10 +4426,10 @@ function formularioPerfil() {
     <label>Localidad o zona<input id="pe-loc" maxlength="80" value="${esc(yo.localidad || '')}"></label>
     <label>Mis instrumentos (separados por coma)<input id="pe-inst" maxlength="200" value="${esc((yo.instrumentos || []).join(', '))}"></label>
     <label>Email<input value="${esc(yo.email)}" disabled></label>
-    <div class="sala-foto-edit" id="pe-preview">${yo.foto ? `<img src="${esc(yo.foto)}" alt="">` : '<span class="sala-chip-foto" style="width:60px;height:60px;font-size:1.6rem">🎸</span>'}</div>
+    <div class="sala-foto-edit" id="pe-preview">${yo.foto ? `<img src="${esc(yo.foto)}" alt="">` : '<span class="sala-chip-foto" style="width:60px;height:60px;font-size:1.6rem"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span>'}</div>
     <label>Nueva foto de perfil<input type="file" id="pe-foto" accept="image/*"></label>
     <div class="row">
-      <button class="btn btn-primary" id="pe-guardar">💾 Guardar cambios</button>
+      <button class="btn btn-primary" id="pe-guardar"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Guardar cambios</button>
       <button class="btn" id="pe-cancelar">Cancelar</button>
     </div>`);
   let nuevaFoto = null;
@@ -4455,7 +4455,7 @@ function formularioPerfil() {
       yo = data.user;
       closeModal();
       renderMine();
-      toast('Perfil actualizado ✓', 'ok');
+      toast('Perfil actualizado', 'ok');
     } catch (e) { toast(e.message, 'error'); }
   };
 }
@@ -4500,7 +4500,7 @@ function aplicarTema(tema) {
 function elegirApariencia(tema) {
   const nombre = { auto: 'Automático', claro: 'Claro', oscuro: 'Oscuro' }[tema] || tema;
   aplicarTema(tema);
-  toast(`Tema ${nombre} activo ✓`, 'ok');
+  toast(`Tema ${nombre} activo`, 'ok');
 }
 
 /* En modo automático, sigue los cambios del sistema */
@@ -4559,7 +4559,7 @@ function formularioPassword() {
       const data = await api('/api/auth/perfil', { method: 'PUT', body: { actual, password: nueva } });
       yo = data.user;
       closeModal();
-      toast('Contraseña actualizada ✓', 'ok');
+      toast('Contraseña actualizada', 'ok');
     } catch (e) {
       btn.disabled = false;
       toast(e.message, 'error');
@@ -4656,14 +4656,14 @@ async function cargarPanel() {
   }
 }
 
-/* El logo de la sala, arriba en el encabezado del panel (si no hay, queda el ícono 🎛️) */
+/* El logo de la sala, arriba en el encabezado del panel (si no hay, queda el ícono ) */
 function renderPanelLogo() {
   const box = $('#panel-head-logo');
   if (!box) return;
   const sala = (panelDatos && panelDatos.room) || miSala || {};
   box.innerHTML = sala.foto
     ? `<img src="${esc(sala.foto)}" alt="${esc(sala.name || 'Mi sala')}">`
-    : '🎛️';
+    : '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>';
 }
 
 function renderPanelTab(tab) {
@@ -4783,7 +4783,7 @@ function renderPanelMovimientos() {
         <strong class="mov-mes">${esc(etiquetaMes(movMes))}</strong>
         <button class="btn btn-sm" data-mes="1" aria-label="Mes siguiente" ${movMes >= hoyMes ? 'disabled' : ''}>›</button>
       </div>
-      <button class="btn btn-primary btn-sm" data-descargar-mes>⬇ Descargar Excel</button>
+      <button class="btn btn-primary btn-sm" data-descargar-mes><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg> Descargar Excel</button>
     </div>
 
     <div class="admin-stats mov-stats">
@@ -4861,17 +4861,17 @@ function descargarMovimientosExcel() {
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
-  toast('Archivo descargado ✓', 'ok');
+  toast('Archivo descargado', 'ok');
 }
 
 function renderPanelEstado() {
   const s = panelDatos.resumen || {};
   const r = panelDatos.room;
   const estado = r.estado === 'aprobada'
-    ? '<span class="badge">🟢 Publicada</span>'
+    ? '<span class="badge"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/></svg> Publicada</span>'
     : r.estado === 'pendiente'
-      ? '<span class="badge badge-next">🕒 Pendiente de aprobación</span>'
-      : '<span class="badge badge-past">⛔ ' + esc(r.estado) + '</span>';
+      ? '<span class="badge badge-next"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Pendiente de aprobación</span>'
+      : '<span class="badge badge-past"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg> ' + esc(r.estado) + '</span>';
   $('#panel-estado').innerHTML = `
     <div class="stats-cards">
       <div class="stat"><span>Hoy</span><strong>${s.hoy || 0}</strong></div>
@@ -4909,7 +4909,7 @@ function renderPanelSala() {
   panelLogoTmp = '';
   panelPortadaTmp = '';
   panelFotosTmp = [];
-  $('#ps-preview-logo').innerHTML = r.foto ? `<img src="${esc(r.foto)}" alt="">` : '<span class="sala-chip-foto" style="width:60px;height:60px;font-size:1.6rem">🎛️</span>';
+  $('#ps-preview-logo').innerHTML = r.foto ? `<img src="${esc(r.foto)}" alt="">` : '<span class="sala-chip-foto" style="width:60px;height:60px;font-size:1.6rem"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg></span>';
   $('#ps-portada-preview').innerHTML = r.fotoPortada
     ? `<img src="${esc(r.fotoPortada)}" alt="Foto horizontal de ${esc(r.name)}">`
     : '<span>Sin foto horizontal</span>';
@@ -4970,7 +4970,7 @@ async function resolverUbicacionSala() {
   }
   return false;
 }
-const AVISO_UBICACION_APROX = 'Quedó en el centro de tu localidad 📍 Ajustala con "Ubicar en el mapa".';
+const AVISO_UBICACION_APROX = 'Quedó en el centro de tu localidad <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> Ajustala con "Ubicar en el mapa".';
 
 /* Al abrir la ficha de la sala: si ya hay dirección pero todavía no hay punto, la
    ubicamos y la guardamos, así aparece en el mapa sin hacer nada más. */
@@ -4992,7 +4992,7 @@ function autoUbicarSala() {
       r.lng = Number($('#ps-lng').value);
       miSala = state.rooms.find(x => x.id === r.id) || miSala;
       renderPanelEstado();
-      toast('Listo: tu sala ya figura en el mapa 📍', 'ok');
+      toast('Listo: tu sala ya figura en el mapa', 'ok');
     } catch (e) { /* si falla, queda para cuando toque Guardar */ }
   })();
 }
@@ -5042,7 +5042,7 @@ async function guardarPanelSala() {
     renderPanelTab('sala');
     renderSalasStrip();
     renderHeaderSalaLogo();
-    toast('Sala guardada ✓', 'ok');
+    toast('Sala guardada', 'ok');
   } catch (e) { toast(e.message, 'error'); }
 }
 
@@ -5094,7 +5094,7 @@ async function guardarPanelHorario() {
     state = data.state;
     await cargarPanel();
     renderPanelTab('disponibilidad');
-    toast('Horarios guardados ✓', 'ok');
+    toast('Horarios guardados', 'ok');
   } catch (e) { toast(e.message, 'error'); }
 }
 
@@ -5119,9 +5119,9 @@ function renderPanelReservas() {
       <div class="res-time">${r.start} – ${r.end}</div>
       <div class="res-info">
         <strong>${fmtDate(r.date, { weekday: 'short', day: 'numeric', month: 'short' })} ${r.estado === 'cancelada' ? '<span class="badge badge-past">Cancelada</span>' : r.estado === 'tentativa' ? '<span class="badge badge-warn">Tentativa · chat</span>' : r.date >= hoy ? '<span class="badge badge-next">Próxima</span>' : ''}</strong>
-        <div>${esc(r.name)}${r.phone ? ' · 📞 ' + esc(r.phone) : ''}</div>
+        <div>${esc(r.name)}${r.phone ? ' · <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg> ' + esc(r.phone) : ''}</div>
         ${r.estado === 'tentativa' ? '<div class="muted small">Pidió reservar desde el Chat Global · confirmá o rechazá</div>' : ''}
-        ${(r.alquiler || []).length ? `<div class="muted small">🎒 ${r.alquiler.map(a => esc(a.nombre)).join(', ')}</div>` : ''}
+        ${(r.alquiler || []).length ? `<div class="muted small"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v10H4z"/><path d="M9 6V4a3 3 0 0 1 6 0v2"/><path d="M9 14h6"/></svg> ${r.alquiler.map(a => esc(a.nombre)).join(', ')}</div>` : ''}
       </div>
       <div class="res-price">${fmtMoney((toMin(r.end) - toMin(r.start)) / 60 * panelDatos.room.price)}</div>
       <div class="res-actions">
@@ -5142,7 +5142,7 @@ function renderPanelDatos() {
   $('#pd-instrumentos').value = (yo.instrumentos || []).join(', ');
   $('#pd-actual').value = '';
   $('#pd-nueva').value = '';
-  $('#pd-preview').innerHTML = yo.foto ? `<img src="${esc(yo.foto)}" alt="">` : '<span class="sala-chip-foto" style="width:60px;height:60px;font-size:1.6rem">🎸</span>';
+  $('#pd-preview').innerHTML = yo.foto ? `<img src="${esc(yo.foto)}" alt="">` : '<span class="sala-chip-foto" style="width:60px;height:60px;font-size:1.6rem"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span>';
 }
 
 async function guardarPanelDatos() {
@@ -5163,7 +5163,7 @@ async function guardarPanelDatos() {
     yo = data.user;
     renderPanelTab('datos');
     renderMine();
-    toast('Datos guardados ✓', 'ok');
+    toast('Datos guardados', 'ok');
   } catch (e) { toast(e.message, 'error'); }
 }
 
@@ -5191,7 +5191,7 @@ function wirePanel() {
     $('#ps-lat').value = p.lat.toFixed(5);
     $('#ps-lng').value = p.lng.toFixed(5);
     if (!$('#ps-mapa').value) $('#ps-mapa').value = p.nombre.slice(0, 300);
-    toast('Dirección located 📍 Guardá los cambios.', 'ok');
+    toast('Dirección located Guardá los cambios.', 'ok');
   };
   $('#btn-guardar-horario').onclick = guardarPanelHorario;
   $('#btn-guardar-datos').onclick = guardarPanelDatos;
@@ -5212,7 +5212,7 @@ function wirePanel() {
     try {
       panelPortadaTmp = await comprimirImagen(f, 1400);
       $('#ps-portada-preview').innerHTML = `<img src="${panelPortadaTmp}" alt="previsualización">`;
-      toast('Foto horizontal lista ✓ Guardá los cambios.', 'ok');
+      toast('Foto horizontal lista Guardá los cambios.', 'ok');
     } catch (err) { toast(err.message, 'error'); }
   };
   $('#ps-fotos').onchange = async e => {
@@ -5284,7 +5284,7 @@ function wirePanel() {
         state = data.state;
         await cargarPanel();
         renderPanelTab('reservas');
-        toast('Reserva confirmada ✓', 'ok');
+        toast('Reserva confirmada', 'ok');
       } catch (err) { toast(err.message, 'error'); }
       return;
     }
@@ -5333,9 +5333,9 @@ function editarReservaPanel(id) {
       <label>Desde<select id="pr-start">${slots.map(s => `<option value="${s.start}" ${s.start === r.start ? 'selected' : ''}>${s.start}</option>`).join('')}</select></label>
       <label>Hasta<select id="pr-end">${slots.map(s => `<option value="${s.end}" ${s.end === r.end ? 'selected' : ''}>${s.end}</option>`).join('')}</select></label>
     </div>
-    <p class="muted small">${esc(r.name)}${r.phone ? ' · 📞 ' + esc(r.phone) : ''}</p>
+    <p class="muted small">${esc(r.name)}${r.phone ? ' · <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg> ' + esc(r.phone) : ''}</p>
     <div class="row">
-      <button class="btn btn-primary" id="pr-ok">💾 Guardar</button>
+      <button class="btn btn-primary" id="pr-ok"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Guardar</button>
       <button class="btn" id="pr-cancel">Cancelar</button>
     </div>`);
   $('#pr-cancel').onclick = closeModal;
@@ -5349,7 +5349,7 @@ function editarReservaPanel(id) {
       closeModal();
       await cargarPanel();
       renderPanelTab('reservas');
-      toast('Reserva actualizada ✓', 'ok');
+      toast('Reserva actualizada', 'ok');
     } catch (e) { toast(e.message, 'error'); }
   };
 }
@@ -5368,8 +5368,8 @@ function renderLugarTab(tab) {
 
 function fotoInstrumento(i) {
   return i.foto
-    ? `<img src="${esc(i.foto)}" alt="${esc(i.nombre)}" onerror="this.parentElement.innerHTML='<span class=inst-emoji>🎸</span>'">`
-    : '<span class="inst-emoji">🎸</span>';
+    ? `<img src="${esc(i.foto)}" alt="${esc(i.nombre)}" onerror="this.parentElement.classList.add('inst-sin-foto');this.remove()">`
+    : '<span class="inst-emoji"></span>';
 }
 
 function renderInstrumentos() {
@@ -5379,7 +5379,7 @@ function renderInstrumentos() {
       <div class="inst-photo">${fotoInstrumento(i)}</div>
       <h3>${esc(i.nombre)}</h3>
       ${i.descripcion ? `<p class="muted">${esc(i.descripcion)}</p>` : ''}
-      ${i.alquiler ? `<span class="tag tag-alquiler">🎒 Alquiler ${fmtMoney(i.precioAlquiler)}/hora</span>` : ''}
+      ${i.alquiler ? `<span class="tag tag-alquiler"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v10H4z"/><path d="M9 6V4a3 3 0 0 1 6 0v2"/><path d="M9 14h6"/></svg> Alquiler ${fmtMoney(i.precioAlquiler)}/hora</span>` : ''}
     </article>`).join('')
     : '<p class="muted">No hay instrumentos para mostrar.</p>';
 }
@@ -5562,7 +5562,7 @@ function wirePublic() {
   };
   $('#btn-notif').onclick = () => abrirPanelNotif();
   $('#btn-ajustes').onclick = () => abrirPanelAjustes();
-  /* Panel de notificaciones: cerrar con ✕, el fondo o la tecla Escape */
+  /* Panel de notificaciones: cerrar con , el fondo o la tecla Escape */
   $('#notif-panel-cerrar').onclick = cerrarPanelNotif;
   $('#notif-backdrop').onclick = cerrarPanelNotif;
   $('#notif-panel-leer').onclick = marcarLeidasPanel;
@@ -5605,7 +5605,7 @@ function wirePublic() {
     if ($('#notif-drop').classList.contains('open')) return cerrarPanelNotif();
     if ($('#ajustes-drop').classList.contains('open')) return cerrarPanelAjustes();
   });
-  /* Panel de ajustes: cerrar con ✕, el fondo o Escape */
+  /* Panel de ajustes: cerrar con , el fondo o Escape */
   $('#ajustes-panel-cerrar').onclick = cerrarPanelAjustes;
   $('#ajustes-backdrop').onclick = cerrarPanelAjustes;
   $('#ajustes-sheet-body').onclick = e => {
@@ -5678,7 +5678,7 @@ function wirePublic() {
 async function enterAdmin() {
   if (esSuper()) { showAdmin(); return; }
   openModal(`
-    <h3>🔒 Panel de administración</h3>
+    <h3><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Panel de administración</h3>
     <p class="muted small">Ingresá con la cuenta de administración general de Más Música.</p>
     <label>Usuario o email<input id="ad-user" autocomplete="username"></label>
     <label>Contraseña<input type="password" id="ad-pass" autocomplete="current-password"></label>
@@ -5710,7 +5710,7 @@ async function enterAdmin() {
 /* Entrada explícita al panel de administración con el PIN de emergencia */
 function pedirPinAdmin() {
   openModal(`
-    <h3>🔑 PIN de administrador</h3>
+    <h3><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg> PIN de administrador</h3>
     <label>PIN<input type="password" id="pin-input" inputmode="numeric" placeholder="PIN de administrador"></label>
     <div class="row">
       <button class="btn btn-primary" id="pin-ok">Entrar</button>
@@ -5873,7 +5873,7 @@ function renderSolicitudes() {
       <div class="sol-req-top">
         <div>
           <h3>${esc(r.name)}</h3>
-          <p class="sol-req-meta">${esc([r.localidad, [r.direccion, r.numero].filter(Boolean).join(' ')].filter(Boolean).join(' · '))} · 👥 ${r.capacity}</p>
+          <p class="sol-req-meta">${esc([r.localidad, [r.direccion, r.numero].filter(Boolean).join(' ')].filter(Boolean).join(' · '))} · <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> ${r.capacity}</p>
           <p class="sol-req-meta">Enviada por ${r.duenio ? '@' + esc(r.duenio.usuario) : '—'}${r.solicitud && r.solicitud.fecha ? ' · ' + fechaCorta(r.solicitud.fecha) : ''}</p>
           ${r.descripcion ? `<p class="sol-req-desc">${esc(r.descripcion)}</p>` : ''}
         </div>
@@ -5895,7 +5895,7 @@ async function accionSolicitud(id, accion, motivo) {
     renderAdminTab('solicitudes');
     renderRooms();
     toast(
-      accion === 'aprobar' ? 'Sala aprobada y publicada ✓' :
+      accion === 'aprobar' ? 'Sala aprobada y publicada <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>' :
       accion === 'rechazar' ? 'Sala rechazada' :
       accion === 'corregir' ? 'Le pedimos correcciones al dueño' : 'Sala actualizada',
       'ok');
@@ -5911,7 +5911,7 @@ function renderUsuarios() {
   if (!cont) return;
   if (!window.__usuarios) { cont.innerHTML = '<p class="muted">Cargando cuentas…</p>'; cargarUsuarios(); return; }
 
-  const ROL = { USER: { label: 'Músico', emoji: '🎸', cls: 'musico' }, ROOM_ADMIN: { label: 'Dueño de sala', emoji: '🎛️', cls: 'sala' }, SUPER_ADMIN: { label: 'Admin', emoji: '👑', cls: 'admin' } };
+  const ROL = { USER: { label: 'Músico', emoji: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>', cls: 'musico' }, ROOM_ADMIN: { label: 'Dueño de sala', emoji: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>', cls: 'sala' }, SUPER_ADMIN: { label: 'Admin', emoji: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 7l4 4 6-7 6 7 4-4-2 12H4z"/></svg>', cls: 'admin' } };
 
   /* Contadores por rol */
   const counts = { '': window.__usuarios.length };
@@ -5944,7 +5944,7 @@ function renderUsuarios() {
 
   /* Renderizar tarjetas */
   cont.innerHTML = lista.length ? lista.map(u => {
-    const r = ROL[u.rol] || { label: u.rol, emoji: '🎸', cls: '' };
+    const r = ROL[u.rol] || { label: u.rol, emoji: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>', cls: '' };
     const isAdmin = u.rol === 'SUPER_ADMIN';
     const blocked = u.bloqueado;
     const off = u.activo === false;
@@ -5952,9 +5952,9 @@ function renderUsuarios() {
       : off ? '<span class="cuentas-pill off">Desactivada</span>'
       : `<span class="cuentas-pill ${r.cls}">${r.emoji} ${r.label}</span>`;
     const meta = [
-      u.email && `<span>📧 ${esc(u.email)}</span>`,
-      u.telefono && `<span>📞 ${esc(u.telefono)}</span>`,
-      u.localidad && `<span>📍 ${esc(u.localidad)}</span>`,
+      u.email && `<span><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/><polyline points="22,6 12,13 2,6"/></svg> ${esc(u.email)}</span>`,
+      u.telefono && `<span><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg> ${esc(u.telefono)}</span>`,
+      u.localidad && `<span><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> ${esc(u.localidad)}</span>`,
     ].filter(Boolean).join(' ');
 
     return `
@@ -6025,30 +6025,30 @@ function renderAyuda() {
   if (!cont) return;
   if (!window.__ayuda) { cont.innerHTML = '<p class="muted">Cargando pedidos…</p>'; cargarAyuda(); return; }
   const lista = window.__ayuda;
-  const MOTIVOS = { olvide: '🔑 Olvidé mi contraseña', bloqueada: '🚫 Cuenta bloqueada/desactivada', otro: '❓ Otro problema' };
+  const MOTIVOS = { olvide: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg> Olvidé mi contraseña', bloqueada: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg> Cuenta bloqueada/desactivada', otro: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Otro problema' };
   const fechaCorta = t => new Date(t).toLocaleString('es-AR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
   const pendientes = lista.filter(a => a.estado === 'pendiente');
   const resueltos = lista.filter(a => a.estado === 'resuelta');
   if (!lista.length) {
-    cont.innerHTML = '<p class="muted">Todavía no hay pedidos de ayuda. Cuando alguien no pueda entrar, aparece acá (y te avisa el timbre 🔔).</p>';
+    cont.innerHTML = '<p class="muted">Todavía no hay pedidos de ayuda. Cuando alguien no pueda entrar, aparece acá (y te avisa el timbre <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>).</p>';
     return;
   }
   const tarjeta = a => `<div class="panel ayuda-item ${a.estado === 'resuelta' ? 'ayuda-resuelta' : ''}">
     <div class="ayuda-head">
-      <strong>${MOTIVOS[a.motivo] || '❓ Otro problema'}</strong>
+      <strong>${MOTIVOS[a.motivo] || '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Otro problema'}</strong>
       <span class="muted small">${fechaCorta(a.fecha)}</span>
     </div>
-    <p>👤 <strong>${esc(a.ident)}</strong>
+    <p><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> <strong>${esc(a.ident)}</strong>
       ${a.cuenta ? ` — <span class="muted small">cuenta encontrada: @${esc(a.cuenta.usuario)} (${esc(a.cuenta.nombre)})${a.cuenta.email ? ' · ' + esc(a.cuenta.email) : ''}${a.cuenta.bloqueado ? ' · <span class="badge badge-past">bloqueada</span>' : a.cuenta.activo === false ? ' · <span class="badge badge-past">desactivada</span>' : ''}</span>` : '<span class="muted small">(cuenta no encontrada con ese dato)</span>'}
     </p>
     ${a.mensaje ? `<p class="ayuda-msj">“${esc(a.mensaje)}”</p>` : ''}
     <div class="row wrap">
       ${a.estado === 'pendiente' && a.cuenta && (a.cuenta.bloqueado || a.cuenta.activo === false) && a.cuenta.rol !== 'SUPER_ADMIN'
-        ? `<button class="btn btn-sm" data-ayuda-desbloquear="${a.id}">🔓 Desbloquear cuenta</button>` : ''}
+        ? `<button class="btn btn-sm" data-ayuda-desbloquear="${a.id}"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg> Desbloquear cuenta</button>` : ''}
       ${a.estado === 'pendiente' && a.cuenta && a.cuenta.rol !== 'SUPER_ADMIN'
-        ? `<button class="btn btn-sm" data-ayuda-clave="${a.id}">🔑 Dar contraseña nueva</button>` : ''}
-      ${a.estado === 'pendiente' ? `<button class="btn btn-sm btn-ghost" data-ayuda-resolver="${a.id}">✓ Marcar resuelto</button>` : ''}
-      ${a.estado === 'resuelta' ? '<span class="muted small">✓ Resuelto' + (a.resuelta ? ' el ' + fechaCorta(a.resuelta) : '') + '</span>' : ''}
+        ? `<button class="btn btn-sm" data-ayuda-clave="${a.id}"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg> Dar contraseña nueva</button>` : ''}
+      ${a.estado === 'pendiente' ? `<button class="btn btn-sm btn-ghost" data-ayuda-resolver="${a.id}"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Marcar resuelto</button>` : ''}
+      ${a.estado === 'resuelta' ? '<span class="muted small"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Resuelto' + (a.resuelta ? ' el ' + fechaCorta(a.resuelta) : '') + '</span>' : ''}
     </div>
   </div>`;
   cont.innerHTML = `
@@ -6076,9 +6076,9 @@ async function resolverAyuda(id, desbloquear) {
   try {
     const data = await api('/api/admin/ayuda', { method: 'POST', admin: true, body: { id, desbloquear: !!desbloquear } });
     if (desbloquear) {
-      toast('Cuenta desbloqueada y pedido resuelto ✓', 'ok');
+      toast('Cuenta desbloqueada y pedido resuelto', 'ok');
     } else {
-      toast('Pedido marcado como resuelto ✓', 'ok');
+      toast('Pedido marcado como resuelto', 'ok');
     }
     await cargarAyuda();
   } catch (e) { toast(e.message, 'error'); }
@@ -6111,7 +6111,7 @@ async function darClaveDesdeAyuda(id) {
   /* Al darle una clave nueva, el pedido queda resuelto */
   try { await api('/api/admin/ayuda', { method: 'POST', admin: true, body: { id: a.id } }); } catch (e) {}
   await mostrarClaveModal(a.cuenta.usuario, clave);
-  toast('Contraseña actualizada y pedido resuelto ✓', 'ok');
+  toast('Contraseña actualizada y pedido resuelto', 'ok');
   await cargarAyuda();
 }
 
@@ -6159,7 +6159,7 @@ function renderReservasAdmin() {
 
   $('#res-list').innerHTML = `<div class="res-list">` + ver.map(r => {
     const room = state.rooms.find(x => x.id === r.roomId);
-    const extra = (r.alquiler || []).length ? ` · 🎒 ${r.alquiler.map(a => esc(a.nombre)).join(', ')}` : '';
+    const extra = (r.alquiler || []).length ? ` · <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v10H4z"/><path d="M9 6V4a3 3 0 0 1 6 0v2"/><path d="M9 14h6"/></svg> ${r.alquiler.map(a => esc(a.nombre)).join(', ')}` : '';
     return `
       <div class="res-card" style="--rc:${colorRoom(room)}">
         <div class="res-row">
@@ -6305,7 +6305,7 @@ function editarReserva(id, backTab = 'reservas') {
       state = data.state;
       closeModal();
       renderAdminTab(backTab);
-      toast('Reserva actualizada ✓', 'ok');
+      toast('Reserva actualizada', 'ok');
     } catch (e) {
       toast(e.message, 'error');
     }
@@ -6361,7 +6361,7 @@ function renderHistorial() {
           <div class="res-time">${r.start} – ${r.end}</div>
           <div class="res-info">
             <strong>${esc(room ? room.name : 'Sala eliminada')}${canc ? ' <span class="badge badge-past">Cancelada</span>' : ''}</strong>
-            <div>${esc(r.name)}${r.phone ? ' · 📞 ' + esc(r.phone) : ''}</div>
+            <div>${esc(r.name)}${r.phone ? ' · <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg> ' + esc(r.phone) : ''}</div>
           </div>
           <div class="res-price">${fmtMoney(precioReserva(r))}</div>
           <div class="res-actions">
@@ -6469,7 +6469,7 @@ function formularioSala(id) {
     <h3>${id ? 'Editar sala' : 'Nueva sala'}</h3>
     <div class="sala-foto-edit" id="fr-preview">${r.foto
       ? `<img src="${esc(r.foto)}" alt="${esc(r.name)}">`
-      : '<span class="sala-chip-foto" style="width:60px;height:60px;font-size:1.6rem">🎸</span>'}</div>
+      : '<span class="sala-chip-foto" style="width:60px;height:60px;font-size:1.6rem"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span>'}</div>
     <label>Logo o foto de la sala<input type="file" id="fr-foto" accept="image/*"></label>
     <label class="check" id="fr-quitar-wrap" ${r.foto ? '' : 'hidden'}><input type="checkbox" id="fr-quitar"> Quitar la foto</label>
     <h3 class="sub">Foto horizontal (la que se ve en el mapa)</h3>
@@ -6496,8 +6496,8 @@ function formularioSala(id) {
       <label>Longitud<input id="fr-lng" inputmode="decimal" value="${r.lng != null ? esc(r.lng) : ''}" placeholder="-64.1888"></label>
     </div>
     <div class="row wrap">
-      <button class="btn btn-sm" type="button" id="fr-ubicar">🗺 Ubicar en el mapa</button>
-      <button class="btn btn-sm" type="button" id="fr-buscar">🔎 Buscar por dirección</button>
+      <button class="btn btn-sm" type="button" id="fr-ubicar"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg> Ubicar en el mapa</button>
+      <button class="btn btn-sm" type="button" id="fr-buscar"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> Buscar por dirección</button>
     </div>
     <h3 class="sub">Equipamiento</h3>
     <div class="row2">
@@ -6523,7 +6523,7 @@ function formularioSala(id) {
     </div>
     <label class="check"><input type="checkbox" id="fr-active" ${r.activo !== false ? 'checked' : ''}> Sala visible para reservar</label>
     <div class="row">
-      <button class="btn btn-primary" id="fr-save">💾 Guardar cambios</button>
+      <button class="btn btn-primary" id="fr-save"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Guardar cambios</button>
       <button class="btn" id="fr-cancel">Cancelar</button>
     </div>`);
 
@@ -6535,7 +6535,7 @@ function formularioSala(id) {
         fotoNueva = dataUrl;
         $('#fr-preview').innerHTML = `<img src="${dataUrl}" alt="previsualización">`;
         $('#fr-quitar').checked = false;
-        toast('Logo listo ✓', 'ok');
+        toast('Logo listo', 'ok');
       })
       .catch(err => toast(err.message || 'No se pudo leer la imagen', 'error'));
   };
@@ -6548,7 +6548,7 @@ function formularioSala(id) {
         portadaNueva = dataUrl;
         $('#fr-portada-preview').innerHTML = `<img src="${dataUrl}" alt="previsualización">`;
         $('#fr-portada-quitar').checked = false;
-        toast('Foto horizontal lista ✓', 'ok');
+        toast('Foto horizontal lista', 'ok');
       })
       .catch(err => toast(err.message || 'No se pudo leer la imagen', 'error'));
   };
@@ -6595,7 +6595,7 @@ function formularioSala(id) {
       renderAdminTab('salas');
       renderSalasStrip();
       renderRooms();
-      toast('Sala guardada ✓', 'ok');
+      toast('Sala guardada', 'ok');
     } catch (e) {
       toast(e.message, 'error');
     }
@@ -6615,7 +6615,7 @@ function formularioSala(id) {
     $('#fr-lat').value = p.lat.toFixed(5);
     $('#fr-lng').value = p.lng.toFixed(5);
     if (!$('#fr-mapa').value) $('#fr-mapa').value = p.nombre.slice(0, 300);
-    toast('Ubicación encontrada 📍', 'ok');
+    toast('Ubicación encontrada', 'ok');
   };
 }
 
@@ -6648,8 +6648,8 @@ function renderLugarAdmin() {
       <div class="res-info">
         <strong>${esc(i.nombre)}</strong>
         <div>${esc(i.descripcion || '—')}</div>
-        ${i.alquiler ? `<div class="muted small">🎒 Alquiler ${fmtMoney(i.precioAlquiler)}/hora</div>` : ''}
-        ${i.foto ? `<div class="muted small">📷 ${esc(i.foto)}</div>` : ''}
+        ${i.alquiler ? `<div class="muted small"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v10H4z"/><path d="M9 6V4a3 3 0 0 1 6 0v2"/><path d="M9 14h6"/></svg> Alquiler ${fmtMoney(i.precioAlquiler)}/hora</div>` : ''}
+        ${i.foto ? `<div class="muted small"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> ${esc(i.foto)}</div>` : ''}
       </div>
       <div class="res-actions">
         <button class="btn btn-sm" data-edit-inst="${i.id}">Editar</button>
@@ -6682,7 +6682,7 @@ function formularioInstrumento(id) {
     <label>Descripción<input id="fi-desc" maxlength="200" value="${esc(i.descripcion)}" placeholder="Ej.: Pearl Export 5 piezas + platillos"></label>
     <label>Foto (ruta o URL)<input id="fi-foto" maxlength="300" value="${esc(i.foto)}" placeholder="assets/instrumentos/bateria.png o https://..."></label>
     <p class="muted small">Sin foto se muestra un ícono. Guarda las fotos en <code>public/assets/</code> del servidor o usa un enlace.</p>
-    <label class="check"><input type="checkbox" id="fi-alquiler" ${i.alquiler ? 'checked' : ''}> 🎒 Se puede alquilar a los músicos</label>
+    <label class="check"><input type="checkbox" id="fi-alquiler" ${i.alquiler ? 'checked' : ''}> <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v10H4z"/><path d="M9 6V4a3 3 0 0 1 6 0v2"/><path d="M9 14h6"/></svg> Se puede alquilar a los músicos</label>
     <label>Precio del alquiler por hora<input type="number" id="fi-precio-alq" min="0" step="1" value="${i.precioAlquiler || 0}"></label>
     <label class="check"><input type="checkbox" id="fi-active" ${i.activo !== false ? 'checked' : ''}> Visible para los visitantes</label>
     <div class="row">
@@ -6707,7 +6707,7 @@ function formularioInstrumento(id) {
       state = data.state;
       closeModal();
       renderLugarAdmin();
-      toast('Instrumento guardado ✓', 'ok');
+      toast('Instrumento guardado', 'ok');
     } catch (e) {
       toast(e.message, 'error');
     }
@@ -6759,7 +6759,7 @@ function formularioFotoLugar(id) {
       state = data.state;
       closeModal();
       renderLugarAdmin();
-      toast('Foto guardada ✓', 'ok');
+      toast('Foto guardada', 'ok');
     } catch (e) {
       toast(e.message, 'error');
     }
@@ -6795,11 +6795,11 @@ function renderBandasAdmin() {
     <div class="band-admin-item">
       <span class="band-avatar band-avatar-lg">${b.foto
         ? `<img src="${esc(b.foto)}" alt="${esc(b.nombre)}">`
-        : '🎭'}</span>
+        : '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4h20v8a10 10 0 0 1-20 0z"/><circle cx="8" cy="10" r="1.4"/><circle cx="16" cy="10" r="1.4"/></svg>'}</span>
       ${b.fotoGrupal ? `<img class="band-mini-grupo" src="${esc(b.fotoGrupal)}" alt="foto grupal">` : ''}
       <div class="res-info">
         <strong>${esc(b.nombre)}</strong>
-        <div class="muted small">${(b.integrantes || []).length ? '👥 ' + b.integrantes.length + ' integrantes' : 'Sin integrantes'}${b.genero ? ' · ' + esc(b.genero) : ''}${b.foto ? ' · Con foto' : ''}</div>
+        <div class="muted small">${(b.integrantes || []).length ? '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> ' + b.integrantes.length + ' integrantes' : 'Sin integrantes'}${b.genero ? ' · ' + esc(b.genero) : ''}${b.foto ? ' · Con foto' : ''}</div>
       </div>
       <div class="res-actions">
         <button class="btn btn-sm" data-edit-band="${b.id}">Editar</button>
@@ -6851,7 +6851,7 @@ function renderInicioAdmin() {
 
   cont.innerHTML = `
     <div class="inicio-saludo">
-      <h2>Hola${yo ? ', ' + esc(yo.usuario) : ''} 👋</h2>
+      <h2>Hola${yo ? ', ' + esc(yo.usuario) : ''} <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 11V6a1.5 1.5 0 0 0-3 0v4"/><path d="M15 10V4a1.5 1.5 0 0 0-3 0v6"/><path d="M12 10.5V6a1.5 1.5 0 0 0-3 0v8"/><path d="M9 10.5V8a1.5 1.5 0 0 0-3 0v6a7 7 0 0 0 7 7h1a7 7 0 0 0 7-7v-3a1.5 1.5 0 0 0-3 0"/></svg></h2>
       <p class="muted small">${esc(fechaTxt)}</p>
     </div>
 
@@ -6907,7 +6907,7 @@ function formularioPromocion(id) {
   const aIso = t => t ? new Date(t).toISOString().slice(0, 10) : '';
   openModal(`
     <h3>${id ? 'Editar promoción' : 'Nueva promoción'}</h3>
-    <label>Título *<input id="pr-titulo" maxlength="80" value="${esc(p.titulo)}" placeholder="Ej.: 🎉 2x1 los martes"></label>
+    <label>Título *<input id="pr-titulo" maxlength="80" value="${esc(p.titulo)}" placeholder="Ej.: 2x1 los martes"></label>
     <label>Texto<textarea id="pr-texto" rows="3" maxlength="400" placeholder="Detalle corto que se verá en el Inicio">${esc(p.texto)}</textarea></label>
     <div class="row2">
       <label>Desde<input type="date" id="pr-desde" value="${aIso(p.desde || Date.now())}"></label>
@@ -6921,7 +6921,7 @@ function formularioPromocion(id) {
     <label>Enlaces a redes (uno o más, separados por espacio)<input id="pr-redes" maxlength="500" value="${esc(p.redes || '')}" placeholder="instagram.com/tu_sala facebook.com/tu_sala"></label>
     <label class="check"><input type="checkbox" id="pr-activa" ${p.activa !== false ? 'checked' : ''}> Mostrar en el Inicio</label>
     <div class="row">
-      <button class="btn btn-primary" id="pr-guardar">💾 Guardar</button>
+      <button class="btn btn-primary" id="pr-guardar"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Guardar</button>
       <button class="btn" id="pr-cancelar">Cancelar</button>
     </div>`);
   let flyerNuevo = null;          /* null = no tocar; '' = quitar; dataURL = nuevo */
@@ -6961,7 +6961,7 @@ function formularioPromocion(id) {
       closeModal();
       renderAdminTab('promociones');
       renderResumenInicio();
-      toast('Promoción guardada ✓', 'ok');
+      toast('Promoción guardada', 'ok');
     } catch (e) { toast(e.message, 'error'); }
   };
 }
@@ -7055,7 +7055,7 @@ async function guardarHorarios() {
   try {
     const data = await api('/api/settings/hours', { method: 'PUT', admin: true, body: { hours } });
     state = data.state;
-    toast('Horarios actualizados ✓', 'ok');
+    toast('Horarios actualizados', 'ok');
   } catch (e) {
     toast(e.message, 'error');
   }
@@ -7097,7 +7097,7 @@ async function agregarBloque() {
     const data = await api('/api/blocks', { method: 'POST', admin: true, body: { roomId, date, from, to, reason } });
     state = data.state;
     renderBloqueosAdmin();
-    toast('Horario bloqueado ✓', 'ok');
+    toast('Horario bloqueado', 'ok');
   } catch (e) {
     toast(e.message, 'error');
   }
@@ -7154,12 +7154,12 @@ function renderStats() {
   const top = Object.values(perRoom).filter(p => p.active && p.reservas > 0).sort((a, b) => b.reservas - a.reservas)[0];
 
   $('#stats-cards').innerHTML = `
-    <div class="stat"><span>💰 Ingresos del mes</span><strong>${fmtMoney(revenue)}</strong></div>
-    <div class="stat"><span>📊 Ocupación</span><strong>${occ}</strong></div>
-    <div class="stat"><span>📲 Reservas</span><strong>${reservas}</strong></div>
-    <div class="stat"><span>⏱ Horas reservadas</span><strong>${horasOcupadas}</strong></div>
-    <div class="stat"><span>🗓 Próximos 7 días</span><strong>${next7} h</strong></div>
-    ${top ? `<div class="stat"><span>🎸 Sala más reservada</span><strong>${esc(top.name)}</strong></div>` : ''}`;
+    <div class="stat"><span><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> Ingresos del mes</span><strong>${fmtMoney(revenue)}</strong></div>
+    <div class="stat"><span><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg> Ocupación</span><strong>${occ}</strong></div>
+    <div class="stat"><span><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg> Reservas</span><strong>${reservas}</strong></div>
+    <div class="stat"><span><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Horas reservadas</span><strong>${horasOcupadas}</strong></div>
+    <div class="stat"><span><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Próximos 7 días</span><strong>${next7} h</strong></div>
+    ${top ? `<div class="stat"><span><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg> Sala más reservada</span><strong>${esc(top.name)}</strong></div>` : ''}`;
 
   $('#stats-table').innerHTML = `
     <table>
@@ -7292,7 +7292,7 @@ async function renderPagosAdmin() {
           if (!ok) return;
           try {
             await api('/api/admin/pagos/liquidar', { method: 'POST', admin: true, body: { roomId: rId } });
-            toast(`Liquidación registrada para "${rName}" ✓`, 'ok');
+            toast(`Liquidación registrada para "${rName}"`, 'ok');
             renderPagosAdmin();
           } catch (err) {
             toast(err.message, 'error');
@@ -7387,7 +7387,7 @@ async function guardarReglasPagos() {
   try {
     const res = await api('/api/settings', { method: 'PUT', admin: true, body: { reglas } });
     state = res.state;
-    toast('Reglas de seña y pago guardadas ✓', 'ok');
+    toast('Reglas de seña y pago guardadas', 'ok');
     renderPagosAdmin();
   } catch (e) {
     toast(e.message, 'error');
@@ -7410,37 +7410,37 @@ function renderAjustes() {
   if (estMail) {
     estMail.innerHTML = state.settings.avisoMail
       ? (c.email
-        ? '✅ <strong>Mail de avisos activo.</strong> Cada registro y pedido de ayuda llega a <strong>' + esc(c.email) + '</strong> además del timbre 🔔 de la app.'
-        : '⚠️ El mail de avisos está activo, pero falta cargar el <strong>email de contacto</strong> de arriba para saber a dónde enviarlo.')
-      : '⚪ Mail de avisos desactivado: los avisos llegan solo al timbre 🔔 de la app. Para activarlos agregá <code>RESEND_API_KEY</code> en <code>server.js</code> y reiniciá el servidor (resend.com).';
+        ? '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> <strong>Mail de avisos activo.</strong> Cada registro y pedido de ayuda llega a <strong>' + esc(c.email) + '</strong> además del timbre <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg> de la app.'
+        : '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> El mail de avisos está activo, pero falta cargar el <strong>email de contacto</strong> de arriba para saber a dónde enviarlo.')
+      : '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/></svg> Mail de avisos desactivado: los avisos llegan solo al timbre <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg> de la app. Para activarlos agregá <code>RESEND_API_KEY</code> en <code>server.js</code> y reiniciá el servidor (resend.com).';
   }
   const estadoG = $('#gmaps-estado');
   if (estadoG) {
     estadoG.innerHTML = state.settings.gmapsKey
       ? (gmapaFallo
-        ? '⚠️ <strong>La clave no funcionó</strong> (revisá que la <em>Maps JavaScript API</em> esté habilitada). El mapa usa OpenStreetMap.'
-        : '✅ <strong>Google Maps activo</strong> en el mapa y en el buscador de direcciones.')
-      : '⚪ Sin clave: el mapa usa OpenStreetMap y la búsqueda de direcciones usa OpenStreetMap.';
+        ? '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> <strong>La clave no funcionó</strong> (revisá que la <em>Maps JavaScript API</em> esté habilitada). El mapa usa OpenStreetMap.'
+        : '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> <strong>Google Maps activo</strong> en el mapa y en el buscador de direcciones.')
+      : '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/></svg> Sin clave: el mapa usa OpenStreetMap y la búsqueda de direcciones usa OpenStreetMap.';
   }
   const selCancel = $('#set-cancelacion');
   if (selCancel) selCancel.value = String((state.settings.reglas && state.settings.reglas.cancelacionHoras) || 0);
   const selRec = $('#set-recordatorio');
   if (selRec) selRec.value = String((state.settings.reglas && state.settings.reglas.recordatorioHoras) || 0);
   $('#admin-device-info').innerHTML = esDispositivoAdmin()
-    ? '✅ Este dispositivo está autorizado como <strong>administrador</strong>: el botón 🔒 aparece en el inicio. En otros dispositivos no se ve.'
-    : '🔒 Este dispositivo <strong>no</strong> es de administración. Para entrar: doble toque en el logo (o URL con <code>#admin</code>) y escribí tu usuario y contraseña.';
+    ? '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Este dispositivo está autorizado como <strong>administrador</strong>: el botón <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> aparece en el inicio. En otros dispositivos no se ve.'
+    : '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Este dispositivo <strong>no</strong> es de administración. Para entrar: doble toque en el logo (o URL con <code>#admin</code>) y escribí tu usuario y contraseña.';
   const info = $('#admin-cuenta-info');
   if (info) {
     info.innerHTML = yo
       ? 'Estos son los datos de la cuenta que administra la app. Podés editarlos y cambiar la contraseña.'
-      : '⚠️ Entrás con el <strong>PIN de emergencia</strong> (no hay cuenta de administración general iniciada).';
+      : '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Entrás con el <strong>PIN de emergencia</strong> (no hay cuenta de administración general iniciada).';
   }
   /* Tarjeta resumen de la cuenta madre */
   const resumen = $('#cm-resumen');
   if (resumen) {
     const fecha = t => t ? new Date(t).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
     resumen.innerHTML = yo
-      ? `<div class="cm-ava">${yo.foto ? `<img src="${esc(yo.foto)}" alt="">` : esDueño() && miSala && miSala.foto ? `<img src="${esc(miSala.foto)}" alt="">` : '<span>👑</span>'}</div>
+      ? `<div class="cm-ava">${yo.foto ? `<img src="${esc(yo.foto)}" alt="">` : esDueño() && miSala && miSala.foto ? `<img src="${esc(miSala.foto)}" alt="">` : '<span><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 7l4 4 6-7 6 7 4-4-2 12H4z"/></svg></span>'}</div>
          <div class="cm-datos">
            <strong>${esc(yo.nombre)}</strong>
            <span class="cm-badge">Super administradora</span>
@@ -7473,7 +7473,7 @@ async function guardarCuentaMadre() {
     renderAjustes();
     renderMine();
     actualizarAdminHead();
-    toast('Cuenta madre actualizada ✓', 'ok');
+    toast('Cuenta madre actualizada', 'ok');
   } catch (e) { toast(e.message, 'error'); }
 }
 
@@ -7519,12 +7519,12 @@ async function guardarAjustes() {
       if (gmap && !claveDespues) limpiarMapa();
       renderAjustes();
       toast(yaCargada
-        ? 'Clave guardada. Recargá la app (F5 🔄) para que se use la nueva.'
-        : (claveDespues ? 'Clave de Google Maps guardada ✓ El mapa va a usar Google Maps.' : 'Clave quitada. El mapa vuelve a OpenStreetMap ✓'), 'ok');
+        ? 'Clave guardada. Recargá la app (F5 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/><path d="M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>) para que se use la nueva.'
+        : (claveDespues ? 'Clave de Google Maps guardada <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> El mapa va a usar Google Maps.' : 'Clave quitada. El mapa vuelve a OpenStreetMap <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>'), 'ok');
       return;
     }
     renderAjustes();
-    toast('Ajustes guardados ✓', 'ok');
+    toast('Ajustes guardados', 'ok');
   } catch (e) {
     toast(e.message, 'error');
   }
@@ -7537,7 +7537,7 @@ function exportar() {
   a.download = `reservas-salas-${todayStr()}.json`;
   a.click();
   URL.revokeObjectURL(a.href);
-  toast('Datos exportados ✓', 'ok');
+  toast('Datos exportados', 'ok');
 }
 
 async function importar(file) {
@@ -7548,7 +7548,7 @@ async function importar(file) {
       const res = await api('/api/state', { method: 'PUT', admin: true, body: data });
       state = res.state;
       showAdmin();
-      toast('Datos importados ✓', 'ok');
+      toast('Datos importados', 'ok');
     } catch (e) {
       toast(e.message || 'Archivo inválido', 'error');
     }
@@ -7557,7 +7557,7 @@ async function importar(file) {
 }
 
 /* ================= Modal y toast ================= */
-let avisoCierreModal = null;   /* avisa cuando el modal se cierra sin aceptar (✕, fondo o Escape) */
+let avisoCierreModal = null;   /* avisa cuando el modal se cierra sin aceptar (, fondo o Escape) */
 
 function openModal(html) {
   const aviso = avisoCierreModal;
@@ -7584,7 +7584,7 @@ function confirmarAccion(mensaje, titulo = '¿Estás seguro?', textoAceptar = 'A
     const colorAceptar = tipo === 'peligro' ? 'btn-danger' : 'btn-primary';
     openModal(`
       <div class="confirmar-modal">
-        <div class="confirmar-icono">${tipo === 'peligro' ? '⚠️' : '❓'}</div>
+        <div class="confirmar-icono">${tipo === 'peligro' ? '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>' : '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>'}</div>
         <h3>${titulo}</h3>
         <p class="confirmar-mensaje">${mensaje}</p>
         <div class="confirmar-botones">
@@ -7659,7 +7659,7 @@ function mostrarClaveModal(usuario, clave) {
     $('#clave-copiar').onclick = async () => {
       try {
         await navigator.clipboard.writeText(clave);
-        toast('Contraseña copiada ✓', 'ok');
+        toast('Contraseña copiada', 'ok');
       } catch (e) {
         const rango = document.createRange();
         rango.selectNodeContents($('#clave-caja'));
@@ -7668,7 +7668,7 @@ function mostrarClaveModal(usuario, clave) {
         sel.addRange(rango);
         let copiada = false;
         try { copiada = document.execCommand('copy'); } catch (e2) {}
-        toast(copiada ? 'Contraseña copiada ✓' : 'Contraseña seleccionada: copiala con Ctrl+C', copiada ? 'ok' : 'warn');
+        toast(copiada ? 'Contraseña copiada' : 'Contraseña seleccionada: copiala con Ctrl+C', copiada ? 'ok' : 'warn');
       }
     };
     $('#clave-listo').onclick = terminar;
@@ -7686,7 +7686,7 @@ async function asegurarUsuarios() {
   return window.__usuarios || [];
 }
 
-/* Asignar o cambiar el dueño de una sala (Administración central → Salas).
+/* Asignar o cambiar el dueño de una sala (Administración central  Salas).
    Interacción con búsqueda y selección, reemplaza al prompt() del navegador. */
 async function asignarDuenioModal(roomId, cambiar) {
   const r = (state.rooms || []).find(x => x.id === roomId);
@@ -7742,7 +7742,7 @@ async function asignarDuenioModal(roomId, cambiar) {
       window.__usuarios = null;   /* el rol del nuevo dueño puede haber cambiado */
       closeModal();
       renderAdminTab('salas');
-      toast(cambiar ? 'Dueño cambiado ✓' : 'Dueño asignado ✓', 'ok');
+      toast(cambiar ? 'Dueño cambiado' : 'Dueño asignado', 'ok');
     } catch (err) {
       ok.disabled = false;
       toast(err.message, 'error');
@@ -7789,7 +7789,7 @@ function startPolling() {
           /* Preferencia de Ajustes: avisar en pantalla cuando llega algo nuevo */
           const nuevas = notificaciones.filter(n => !conocidos.has(n.id));
           if (nuevas.length && localStorage.getItem('mm-avisos-toast') !== '0') {
-            toast(`🔔 ${nuevas[0].titulo}`, 'ok');
+            toast(`${nuevas[0].titulo}`, 'ok');
           }
         });
       }
@@ -7954,7 +7954,7 @@ function wireAdmin() {
     if (ap) {
       try {
         const data = await api(`/api/admin/solicitudes/${ap.dataset.approveRoom}`, { method: 'PUT', admin: true, body: { accion: 'aprobar' } });
-        state = data.state; renderAdminTab('salas'); toast('Sala aprobada ✓', 'ok');
+        state = data.state; renderAdminTab('salas'); toast('Sala aprobada', 'ok');
       } catch (err) { toast(err.message, 'error'); }
       return;
     }
@@ -8037,7 +8037,7 @@ function wireAdmin() {
       yo = data.user;
       $('#set-pass-nueva').value = '';
       $('#set-pass-actual').value = '';
-      toast('Contraseña de administrador cambiada ✓', 'ok');
+      toast('Contraseña de administrador cambiada', 'ok');
     } catch (e) { toast(e.message, 'error'); }
   };
   $('#btn-forget-admin').onclick = () => {
@@ -8213,7 +8213,7 @@ async function init() {
   window.addEventListener('appinstalled', () => {
     deferredPrompt = null;
     $('#btn-install').hidden = true;
-    toast('App instalada ✓', 'ok');
+    toast('App instalada', 'ok');
   });
   $('#btn-install').onclick = async () => {
     if (deferredPrompt) {
@@ -8228,10 +8228,10 @@ async function init() {
     }
     if (esIOS()) {
       openModal(
-        '<h3>📲 Instalar la app</h3>' +
+        '<h3><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg> Instalar la app</h3>' +
         '<p>En tu iPhone o iPad:</p>' +
         '<ol style="padding-left:20px;margin:8px 0;line-height:1.7">' +
-        '<li>Tocá el botón <b>Compartir</b> ⬆️ en la barra del navegador.</li>' +
+        '<li>Tocá el botón <b>Compartir</b> <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg> en la barra del navegador.</li>' +
         '<li>Elegí <b>Añadir a pantalla de inicio</b>.</li>' +
         '<li>Tocá <b>Añadir</b> (arriba a la derecha).</li>' +
         '</ol>' +
@@ -8253,7 +8253,7 @@ async function init() {
   if (!pg) return;
   history.replaceState(null, '', location.pathname + location.hash);
   setTimeout(() => {
-    if (pg === 'ok') toast('¡Seña recibida! Tu reserva se confirma en unos segundos. Mirala en Mis reservas ✓', 'ok');
+    if (pg === 'ok') toast('¡Seña recibida! Tu reserva se confirma en unos segundos. Mirala en Mis reservas', 'ok');
     else if (pg === 'pendiente') toast('Tu pago está pendiente. Te avisamos cuando se acredite.', 'warn');
     else toast('El pago no se completó. Podés intentarlo de nuevo antes de que venza el horario.', 'warn');
   }, 1500);
