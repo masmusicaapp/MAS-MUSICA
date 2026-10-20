@@ -191,6 +191,9 @@ const CHAT_PLAN_CONFIG = {
   anual: { id: 'anual', nombre: 'Chat Global - Anual', precioMensual: 15000, moneda: 'ARS', duracionDias: 365 }
 };
 
+/* Versión vigente de los Términos y condiciones: se guarda en la cuenta al registrarse */
+const TERMINOS_VERSION = '2026-10-19';
+
 /* Verificar si un usuario tiene acceso al chat global */
 function tieneAccesoChat(state, userId) {
   if (!userId) return false;
@@ -1261,9 +1264,11 @@ async function handleApi(req, res, url, parts) {
   if (method === 'POST' && url.pathname === '/api/auth/registro') {
     const it = chequearIntento(req, 'registro');
     if (it.bloqueado) return sendJson(res, 429, { error: `Demasiados intentos. Probá de nuevo en ${it.espera} s.` });
+    if (body.aceptaTerminos !== true) return sendJson(res, 400, { error: 'Tenés que aceptar los Términos y condiciones' });
     let nuevo;
     try { nuevo = crearUsuario(state, body, 'USER'); }
     catch (e) { return sendJson(res, e.code || 400, { error: e.message }); }
+    nuevo.terminos = { version: TERMINOS_VERSION, fecha: Date.now() };
     const token = crearSesion(state, nuevo.id);
     avisar(state, nuevo.id, '¡Bienvenido a Más Música!', 'Tu cuenta ya está activa. Buscá tu sala de ensayo y reservá.', 'ok');
     /* La administración se entera de cada registro (notificación en la app + mail si está configurado) */
@@ -1277,6 +1282,7 @@ async function handleApi(req, res, url, parts) {
   if (method === 'POST' && url.pathname === '/api/auth/registro-sala') {
     const it = chequearIntento(req, 'registro');
     if (it.bloqueado) return sendJson(res, 429, { error: `Demasiados intentos. Probá de nuevo en ${it.espera} s.` });
+    if (body.aceptaTerminos !== true) return sendJson(res, 400, { error: 'Tenés que aceptar los Términos y condiciones' });
     const nombreSala = String(body.sala && body.sala.name || '').trim();
     const direccion = String(body.sala && body.sala.direccion || '').trim();
     if (nombreSala.length < 2) return sendJson(res, 400, { error: 'Escribí el nombre de la sala' });
@@ -1284,6 +1290,7 @@ async function handleApi(req, res, url, parts) {
     let duenio;
     try { duenio = crearUsuario(state, body, 'ROOM_ADMIN'); }
     catch (e) { return sendJson(res, e.code || 400, { error: e.message }); }
+    duenio.terminos = { version: TERMINOS_VERSION, fecha: Date.now() };
     const s = body.sala;
     const id = uid();
     const horario = horarioVacio();
