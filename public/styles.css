@@ -2627,6 +2627,12 @@ main {
 .pie-legal a { color: var(--muted); font-size: .84rem; text-decoration: underline; }
 .pie-legal a:hover { color: var(--accent); }
 
+/* Ayuda: canales de contacto dentro del modal */
+.ayuda-contacto-tit { margin: 4px 0 10px; font-size: .9rem; color: var(--muted); }
+.ayuda-contacto { gap: 8px; }
+.ayuda-contacto .btn { flex: 0 0 auto; }
+.ayuda-ico { flex: 0 0 auto; }
+
 /* Tarjeta resumen de la cuenta madre (Ajustes del panel de administración) */
 #cm-resumen {
   display: flex; gap: 12px; align-items: center;
