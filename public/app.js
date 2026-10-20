@@ -3386,6 +3386,7 @@ function pantallaAuth(vista = 'inicio') {
           ${campoPassword('mu-pass2', 'Repetí la contraseña', { valida: 'pass2', ph: 'Igual que arriba' })}
           ${campoAuth('mu-loc', 'Localidad o zona', { ph: 'Ej.: Villa Carlos Paz', max: 80 })}
           ${campoAuth('mu-inst', '¿Qué instrumento tocás?', { ph: 'Ej.: Bajo, Guitarra (separados por coma)', max: 200 })}
+          <label class="check"><input type="checkbox" id="mu-terms"> <span>Acepto los <a class="link-term" href="terminos.html" target="_blank" rel="noopener">términos y condiciones</a></span></label>
           <button class="btn btn-primary btn-block btn-lg" type="submit">Crear mi cuenta</button>
         </form>
         <p class="auth-cuenta">¿Olvidaste tu contraseña o tu cuenta está bloqueada?
@@ -3411,6 +3412,7 @@ function pantallaAuth(vista = 'inicio') {
             ${campoAuth('sg-tel', 'Teléfono', { req: true, valida: 'telefono', ac: 'tel', ph: 'Ej.: 15854455', max: 30 })}
             ${campoPassword('sg-pass', 'Contraseña', { fuerza: true, ph: 'Mínimo 6 caracteres' })}
             <label class="check"><input type="checkbox" id="sg-soy"> Soy responsable de esta sala</label>
+            <label class="check"><input type="checkbox" id="du-terms"> <span>Acepto los <a class="link-term" href="terminos.html" target="_blank" rel="noopener">términos y condiciones</a></span></label>
             <button class="btn btn-primary btn-block btn-lg" type="submit">Continuar →</button>
           </form>
           <p class="auth-cuenta">¿Olvidaste tu contraseña o tu cuenta está bloqueada?
@@ -3584,12 +3586,14 @@ function wireAuth() {
       else if (f.id === 'f-musico') await registrarMusico(f);
       else if (f.id === 'f-duenio') {
         if (!$('#sg-soy').checked) { toast('Confirmá que sos responsable de la sala', 'warn'); return; }
+        if (!$('#du-terms').checked) { toast('Tenés que aceptar los términos y condiciones', 'warn'); return; }
         datosDuenio = {
           nombre: $('#sg-nombre').value.trim(),
           usuario: $('#sg-usuario').value.trim().toLowerCase(),
           email: $('#sg-email').value.trim(),
           telefono: $('#sg-tel').value.trim(),
           password: $('#sg-pass').value,
+          aceptaTerminos: true,
         };
         pantallaAuth('duenio-sala');
       } else if (f.id === 'f-sala') await registrarSala();
@@ -3603,6 +3607,7 @@ function wireAuth() {
 }
 
 async function registrarMusico(form) {
+  if (!$('#mu-terms').checked) { toast('Tenés que aceptar los términos y condiciones', 'warn'); return; }
   const instrumentos = $('#mu-inst').value.split(',').map(s => s.trim()).filter(Boolean);
   const data = await api('/api/auth/registro', {
     method: 'POST',
@@ -3615,6 +3620,7 @@ async function registrarMusico(form) {
       localidad: $('#mu-loc').value.trim(),
       instrumentos,
       foto: fotoTemporal || '',
+      aceptaTerminos: true,
     },
   });
   fotoTemporal = '';
@@ -3640,6 +3646,7 @@ async function registrarSala() {
       telefono: datosDuenio.telefono,
       password: datosDuenio.password,
       foto: '',
+      aceptaTerminos: !!(datosDuenio && datosDuenio.aceptaTerminos),
       sala: {
         name: $('#sa-name').value.trim(),
         direccion: $('#sa-direccion').value.trim(),
@@ -4438,19 +4445,11 @@ function modalAyuda() {
 }
 
 /* ---------- Términos y condiciones ---------- */
+/* El texto completo vive en terminos.html: es una página pública, también para
+   quien todavía no tiene cuenta. Desde acá la abrimos en otra pestaña. */
 function modalTerminos() {
-  const h = (state.settings.reglas && state.settings.reglas.cancelacionHoras) || 0;
-  openModal(`
-    <h3>Términos y condiciones</h3>
-    <div class="terminos">
-      <p><strong>Uso de la app.</strong> +Música conecta a músicos con salas de ensayo independientes. La app solo organiza la reserva: el ensayo se realiza en la sala elegida.</p>
-      <p><strong>Reservas.</strong> Cada reserva queda a nombre de la banda o del músico que la confirma y habilita el horario elegido. Los horarios ocupados aparecen tachados para el resto de los usuarios.</p>
-      <p><strong>Cancelaciones.</strong> ${h ? `Podés cancelar hasta ${h} horas antes del inicio del ensayo. Después de ese plazo la sala puede mantener el horario reservado.` : 'Podés cancelar la reserva desde "Mis reservas" mientras el ensayo no haya comenzado.'}</p>
-      <p><strong>Precios y alquileres.</strong> El precio por hora y el de los instrumentos en alquiler los define cada sala y se muestran antes de confirmar. El total se calcula en el servidor.</p>
-      <p><strong>Datos personales.</strong> Guardamos tu nombre, usuario, email, teléfono, localidad e instrumentos para operar tus reservas y avisos. Podés editarlos o pedir la baja de tu cuenta en cualquier momento.</p>
-      <p><strong>Salas asociadas.</strong> Cada sala es responsable de su información, sus fotos, sus horarios y la atención en su establecimiento.</p>
-    </div>
-    <div class="row"><button class="btn btn-primary" onclick="closeModal()">Cerrar</button></div>`);
+  const v = window.open('terminos.html', '_blank');
+  if (!v) location.href = 'terminos.html';
 }
 
 /* ---------- Panel del dueño de la sala ---------- */
