@@ -1,6 +1,14 @@
-# Pendientes y cosas para revisar — Más Música (v101)
+# Pendientes y cosas para revisar — Más Música (v103)
 
 Actualizado: 20/10/2026. Este archivo es solo una guía de trabajo; la app no lo usa.
+
+## 0. Cambios recientes
+
+- [x] **Emojis reemplazados por íconos SVG en toda la app** (v103): menús, botones,
+      títulos, avisos, panel de administración (Cuentas, Ayuda, Salas, Estadísticas,
+      Ajustes), etc. Ya no queda ningún emoji visible. En el mapa, el ícono cuando una
+      sala no tiene foto usa una nota musical (dibujo de canvas). El tilde verde del
+      formulario de registro ahora es un SVG (en `styles.css`).
 
 ## 1. Seguridad (lo más urgente)
 
