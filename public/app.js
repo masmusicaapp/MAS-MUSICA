@@ -3292,6 +3292,9 @@ function pantallaAuth(vista = 'inicio') {
         <p class="auth-cuenta">¿Ya tenés cuenta?
           <button type="button" class="auth-link" data-vista="login">Iniciar sesión</button>
         </p>
+        <p class="auth-terminos">Al usar Más Música aceptás los
+          <a class="link-term" href="terminos.html" target="_blank" rel="noopener">términos y condiciones</a>.
+        </p>
       </div>`;
     return;
   }
