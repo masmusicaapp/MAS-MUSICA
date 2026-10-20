@@ -1,9 +1,14 @@
-# Pendientes y cosas para revisar — Más Música (v104)
+# Pendientes y cosas para revisar — Más Música (v105)
 
 Actualizado: 20/10/2026. Este archivo es solo una guía de trabajo; la app no lo usa.
 
 ## 0. Cambios recientes
 
+- [x] **Catálogo de equipos también desde la cuenta madre** (v105): la cuenta madre
+      (SUPER_ADMIN) puede cargar los equipos de cualquier sala desde **Administración →
+      Salas → Editar sala → Catálogo de equipos** (mismo formulario que usa el dueño). Al
+      agregar/editar un equipo, vuelve solo al formulario de la sala sin perder lo escrito.
+      Sirve para dar una mano cuando el dueño tiene dificultades.
 - [x] **Catálogo de equipos por sala** (v104): cada sala ahora tiene su propio catálogo de
       equipos (nombre, descripción, foto y, si se alquila, precio por hora). El dueño lo
       carga desde **Mi panel → Información → Catálogo de equipos** (con "Agregar equipo";
