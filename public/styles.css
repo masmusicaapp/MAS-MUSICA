@@ -2620,6 +2620,12 @@ main {
 .terminos p { margin: 0 0 10px; font-size: .92rem; color: var(--muted); }
 .terminos strong { color: var(--text); }
 
+/* Enlaces a los términos: casilla del registro y pie del inicio */
+.link-term { color: var(--accent); font-weight: 600; text-decoration: underline; }
+.pie-legal { text-align: center; padding: 18px 16px 12px; }
+.pie-legal a { color: var(--muted); font-size: .84rem; text-decoration: underline; }
+.pie-legal a:hover { color: var(--accent); }
+
 /* Tarjeta resumen de la cuenta madre (Ajustes del panel de administración) */
 #cm-resumen {
   display: flex; gap: 12px; align-items: center;
