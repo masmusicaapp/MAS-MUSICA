@@ -2577,7 +2577,7 @@ function mostrarSuscripcionChat() {
       <section class="sus-plan" aria-labelledby="sus-plan-name">
         <div class="sus-plan-row">
           <span class="sus-plan-name" id="sus-plan-name">Plan mensual</span>
-          <span class="sus-plan-price">$2.000<small>/ mes</small></span>
+          <span class="sus-plan-price">$5.000<small>/ mes</small></span>
         </div>
         <button class="sus-btn" id="suscribirse-chat" type="button">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
