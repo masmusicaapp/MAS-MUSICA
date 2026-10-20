@@ -1,1 +1,19 @@
+# Datos sensibles de la app: NUNCA subir a GitHub
+# data.json contiene contraseñas (hash), PIN de administración y sesiones
+data.json
+data.json.tmp
+data_backup_*.json
+*.json.tmp
 
+# Copias de seguridad diarias que guarda el servidor (backups/data-AAAA-MM-DD.json)
+backups/
+
+# Clave privada del servicio de mail (Resend): NUNCA subir a GitHub
+resend.key
+
+# Sistema
+node_modules/
+npm-debug.log*
+*.log
+.DS_Store
+Thumbs.db
