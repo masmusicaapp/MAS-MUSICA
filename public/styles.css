@@ -2764,6 +2764,14 @@ main {
 .resena-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .resena-top strong { font-size: .88rem; }
 .resena p { margin: 6px 0 0; font-size: .9rem; color: var(--text); white-space: pre-wrap; }
+.resena .resena-visita { margin: 6px 0 0; }
+.resena .resena-visita + .resena-visita { margin-top: 2px; }
+.resena-borrar-caja { margin: 10px 0 4px; border: 1px solid var(--line); border-radius: 12px; padding: 8px 10px; background: var(--panel2); }
+.resena-borrar-caja summary { cursor: pointer; font-size: .85rem; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+.resena-borrar-caja summary svg { width: 15px; height: 15px; }
+.resena-mias { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.resena-mias li { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: .84rem; }
+.resena-mias li span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .resena-form { display: flex; flex-direction: column; gap: 8px; margin: 4px 0 6px; }
 .resena-form textarea { width: 100%; resize: vertical; }
 .resena-estrellas { display: flex; gap: 2px; }
