@@ -435,7 +435,7 @@ function loadState() {
       if (!Array.isArray(data.mensajes)) { data.mensajes = []; cambiado = true; }
       if (!Array.isArray(data.resenas)) { data.resenas = []; cambiado = true; }
       /* Plazo del recordatorio antes del ensayo (0 = apagado) */
-      if (data.settings.reglas.recordatorioHoras === undefined) {
+      if (data.settings.reglas && data.settings.reglas.recordatorioHoras === undefined) {
         data.settings.reglas.recordatorioHoras = REGlas_DEFAULT.recordatorioHoras;
         cambiado = true;
       }
