@@ -1,9 +1,16 @@
-# Pendientes y cosas para revisar — Más Música (v103)
+# Pendientes y cosas para revisar — Más Música (v104)
 
 Actualizado: 20/10/2026. Este archivo es solo una guía de trabajo; la app no lo usa.
 
 ## 0. Cambios recientes
 
+- [x] **Catálogo de equipos por sala** (v104): cada sala ahora tiene su propio catálogo de
+      equipos (nombre, descripción, foto y, si se alquila, precio por hora). El dueño lo
+      carga desde **Mi panel → Información → Catálogo de equipos** (con "Agregar equipo";
+      se guarda al tocar "Guardar sala"). Los músicos lo ven al abrir la sala (ficha) y los
+      equipos en alquiler aparecen al confirmar la reserva, con su precio por hora.
+      Se eliminó la vista general "Equipos y sala" (botón, pantalla y pestaña "Lugar" del
+      panel de administración), que mostraba un catálogo único para todas las salas.
 - [x] **Emojis reemplazados por íconos SVG en toda la app** (v103): menús, botones,
       títulos, avisos, panel de administración (Cuentas, Ayuda, Salas, Estadísticas,
       Ajustes), etc. Ya no queda ningún emoji visible. En el mapa, el ícono cuando una
