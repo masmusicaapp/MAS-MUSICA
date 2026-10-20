@@ -66,11 +66,19 @@ Producción tiene 10 cuentas, varias de demostración. Se borran desde
       las últimas **7**. No hace falta hacer nada: se dispara solo.
 - [x] **`data_backup_*.json` y logs viejos** movidos a `backups/viejos/` (no se borraron).
 - [x] `backups/` agregado al `.gitignore` para que nunca se suba a GitHub.
+- [x] **Freno de intentos de login**: ya existía (bloquea por IP tras varios fallos en
+      15 min). Se bajó el tope de **25 a 8** intentos. Un login correcto limpia el contador,
+      así que nadie se traba por equivocarse un par de veces.
 - [ ] Revisar de vez en cuando el registro de producción
       (`Temp\opencode\produccion.log` y `.err.log`) buscando errores repetidos.
+      El servidor **sí registra los ingresos fallidos** con la IP de quien intenta.
 - [ ] Limpieza opcional en la instancia de prueba (3100): reservas y mensajes de prueba.
 - [ ] `sw.js` tiene unas palabras mal codificadas en los comentarios (no afecta el
       funcionamiento, pero conviene corregirlas alguna vez).
+- [ ] **Registro de errores**: se encontró un `EADDRINUSE` viejo (18/10) porque se levantó
+      el servidor dos veces sobre el puerto 3000. No es un problema de la app ni de los
+      usuarios: solo pasa si se reinicia mal. Se puede dejar salir ordenadamente si vuelve
+      a pasar.
 
 ## 9. Lo que todavía no se probó en el celular
 
