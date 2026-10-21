@@ -1,9 +1,16 @@
-﻿# Pendientes y cosas para revisar — Más Música (v121)
+﻿# Pendientes y cosas para revisar — Más Música (v122)
 
 Actualizado: 21/10/2026. Este archivo es solo una guía de trabajo; la app no lo usa.
 
 ## 0. Cambios recientes
 
+- [x] **Suscripción al chat conectada a Mercado Pago** (v122). Antes, tocar "Suscribirme"
+      activaba el acceso al instante y marcaba el pago como aprobado **sin cobrar**. Ahora,
+      con Mercado Pago activo, se genera el link de pago ($5.000 final, IVA incluido) y el
+      acceso al Chat Global se activa recién cuando el webhook confirma el pago. El pago se
+      abre en otra pestaña y, al volver (`?chat=ok`), la app verifica y activa.
+      Con el cobro apagado o simulado, sigue activando directo (como antes).
+      Cambio de servidor + cliente → versión v122.
 - [x] **Inicio: la barra de las 5 opciones ya no tapa "Mis reservas"** (v121). Cuando había
       varias reservas, las últimas tarjetas quedaban por debajo de la barra inferior en el
       celular (y en escritorio el panel se salía de su recuadro). Ahora, en celular el
@@ -114,9 +121,10 @@ Actualizado: 21/10/2026. Este archivo es solo una guía de trabajo; la app no lo
       armar una nueva para probar.)
 - [x] **Suscripción al Chat Global**: queda **solo el plan mensual de $5.000** (se
       eliminaron los planes trimestral y anual).
-- [ ] **La suscripción al chat todavía NO se cobra**: al tocar "Suscribirme ahora" se
-      activa directo, sin pasar por Mercado Pago. Si se quiere cobrar de verdad, hay que
-      conectarla al mismo circuito de pago que la seña.
+- [x] **La suscripción al chat ya se cobra con Mercado Pago** (v122): al tocar
+      "Suscribirme ahora" se genera el link de pago ($5.000 final, IVA incluido), se abre
+      en otra pestaña y el acceso se activa cuando el webhook confirma el pago. Queda
+      **probar el pago real** en producción (igual que la seña).
 - [x] **Liquidación a las salas**: la seña entra entera a la cuenta MP de +MÚSICA; la
       parte de la sala (seña menos comisión) se le transfiere a mano. Para eso, el dueño
       carga su alias/CVU en **Mi panel → Información → Datos de cobro** y +MÚSICA los ve
