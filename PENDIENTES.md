@@ -1,9 +1,15 @@
-﻿# Pendientes y cosas para revisar — Más Música (v123)
+﻿# Pendientes y cosas para revisar — Más Música (v124)
 
 Actualizado: 21/10/2026. Este archivo es solo una guía de trabajo; la app no lo usa.
 
 ## 0. Cambios recientes
 
+- [x] **El músico puede eliminar sus reservas pasadas** (v124). En **Mis reservas** (Inicio),
+      además de las reservas canceladas, ahora también se pueden borrar del historial las
+      reservas que **ya pasaron**. Reglas: solo el dueño de la reserva (o la sala/administración)
+      puede eliminarla; una reserva **futura activa** no se borra (primero hay que cancelarla);
+      y si la reserva tiene una **seña pagada** no se elimina (queda para auditoría y facturación).
+      Cambio de servidor + cliente → versión v124.
 - [x] **Detalle de suscripciones al chat cobradas** (v123). En **Administración → Pagos y
       Señas** se agregó la sección "Suscripciones al Chat" con tarjetas de resumen (cobrado,
       neto, IVA 21% y cantidad) y una tabla con fecha de pago, músico, plan, total, neto, IVA
