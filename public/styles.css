@@ -5697,3 +5697,38 @@ main#view-comunidad:has(.suscripcion-wrap) > .panel {
 /* Íconos que acompañan texto en títulos y etiquetas: alineados con la letra */
 h1 svg, h2 svg, h3 svg, .sub svg, .tag svg, .badge svg, .stat span svg { vertical-align: -0.14em; }
 
+
+/* ---------- Confirma tu reserva (pantalla de pago de se�a) ---------- */
+.confirma-reserva { display: grid; gap: 12px; }
+.cr-stepper { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 6px; }
+.cr-step { font-size: 12px; color: var(--muted); }
+.cr-step::before { content: ""; display: block; height: 4px; border-radius: 4px; background: var(--panel2); margin-bottom: 8px; }
+.cr-step.done::before { background: var(--ok); }
+.cr-step.active { color: var(--text); font-weight: 700; }
+.cr-step.active::before { background: linear-gradient(90deg, var(--ok) 50%, var(--panel2) 50%); }
+.cr-card { background: var(--panel); border: 1px solid var(--line); border-radius: 20px; padding: 22px; }
+.cr-eyebrow { font-size: 12px; letter-spacing: 1.2px; text-transform: uppercase; color: var(--warn); font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+.cr-eyebrow::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--warn); animation: cr-pulse 1.6s infinite; }
+@keyframes cr-pulse { 0%,100% { opacity: 1 } 50% { opacity: .3 } }
+.cr-title { font-size: 24px; line-height: 1.15; font-weight: 800; margin-bottom: 4px; }
+.cr-sub { color: var(--muted); font-size: 15px; margin-bottom: 14px; }
+.cr-info { display: grid; gap: 14px; margin-top: 6px; }
+.cr-info-row { display: flex; gap: 12px; align-items: flex-start; }
+.cr-icon { width: 36px; height: 36px; border-radius: 12px; flex: none; background: var(--panel2); display: grid; place-items: center; color: var(--muted); }
+.cr-icon-amber { background: rgba(245,158,11,.2); color: var(--warn); }
+.cr-info-row strong { display: block; font-size: 15px; }
+.cr-info-row small { color: var(--muted); font-size: 13px; }
+.cr-pay-head { display: flex; justify-content: space-between; align-items: baseline; }
+.cr-pay-head .cr-amount { font-size: 32px; font-weight: 800; color: var(--ok); }
+.cr-pay-head .cr-total { text-align: right; }
+.cr-pay-head .cr-total b { color: var(--text); font-size: 16px; font-weight: 700; }
+.cr-label { font-size: 13px; color: var(--muted); }
+.cr-bar { height: 8px; border-radius: 8px; background: var(--panel2); overflow: hidden; margin: 14px 0 10px; }
+.cr-bar > div { height: 100%; background: linear-gradient(90deg, var(--ok), var(--ok)); border-radius: 8px; transition: width .4s; }
+.cr-split { display: flex; justify-content: space-between; font-size: 14px; color: var(--muted); }
+.cr-split b { color: var(--text); font-weight: 700; }
+.cr-hold { display: flex; gap: 12px; align-items: center; background: rgba(245,158,11,.1); border: 1px solid rgba(245,158,11,.3); color: var(--text); border-radius: 14px; padding: 12px 14px; font-size: 14px; }
+.cr-btn-primary { background: linear-gradient(180deg, #2ee36b, #16a34a); color: #04210e; box-shadow: 0 10px 30px -10px rgba(34,197,94,.6); text-decoration: none; }
+.cr-btn-primary:active { transform: scale(.99); }
+.cr-btn-secondary { background: var(--panel); color: var(--text); border: 1px solid var(--line); }
+.cr-fine { text-align: center; color: var(--muted); font-size: 13px; margin-top: 4px; line-height: 1.5; }
