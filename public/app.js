@@ -7578,6 +7578,70 @@ async function renderPagosAdmin() {
         </table>
       `;
     }
+
+    // ===== Suscripciones al Chat Global (con desglose de IVA) =====
+    const chatCards = $('#pagos-chat-cards');
+    const chatTabla = $('#pagos-tabla-chat');
+    const chatPill = $('#pagos-chat-pill');
+    const chat = data.chat || { cantidad: 0, total: 0, neto: 0, iva: 0, suscripciones: [] };
+
+    if (chatPill) {
+      if (chat.cantidad > 0) {
+        chatPill.hidden = false;
+        chatPill.className = 'pill pill-ok';
+        chatPill.textContent = chat.cantidad + (chat.cantidad === 1 ? ' suscripción cobrada' : ' suscripciones cobradas');
+      } else {
+        chatPill.hidden = true;
+      }
+    }
+
+    if (chatCards) {
+      chatCards.innerHTML = `
+        <div class="stat"><span>${ICO_SVG.tarjeta} Cobrado (chat)</span><strong>${fmtMoney(chat.total)}</strong></div>
+        <div class="stat"><span>${ICO_SVG.precio} Neto (sin IVA)</span><strong>${fmtMoney(chat.neto)}</strong></div>
+        <div class="stat"><span>${ICO_SVG.info} IVA (21%)</span><strong>${fmtMoney(chat.iva)}</strong></div>
+        <div class="stat"><span>${ICO_SVG.edificio} Suscripciones</span><strong>${chat.cantidad}</strong></div>
+      `;
+    }
+
+    if (chatTabla) {
+      if (!chat.suscripciones || chat.suscripciones.length === 0) {
+        chatTabla.innerHTML = '<p class="muted small">Todavía no hay suscripciones al chat cobradas.</p>';
+      } else {
+        chatTabla.innerHTML = `
+          <table>
+            <thead>
+              <tr>
+                <th>Fecha de pago</th>
+                <th>Músico</th>
+                <th>Plan</th>
+                <th>Total cobrado</th>
+                <th>Neto</th>
+                <th>IVA (21%)</th>
+                <th>Pago MP</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${chat.suscripciones.map(s => {
+                const d = s.pagadoEn ? new Date(s.pagadoEn) : null;
+                const fecha = d ? `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}` : '—';
+                return `
+                  <tr>
+                    <td>${esc(fecha)}</td>
+                    <td><strong>${esc(s.nombre || s.usuario || '—')}</strong>${s.email ? `<br><span class="muted small">${esc(s.email)}</span>` : ''}</td>
+                    <td>${esc(s.planNombre || 'Mensual')}</td>
+                    <td><strong>${fmtMoney(s.total)}</strong></td>
+                    <td>${fmtMoney(s.neto)}</td>
+                    <td>${fmtMoney(s.iva)}</td>
+                    <td>${s.pagoId ? `<span class="muted small">${esc(String(s.pagoId).slice(0, 14))}…</span>` : '—'}</td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        `;
+      }
+    }
   } catch (err) {
     cards.innerHTML = `<p class="muted" style="color: var(--danger, red);">Error al cargar pagos: ${esc(err.message)}</p>`;
   }
