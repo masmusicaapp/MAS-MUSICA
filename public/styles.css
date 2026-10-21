@@ -5748,3 +5748,41 @@ h1 svg, h2 svg, h3 svg, .sub svg, .tag svg, .badge svg, .stat span svg { vertica
 .mine-card-actions .btn { font-size: 12px; padding: 6px 10px; }
 .mine-card.cancelada { opacity: .6; }
 .mine-card.res-past { opacity: .7; }
+
+/* =====================================================================
+   PAGOS Y SEÑAS: que no se corten las palabras
+   Los rótulos de las tarjetas ("Comisión +Música", "Asignado a salas",
+   "Ya transferido"…) y los títulos de las tablas de liquidación se
+   recortaban con puntos suspensivos en pantallas angostas. Ahora pasan
+   a dos líneas cuando no entran, y las tablas se desplazan en horizontal
+   en vez de apretar el texto.
+   ===================================================================== */
+#pagos-cards .stat span {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.25;
+  letter-spacing: .2px;
+}
+/* Las tablas de Pagos: los títulos y las celdas pueden ocupar dos líneas
+   y la tabla se desplaza si no entra, en lugar de recortar el texto. */
+#pagos-tabla-salas table,
+#pagos-tabla-reservas table {
+  min-width: 100%;
+}
+#pagos-tabla-salas table { min-width: 640px; }
+#pagos-tabla-reservas table { min-width: 720px; }
+#pagos-tabla-salas th,
+#pagos-tabla-reservas th,
+#pagos-tabla-salas td,
+#pagos-tabla-reservas td {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  vertical-align: top;
+}
+/* El detalle de "Datos de cobro" queda legible en varias líneas */
+#pagos-tabla-salas td b,
+#pagos-tabla-salas td .muted {
+  word-break: break-word;
+}
