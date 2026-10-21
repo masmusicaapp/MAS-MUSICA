@@ -1,9 +1,28 @@
-﻿# Pendientes y cosas para revisar — Más Música (v107)
+﻿# Pendientes y cosas para revisar — Más Música (v118)
 
-Actualizado: 20/10/2026. Este archivo es solo una guía de trabajo; la app no lo usa.
+Actualizado: 21/10/2026. Este archivo es solo una guía de trabajo; la app no lo usa.
 
 ## 0. Cambios recientes
 
+- [x] **Datos de cobro de la sala + panel de liquidaciones** (v118): cada dueño carga en
+      **Mi panel → Información → Datos de cobro** su titular, banco/billetera, alias y CVU.
+      Ese dato es privado (solo lo ve el dueño de la sala y la administración). En
+      **Administración → Pagos y Señas**, la tabla por sala ahora tiene la columna
+      "Datos de cobro" para saber a dónde transferir el importe de cada liquidación.
+      El pago sigue entrando a +MÚSICA y la transferencia a la sala se hace a mano
+      (ver sección 6 sobre por qué no es automática por API).
+- [x] **Refuerzos de seguridad** (servidor): CSP en HTML y API, `ipDeReq` endurecido
+      (solo confía en `x-forwarded-for` desde el proxy/túnel propio) y freno general de
+      escritura (120 peticiones POST/PUT/PATCH/DELETE por IP cada 5 min). No cambia el
+      cliente → sin bump de versión. Requiere reiniciar el server (ya reiniciado).
+- [x] **Contraseñas de producción cambiadas**: `admin` (SUPER_ADMIN) y `madeinpilar`
+      (ROOM_ADMIN) ya no usan `Test1234!`. Se generaron claves fuertes y se cerraron las
+      37 sesiones abiertas. Las claves nuevas no quedan escritas en ningún archivo.
+- [x] **Barra de las 5 opciones se oculta al deslizar hacia abajo** (v116): baja y se
+      esconde al deslizar hacia abajo y reaparece al deslizar hacia arriba. En el mapa no
+      se oculta.
+- [x] **Se quitó "Términos y condiciones" del inicio** (v117): sigue estando dentro de
+      Ajustes (abre `terminos.html`).
 - [x] **Catálogo de equipos también desde la cuenta madre** (v105): la cuenta madre
       (SUPER_ADMIN) puede cargar los equipos de cualquier sala desde **Administración →
       Salas → Editar sala → Catálogo de equipos** (mismo formulario que usa el dueño). Al
@@ -28,7 +47,12 @@ Actualizado: 20/10/2026. Este archivo es solo una guía de trabajo; la app no lo
       (el clásico `ghp_...` y el fine-grained `github_pat_...`). Mientras estén activos,
       cualquiera que los vea puede escribir en el repositorio.
 - [ ] Una vez revocados, avisarme para generar uno nuevo (o pasar a subir por `git push`).
-- [ ] Revisar quién tiene la cuenta `SUPER_ADMIN` (`admin`) y con qué contraseña.
+- [x] **Revisar quién tiene la cuenta `SUPER_ADMIN` (`admin`) y con qué contraseña**:
+      hoy hay una sola cuenta madre (`admin`) y su contraseña ya no es la de prueba.
+- [x] **Refuerzos de seguridad del servidor**: CSP, `ipDeReq` endurecido y freno general
+      de escritura (ver "Cambios recientes"). Queda opcional a futuro: separar los scripts
+      en línea del HTML para poder quitar `'unsafe-inline'` de la CSP (hoy hace falta por
+      los manejadores `onclick=` y los dos `<script>` en línea de `index.html`).
 
 ## 2. Cuentas de prueba que quedaron en Producción
 
@@ -40,8 +64,8 @@ Actualizado: 20/10/2026. Este archivo es solo una guía de trabajo; la app no lo
       chat y 1 suscripción).
 - Producción quedó con **2 cuentas**: `admin` (SUPER_ADMIN) y `madeinpilar`
       (ROOM_ADMIN, dueño de la sala "made in pilar").
-- [ ] Contraseñas de prueba: hoy casi todo usa `Test1234!`.
-      Cambiar la de `admin` y la de `madeinpilar` (dueño de sala) antes de abrir al público.
+- [x] Contraseñas de prueba: se cambiaron las de `admin` y `madeinpilar` (dueño de sala).
+      Ya no queda ninguna cuenta de producción con `Test1234!`.
 
 ## 3. Pedidos de ayuda sin responder
 
@@ -66,14 +90,29 @@ Actualizado: 20/10/2026. Este archivo es solo una guía de trabajo; la app no lo
 
 ## 6. Pagos (cuando se quiera cobrar la seña)
 
-- [ ] Hoy **Producción tiene los pagos apagados**: reservar no cobra nada.
-- [ ] Falta activar **Mercado Pago** (token + URL pública) y probar el camino completo:
-      reserva → seña → confirmación → webhook.
+- [x] **Producción tiene los pagos ACTIVOS con Mercado Pago** (`modo: mercadopago`):
+      reservar pide la seña y se cobra de verdad. `BASE_URL` es la URL del túnel
+      Cloudflare vigente.
+- [ ] Probar el camino completo en producción: reserva → seña → confirmación → webhook.
+      (Se generó un link real pero no se completó el pago; si la reserva venció, hay que
+      armar una nueva para probar.)
 - [x] **Suscripción al Chat Global**: queda **solo el plan mensual de $5.000** (se
       eliminaron los planes trimestral y anual).
 - [ ] **La suscripción al chat todavía NO se cobra**: al tocar "Suscribirme ahora" se
       activa directo, sin pasar por Mercado Pago. Si se quiere cobrar de verdad, hay que
       conectarla al mismo circuito de pago que la seña.
+- [x] **Liquidación a las salas**: la seña entra entera a la cuenta MP de +MÚSICA; la
+      parte de la sala (seña menos comisión) se le transfiere a mano. Para eso, el dueño
+      carga su alias/CVU en **Mi panel → Información → Datos de cobro** y +MÚSICA los ve
+      en **Administración → Pagos y Señas → Datos de cobro**, con botón "Marcar liquidado".
+      **Por qué no es automático:** la API de transferencias salientes de Mercado Pago
+      **no está disponible públicamente en Argentina** para cuentas comunes (no hay
+      endpoint en la API reference); se habilita solo por convenio comercial.
+- [ ] **Split de Pagos 1:1 (marketplace) — solución definitiva a futuro**: es la única
+      forma de que Mercado Pago reparta el dinero automáticamente (comisión a +MÚSICA,
+      resto al dueño). Requiere implementar **OAuth** (cada dueño conecta su Mercado Pago)
+      y que **cada sala tenga cuenta MP verificada (KYC 6)**. Se decidió postergarlo
+      porque depende de que los dueños hagan el trámite. Cuando haya volumen, migrar.
 
 ## 7. Funciones que todavía no existen
 
