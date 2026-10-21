@@ -3313,11 +3313,13 @@ function actualizarBarraSesion() {
   actualizarAccionesHeader();
 }
 
-/* Dentro del Perfil la campana se cambia por el engranaje de Ajustes */
+/* En el Inicio la campana se cambia por el engranaje de Ajustes.
+   (Antes dependía de la vista "Mis reservas" separada, que ya no existe) */
 function actualizarAccionesHeader() {
-  $('#btn-ajustes').hidden = !yo || $('#view-mine').hidden;
-  $('#btn-notif').hidden = !yo || !$('#view-mine').hidden;
-  if (yo && $('#view-mine').hidden) pintarBadgeNotif();
+  const enInicio = navActual === 'inicio';
+  $('#btn-ajustes').hidden = !yo || !enInicio;
+  $('#btn-notif').hidden = !yo || enInicio;
+  if (yo && !enInicio) pintarBadgeNotif();
   renderHeaderSalaLogo();
 }
 
