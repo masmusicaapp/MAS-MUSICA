@@ -51,7 +51,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@500;600;700&family=Barlow+Condensed:ital,wght@1,900&display=swap">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
       integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
-<link rel="stylesheet" href="styles.css?v=122">
+<link rel="stylesheet" href="styles.css?v=123">
 </head>
 <body>
 
@@ -859,6 +859,17 @@
 
       <h3 class="sub" style="margin-top: 28px;">Detalle de Reservas con Seña</h3>
       <div id="pagos-tabla-reservas" style="overflow-x: auto; margin-top: 8px;"></div>
+
+      <div class="panel-head" style="margin-top: 32px;">
+        <h3 class="sub" style="margin: 0;">Suscripciones al Chat</h3>
+        <span class="pill" id="pagos-chat-pill" hidden></span>
+      </div>
+      <p class="muted small" style="margin-top: 4px;">
+        Cobros de la suscripción mensual al Chat Global ($5.000 final, IVA incluido).
+        Se muestra el desglose para facturar.
+      </p>
+      <div id="pagos-chat-cards" class="stats-cards"></div>
+      <div id="pagos-tabla-chat" style="overflow-x: auto; margin-top: 8px;"></div>
     </div>
   </section>
 </main>
@@ -988,7 +999,7 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-<script src="app.js?v=122"></script>
+<script src="app.js?v=123"></script>
 <script>
   /* Fallback: si a los 1.5s la app no arrancó (init lento o trabado), forzar el arranque.
      Espera a que state esté cargado: llamar a arrancarApp con state en null tiraba
