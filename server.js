@@ -191,6 +191,15 @@ const CHAT_PLAN_CONFIG = {
   mensual: { id: 'mensual', nombre: 'Chat Global - Mensual', precioMensual: 5000, moneda: 'ARS', duracionDias: 30 }
 };
 
+/* IVA de la suscripción: el precio ($5.000) es FINAL, con IVA incluido.
+   Se desglosa para poder facturar: neto = precio / 1,21 ; iva = precio - neto. */
+const IVA_ALICUOTA = 0.21;
+const desglosarIva = (precioFinal) => {
+  const total = Math.round(Number(precioFinal) || 0);
+  const neto = Math.round(total / (1 + IVA_ALICUOTA));
+  return { total, neto, iva: total - neto };
+};
+
 /* Versión vigente de los Términos y condiciones: se guarda en la cuenta al registrarse */
 const TERMINOS_VERSION = '2026-10-19';
 
@@ -1207,6 +1216,8 @@ async function procesarPagoSuscripcion(state, solicitud, pago, pagoId) {
     });
     solicitud.estado = 'pagada';
     solicitud.pagadoEn = Date.now();
+    solicitud.pagoId = String(pagoId || '');
+    solicitud.ivaDiscriminado = desglosarIva(solicitud.monto);
     avisar(state, u.id, '¡Suscripción activada!', `Tu acceso al Chat Global está activo hasta ${new Date(sub.venceEn).toLocaleDateString('es-AR')}.`, 'ok');
   }
   return true;
@@ -1441,6 +1452,31 @@ function resumenPagos(state, roomId) {
       if (r.pago.liquidadoEn) f.liquidado += r.paraSala; else f.porLiquidar += r.paraSala;
     }
   });
+  /* Suscripciones al Chat Global cobradas con Mercado Pago (dato para facturar el IVA).
+     Se listan las solicitudes PAGADAS (ingreso real) y las pendientes/vencidas. */
+  const solicitudes = (state.chatSolicitudes || []).filter(s => s.estado === 'pagada');
+  const subsChat = solicitudes.map(s => {
+    const u = (state.users || []).find(x => x.id === s.userId);
+    const d = desglosarIva(s.monto);
+    return {
+      id: s.id,
+      usuario: u ? u.usuario : '',
+      nombre: u ? u.nombre : '',
+      email: u ? u.email : '',
+      plan: s.plan,
+      planNombre: s.planNombre || (CHAT_PLAN_CONFIG[s.plan] || CHAT_PLAN_CONFIG.mensual).nombre,
+      total: d.total,
+      neto: d.neto,
+      iva: d.iva,
+      pagadoEn: s.pagadoEn || s.creada || null,
+      pagoId: s.pagoId || (s.pago && s.pago.pagoId) || null,
+    };
+  }).sort((a, b) => (b.pagadoEn || 0) - (a.pagadoEn || 0));
+
+  const totalChat = subsChat.reduce((s, x) => s + x.total, 0);
+  const totalChatNeto = subsChat.reduce((s, x) => s + x.neto, 0);
+  const totalChatIva = subsChat.reduce((s, x) => s + x.iva, 0);
+
   return {
     modo: MODO_PAGOS,
     salas: Object.values(porSala),
@@ -1449,6 +1485,15 @@ function resumenPagos(state, roomId) {
       total: r.total, sena: r.sena, comision: r.comision, paraSala: r.paraSala, saldo: r.saldo,
       pago: r.pago.estado, liquidadoEn: r.pago.liquidadoEn || null,
     })),
+    chat: {
+      ivaAlicuota: IVA_ALICUOTA,
+      precioMensual: CHAT_PLAN_CONFIG.mensual.precioMensual,
+      cantidad: subsChat.length,
+      total: totalChat,
+      neto: totalChatNeto,
+      iva: totalChatIva,
+      suscripciones: subsChat,
+    },
   };
 }
 
