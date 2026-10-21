@@ -1315,6 +1315,13 @@ main {
   transform: translateY(calc(100% + 30px));
   transition: transform .34s cubic-bezier(.22, .9, .28, 1), opacity .26s ease, visibility 0s linear 0s;
 }
+/* Al deslizar hacia abajo, la barra baja y se esconde; al deslizar hacia arriba, vuelve */
+.dock-container.dock-oculto {
+  transform: translateY(calc(100% + 30px));
+  opacity: 0;
+  visibility: hidden;
+  transition: transform .34s cubic-bezier(.22, .9, .28, 1), opacity .26s ease, visibility 0s linear .34s;
+}
 .bottom-nav {
   pointer-events: auto;
   width: 100%;
