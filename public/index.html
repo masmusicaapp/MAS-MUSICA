@@ -51,7 +51,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@500;600;700&family=Barlow+Condensed:ital,wght@1,900&display=swap">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
       integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
-<link rel="stylesheet" href="styles.css?v=117">
+<link rel="stylesheet" href="styles.css?v=118">
 </head>
 <body>
 
@@ -312,6 +312,20 @@
         <label>Consola / sonido<input id="ps-eq-consola" maxlength="300" placeholder="Ej.: Allen&Heath 12 canales + 2 parlantes"></label>
         <label>Otros<input id="ps-eq-otros" maxlength="300" placeholder="Ej.: Aire acondicionado, placard, baño"></label>
       </div>
+        </div>
+      </details>
+      <details class="sala-sec">
+        <summary><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/><path d="M7 15h4"/></svg> Datos de cobro</summary>
+        <div class="sala-sec-body">
+          <p class="muted small">Acá se transfiere lo que te corresponde de cada seña (el total menos la comisión de Más Música). Completá tu alias o CVU para que podamos liquidarte.</p>
+          <div class="row2">
+            <label>Titular de la cuenta<input id="ps-cobro-titular" maxlength="80" placeholder="Nombre y apellido o razón social"></label>
+            <label>Banco o billetera<input id="ps-cobro-banco" maxlength="80" placeholder="Ej.: Mercado Pago, Banco Nación"></label>
+          </div>
+          <div class="row2">
+            <label>Alias<input id="ps-cobro-alias" maxlength="60" placeholder="Ej.: sala.ensayo.mp"></label>
+            <label>CVU<input id="ps-cobro-cvu" inputmode="numeric" maxlength="22" placeholder="22 dígitos"></label>
+          </div>
         </div>
       </details>
       <details class="sala-sec">
@@ -974,7 +988,7 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-<script src="app.js?v=117"></script>
+<script src="app.js?v=118"></script>
 <script>
   /* Fallback: si a los 1.5s la app no arrancó (init lento o trabado), forzar el arranque.
      Espera a que state esté cargado: llamar a arrancarApp con state en null tiraba
