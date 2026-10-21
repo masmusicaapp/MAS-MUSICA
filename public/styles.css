@@ -5786,3 +5786,32 @@ h1 svg, h2 svg, h3 svg, .sub svg, .tag svg, .badge svg, .stat span svg { vertica
 #pagos-tabla-salas td .muted {
   word-break: break-word;
 }
+
+/* =====================================================================
+   INICIO: que la barra de las 5 opciones no tape "Mis reservas"
+   En el inicio, "Mis reservas" va debajo del calendario. Cuando hay varias
+   reservas, las últimas tarjetas quedaban por debajo de la barra inferior
+   (y en escritorio, el panel se salía de su recuadro). Ahora:
+   - En celular, el bloque de "Mis reservas" deja aire abajo para que la
+     última tarjeta siempre quede por encima de la barra.
+   - En escritorio, el panel de "Mis reservas" scrollea dentro de su
+     recuadro, así no se desborda hacia afuera.
+   ===================================================================== */
+/* Celular: aire extra abajo del listado */
+@media (max-width: 959px) {
+  #home-mine {
+    padding-bottom: 24px;
+  }
+  #home-mine-body {
+    padding-bottom: 88px;   /* espacio para la barra de las 5 opciones */
+  }
+}
+/* Escritorio: el panel de "Mis reservas" scrollea dentro de su recuadro */
+@media (min-width: 960px) {
+  #home-mine {
+    overflow-y: auto;
+    min-height: 0;
+    max-height: 100%;
+  }
+  #home-mine-body { padding-bottom: 16px; }
+}
