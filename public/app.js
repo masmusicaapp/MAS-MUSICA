@@ -2725,7 +2725,16 @@ function mostrarSuscripcionChat() {
       btnSuscribir.disabled = true;
       btnSuscribir.textContent = 'Procesando…';
       try {
-        await api('/api/comunidad/chat-suscribirse', { method: 'POST', body: { plan: 'mensual' } });
+        const res = await api('/api/comunidad/chat-suscribirse', { method: 'POST', body: { plan: 'mensual' } });
+        /* Con Mercado Pago: se abre el pago en otra pestaña y se verifica al volver. */
+        if (res.pago && res.pago.url) {
+          window.open(res.pago.url, '_blank', 'noopener');
+          toast('Terminá el pago en la otra pestaña. Al volver, te confirmamos la suscripción.', 'ok');
+          btnSuscribir.disabled = false;
+          btnSuscribir.innerHTML = htmlOriginal;
+          esperarPagoChat(res.solicitudId);
+          return;
+        }
         toast('¡Suscripción activada! Ya podés chatear.', 'ok');
         await cargarChatGlobal();
       } catch (e) {
@@ -2738,6 +2747,26 @@ function mostrarSuscripcionChat() {
       }
     };
   }
+}
+
+/* Tras abrir el pago del chat en Mercado Pago, se consulta el estado hasta que
+   se acredite (o hasta que venza el intento). */
+function esperarPagoChat(solicitudId) {
+  let intentos = 0;
+  const max = 40;   /* ~10 minutos, cada 15 s */
+  const revisar = async () => {
+    intentos++;
+    try {
+      const acceso = await api('/api/comunidad/chat-acceso');
+      if (acceso && acceso.tieneAcceso) {
+        toast('¡Suscripción activada! Ya podés chatear.', 'ok');
+        await cargarChatGlobal();
+        return;
+      }
+    } catch (e) { /* se reintenta */ }
+    if (intentos < max) setTimeout(revisar, 15000);
+  };
+  setTimeout(revisar, 4000);
 }
 
 /* ========== CHAT GLOBAL GRUPAL ========== */
@@ -8414,6 +8443,18 @@ async function init() {
     if (pg === 'ok') toast('¡Seña recibida! Tu reserva se confirma en unos segundos. Mirala en Mis reservas', 'ok');
     else if (pg === 'pendiente') toast('Tu pago está pendiente. Te avisamos cuando se acredite.', 'warn');
     else toast('El pago no se completó. Podés intentarlo de nuevo antes de que venza el horario.', 'warn');
+  }, 1500);
+})();
+
+/* Al volver de Mercado Pago por la suscripción al chat (?chat=ok | pendiente | error) */
+(function () {
+  const ch = new URLSearchParams(location.search).get('chat');
+  if (!ch) return;
+  history.replaceState(null, '', location.pathname + location.hash);
+  setTimeout(() => {
+    if (ch === 'ok') toast('¡Suscripción al chat activada! Ya podés entrar a la comunidad.', 'ok');
+    else if (ch === 'pendiente') toast('Tu pago de la suscripción está pendiente. Te avisamos cuando se acredite.', 'warn');
+    else toast('El pago de la suscripción no se completó. Podés intentarlo de nuevo.', 'warn');
   }, 1500);
 })();
 
