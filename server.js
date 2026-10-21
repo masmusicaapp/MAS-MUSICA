@@ -208,21 +208,21 @@ function tieneAccesoChat(state, userId) {
   return sub.venceEn > Date.now();
 }
 
-/* Crear o renovar suscripción al chat */
-function crearSuscripcionChat(state, userId, plan) {
+/* Activar o renovar la suscripción al chat (una vez confirmado el pago).
+   Si renueva antes de vencer, extiende desde el vencimiento actual: no pierde días. */
+function activarSuscripcionChat(state, userId, plan, pago) {
   state.chatSubscriptions = state.chatSubscriptions || [];
   const config = CHAT_PLAN_CONFIG[plan] || CHAT_PLAN_CONFIG.mensual;
   const venceEn = Date.now() + config.duracionDias * 24 * 3600 * 1000;
-  
-  /* Buscar suscripción existente */
+
   let sub = state.chatSubscriptions.find(s => s.userId === userId);
   if (sub) {
-    /* Renovar: extender desde la fecha de vencimiento actual si aún no venció */
     const desde = sub.venceEn > Date.now() ? sub.venceEn : Date.now();
     sub.venceEn = desde + config.duracionDias * 24 * 3600 * 1000;
     sub.plan = plan;
     sub.estado = 'activo';
     sub.fechaRenovacion = Date.now();
+    if (pago) sub.pago = pago;
   } else {
     sub = {
       id: uid(),
@@ -231,7 +231,7 @@ function crearSuscripcionChat(state, userId, plan) {
       estado: 'activo',
       fechaInicio: Date.now(),
       venceEn,
-      pago: { estado: 'aprobado', fecha: Date.now() }
+      pago: pago || { estado: 'aprobado', fecha: Date.now() },
     };
     state.chatSubscriptions.push(sub);
   }
@@ -376,6 +376,7 @@ function defaultState() {
     resenas: [],         /* reseñas de los músicos sobre las salas donde reservaron */
     chatGlobal: [],
     chatSubscriptions: [],
+    chatSolicitudes: [],
     promociones: demoPromociones(),
     rooms: [
       salaNueva({ id: 'r1', estado: 'aprobada', name: 'Sala 1', price: 15000, capacity: 4, features: ['Batería completa', 'Amplificadores'] }),
@@ -466,6 +467,9 @@ function loadState() {
       if (!Array.isArray(data.promociones)) { data.promociones = demoPromociones(); cambiado = true; }
       if (!Array.isArray(data.mensajes)) { data.mensajes = []; cambiado = true; }
       if (!Array.isArray(data.resenas)) { data.resenas = []; cambiado = true; }
+      /* Suscripciones y solicitudes de pago del Chat Global */
+      if (!Array.isArray(data.chatSubscriptions)) { data.chatSubscriptions = []; cambiado = true; }
+      if (!Array.isArray(data.chatSolicitudes)) { data.chatSolicitudes = []; cambiado = true; }
       /* Plazo del recordatorio antes del ensayo (0 = apagado) */
       if (data.settings.reglas && data.settings.reglas.recordatorioHoras === undefined) {
         data.settings.reglas.recordatorioHoras = REGlas_DEFAULT.recordatorioHoras;
@@ -1160,7 +1164,53 @@ async function crearPreferencia(reserva, room) {
   return { id: pref.id, url: (sandbox ? pref.sandbox_init_point : pref.init_point) || pref.init_point || pref.sandbox_init_point };
 }
 
+/* Preferencia de pago para la suscripción mensual al Chat Global.
+   Paga el músico ($5.000 final, IVA incluido). El acceso se activa cuando el
+   webhook confirma el pago (ver procesarPagoSuscripcion). */
+async function crearPreferenciaSuscripcion(solicitud, u) {
+  const pref = await mpFetch('/checkout/preferences', {
+    method: 'POST',
+    body: {
+      items: [{
+        title: `Suscripción Chat Global · ${solicitud.planNombre}`.slice(0, 120),
+        quantity: 1,
+        unit_price: solicitud.monto,
+        currency_id: MP_MONEDA,
+      }],
+      payer: u && u.email ? { email: u.email } : undefined,
+      external_reference: solicitud.id,
+      back_urls: {
+        success: `${BASE_URL}/?chat=ok`,
+        pending: `${BASE_URL}/?chat=pendiente`,
+        failure: `${BASE_URL}/?chat=error`,
+      },
+      auto_return: 'approved',
+      notification_url: `${BASE_URL}/api/pagos/webhook`,
+      statement_descriptor: 'MASMUSICA',
+      expires: true,
+      expiration_date_to: new Date(solicitud.venceEn).toISOString(),
+    },
+  });
+  const sandbox = MP_TOKEN.startsWith('TEST-');
+  return { id: pref.id, url: (sandbox ? pref.sandbox_init_point : pref.init_point) || pref.init_point || pref.sandbox_init_point };
+}
+
 const consultarPago = id => mpFetch('/v1/payments/' + encodeURIComponent(id));
+
+/* Activa la suscripción al chat cuando llega el pago aprobado.
+   El pago se verifica siempre contra Mercado Pago con nuestro token. */
+async function procesarPagoSuscripcion(state, solicitud, pago, pagoId) {
+  const u = (state.users || []).find(x => x.id === solicitud.userId);
+  if (u) {
+    const sub = activarSuscripcionChat(state, solicitud.userId, solicitud.plan, {
+      estado: 'aprobado', pagoId: String(pagoId || ''), pagadoEn: Date.now(), monto: solicitud.monto,
+    });
+    solicitud.estado = 'pagada';
+    solicitud.pagadoEn = Date.now();
+    avisar(state, u.id, '¡Suscripción activada!', `Tu acceso al Chat Global está activo hasta ${new Date(sub.venceEn).toLocaleDateString('es-AR')}.`, 'ok');
+  }
+  return true;
+}
 
 async function reembolsarSena(r) {
   if (MODO_PAGOS === 'simulado') return true;
@@ -1223,12 +1273,18 @@ function expirarPendientes(state) {
       }
     }
   });
+  /* Solicitudes de pago de la suscripción al chat que vencieron sin pagarse */
+  (state.chatSolicitudes || []).forEach(s => {
+    if (s.estado === 'pendiente' && s.venceEn && s.venceEn < ahora) {
+      s.estado = 'vencida';
+      cambio = true;
+    }
+  });
   if (cambio) persist(state);
   /* Aprovechamos cada pedido para revisar también los recordatorios: si toca
      mandar uno, sale aunque el temporizador todavía no haya pasado. */
   enviarRecordatorios(state);
 }
-
 /* ================= Recordatorio antes del ensayo ================= */
 
 /* Fecha y hora de una reserva ("2026-10-23" + "16:00") en milisegundos */
@@ -1333,6 +1389,24 @@ function confirmarPorPago(state, r, pagoId) {
    así nadie puede falsificar un aviso. */
 async function procesarPago(state, pagoId, datos) {
   const pago = datos || await consultarPago(pagoId);
+
+  /* ¿Es el pago de una suscripción al chat? (las solicitudes usan "chat:" como prefijo) */
+  const ref = String(pago.external_reference || '');
+  if (ref.startsWith('chat:')) {
+    const solicitud = (state.chatSolicitudes || []).find(x => x.id === ref);
+    if (!solicitud) return null;
+    if (Number(pago.transaction_amount) !== Number(solicitud.monto)) {
+      console.error('[pagos] monto inesperado en la suscripción al chat ' + solicitud.id);
+      return null;
+    }
+    if (pago.status === 'approved') {
+      if (solicitud.estado === 'pagada') return true;
+      return await procesarPagoSuscripcion(state, solicitud, pago, pagoId);
+    }
+    if (['rejected', 'cancelled'].includes(pago.status)) solicitud.estado = 'rechazada';
+    return solicitud;
+  }
+
   const r = state.reservations.find(x => x.id === pago.external_reference);
   if (!r || !r.pago) return null;
   if (Number(pago.transaction_amount) !== Number(r.sena)) {
@@ -2801,19 +2875,52 @@ async function handleApi(req, res, url, parts) {
     /* Suscribirse al chat */
     if (method === 'POST' && url.pathname === '/api/comunidad/chat-suscribirse') {
       const plan = txt(body.plan) || 'mensual';
-      if (!CHAT_PLAN_CONFIG[plan]) return sendJson(res, 400, { error: 'Plan no válido' });
-      const sub = crearSuscripcionChat(state, u.id, plan);
+      const config = CHAT_PLAN_CONFIG[plan];
+      if (!config) return sendJson(res, 400, { error: 'Plan no válido' });
+      const monto = config.precioMensual;   /* $5.000 final, IVA incluido */
+
+      /* Si el cobro está apagado o es simulado, se activa directo (como antes). */
+      if (MODO_PAGOS !== 'mercadopago') {
+        const sub = activarSuscripcionChat(state, u.id, plan, { estado: 'aprobado', fecha: Date.now(), monto });
+        persist(state);
+        avisar(state, u.id, '¡Suscripción activada!', `Tu acceso al Chat Global está activo hasta ${new Date(sub.venceEn).toLocaleDateString('es-AR')}.`, 'ok');
+        return sendJson(res, 200, {
+          ok: true,
+          activada: true,
+          suscripcion: {
+            plan: sub.plan, estado: sub.estado, venceEn: sub.venceEn,
+            diasRestantes: Math.max(0, Math.ceil((sub.venceEn - Date.now()) / (24 * 3600 * 1000))),
+          },
+        });
+      }
+
+      /* Con Mercado Pago: se crea la solicitud y se devuelve el link de pago.
+         El acceso se activa recién cuando el webhook confirma el pago. */
+      const minutos = 30;
+      const solicitud = {
+        id: 'chat:' + uid(),
+        userId: u.id,
+        plan,
+        planNombre: config.nombre,
+        monto,
+        estado: 'pendiente',
+        proveedor: 'mercadopago',
+        creada: Date.now(),
+        venceEn: Date.now() + minutos * 60000,
+      };
+      state.chatSolicitudes = state.chatSolicitudes || [];
+      let pago;
+      try {
+        const pref = await crearPreferenciaSuscripcion(solicitud, u);
+        solicitud.preferenciaId = pref.id;
+        pago = { url: pref.url, monto, plan, venceEn: solicitud.venceEn };
+      } catch (e) {
+        console.error('[pagos] no se pudo crear el pago de la suscripción:', e.message);
+        return sendJson(res, 502, { error: 'No pudimos iniciar el pago. Probá de nuevo en unos minutos.' });
+      }
+      state.chatSolicitudes.push(solicitud);
       persist(state);
-      avisar(state, u.id, '¡Suscripción activada!', `Tu acceso al Chat Global está activo hasta ${new Date(sub.venceEn).toLocaleDateString('es-AR')}.`, 'ok');
-      return sendJson(res, 200, {
-        ok: true,
-        suscripcion: {
-          plan: sub.plan,
-          estado: sub.estado,
-          venceEn: sub.venceEn,
-          diasRestantes: Math.max(0, Math.ceil((sub.venceEn - Date.now()) / (24 * 3600 * 1000))),
-        },
-      });
+      return sendJson(res, 200, { ok: true, activada: false, solicitudId: solicitud.id, pago });
     }
 
     /* ========== CHAT GLOBAL GRUPAL ========== */
