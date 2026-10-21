@@ -1,9 +1,14 @@
-﻿# Pendientes y cosas para revisar — Más Música (v118)
+﻿# Pendientes y cosas para revisar — Más Música (v119)
 
 Actualizado: 21/10/2026. Este archivo es solo una guía de trabajo; la app no lo usa.
 
 ## 0. Cambios recientes
 
+- [x] **Arreglo de textos cortados en "Pagos y Señas"** (v119): los rótulos de las
+      tarjetas ("Comisión +Música", "Asignado a salas", "Ya transferido"…) y los títulos
+      de las tablas de liquidación se recortaban con puntos suspensivos en pantallas
+      angostas. Ahora pasan a dos líneas cuando no entran y las tablas se desplazan en
+      horizontal en vez de apretar el texto. Solo CSS → no cambia el servidor.
 - [x] **Datos de cobro de la sala + panel de liquidaciones** (v118): cada dueño carga en
       **Mi panel → Información → Datos de cobro** su titular, banco/billetera, alias y CVU.
       Ese dato es privado (solo lo ve el dueño de la sala y la administración). En
