@@ -2334,20 +2334,62 @@ async function confirmBooking() {
         <p class="muted small">Seña pagada (modo prueba). La sala ya recibió el aviso.</p>
         <button class="btn" id="bk-mine"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Ver mis reservas</button>
       </div>`;
+    const pctSena = Math.max(1, Math.min(100, Math.round((data.pago.sena / data.pago.total) * 100)));
     $('#confirm-body').innerHTML = `
-      <div class="success">
-        <h3>Falta pagar la seña</h3>
-        <p><strong>${esc(name)}</strong></p>
-        <p>${fmtDate(sel.date)} · ${esc(roomP ? roomP.name : '')} · ${data.reservation.start} – ${data.reservation.end}</p>
-        <p class="accent"><strong>Seña a pagar ahora: ${fmtMoney(data.pago.sena)}</strong></p>
-        <p class="muted small">Total ${fmtMoney(data.pago.total)} · el saldo de ${fmtMoney(data.pago.saldo)} se paga en la sala.</p>
-        <p class="muted small">Tu horario queda reservado hasta las ${hasta}. Si no se paga la seña, se libera.</p>
+      <div class="confirma-reserva">
+        <div class="cr-stepper" aria-label="Progreso de la reserva">
+          <div class="cr-step done">Horario elegido</div>
+          <div class="cr-step active">Pagar seña</div>
+          <div class="cr-step">Sala confirmada</div>
+        </div>
+
+        <section class="cr-card">
+          <div class="cr-eyebrow">Falta pagar la seña</div>
+          <h2 class="cr-title">Confirma tu reserva</h2>
+          <p class="cr-sub">${esc(roomP ? roomP.name : '')}</p>
+
+          <div class="cr-info">
+            <div class="cr-info-row">
+              <span class="cr-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>
+              <div>
+                <strong>${fmtDate(sel.date)}</strong>
+                <small>${data.reservation.start} – ${data.reservation.end} · ${esc(roomP ? roomP.name : '')}</small>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="cr-card">
+          <div class="cr-pay-head">
+            <div>
+              <div class="cr-label">Seña a pagar ahora</div>
+              <div class="cr-amount">${fmtMoney(data.pago.sena)}</div>
+            </div>
+            <div class="cr-total">
+              <div class="cr-label" style="text-align:right">Total</div>
+              <b>${fmtMoney(data.pago.total)}</b>
+            </div>
+          </div>
+          <div class="cr-bar" role="progressbar" aria-valuenow="${pctSena}" aria-valuemin="0" aria-valuemax="100"><div style="width:${pctSena}%"></div></div>
+          <div class="cr-split">
+            <span>Seña (${pctSena}%) <b>${fmtMoney(data.pago.sena)}</b></span>
+            <span>Saldo en sala <b>${fmtMoney(data.pago.saldo)}</b></span>
+          </div>
+        </section>
+
+        <div class="cr-hold">
+          <span class="cr-icon cr-icon-amber"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>
+          <div>Tu horario queda reservado hasta las <b>${hasta}</b>. Si no pagás la seña, se libera.</div>
+        </div>
+
         ${pagarUrl
-          ? `<a class="btn btn-primary" href="${pagarUrl}">Pagar la seña con Mercado Pago</a>`
+          ? `<a class="btn cr-btn-primary" href="${pagarUrl}" target="_blank" rel="noopener">Pagar seña con Mercado Pago</a>`
           : data.pago.simulado
-            ? `<button class="btn btn-primary" id="bk-pagar-prueba">Pagar la seña (prueba)</button>`
+            ? `<button class="btn cr-btn-primary" id="bk-pagar-prueba">Pagar la seña (prueba)</button>`
             : '<p class="muted small">El cobro de la seña no está activo.</p>'}
-        <button class="btn" id="bk-mine"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Ver mis reservas</button>
+        <button class="btn cr-btn-secondary" id="bk-mine"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Ver mis reservas</button>
+
+        <p class="cr-fine">El saldo de ${fmtMoney(data.pago.saldo)} se abona en la sala el día de tu turno.</p>
       </div>`;
     $('#bk-mine').onclick = () => { mostrarMisReservas(); };
     const btnPrueba = $('#bk-pagar-prueba');
