@@ -1,9 +1,15 @@
-﻿# Pendientes y cosas para revisar — Más Música (v122)
+﻿# Pendientes y cosas para revisar — Más Música (v123)
 
 Actualizado: 21/10/2026. Este archivo es solo una guía de trabajo; la app no lo usa.
 
 ## 0. Cambios recientes
 
+- [x] **Detalle de suscripciones al chat cobradas** (v123). En **Administración → Pagos y
+      Señas** se agregó la sección "Suscripciones al Chat" con tarjetas de resumen (cobrado,
+      neto, IVA 21% y cantidad) y una tabla con fecha de pago, músico, plan, total, neto, IVA
+      y el ID de pago de Mercado Pago. Sirve para **facturar el IVA**: el precio de $5.000 es
+      final (con IVA incluido), así que se desglosa en neto $4.132 + IVA $868. Cambio de
+      servidor + cliente → versión v123.
 - [x] **Suscripción al chat conectada a Mercado Pago** (v122). Antes, tocar "Suscribirme"
       activaba el acceso al instante y marcaba el pago como aprobado **sin cobrar**. Ahora,
       con Mercado Pago activo, se genera el link de pago ($5.000 final, IVA incluido) y el
