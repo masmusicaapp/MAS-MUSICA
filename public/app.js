@@ -281,6 +281,77 @@ function goStep(n) {
 /* Reservas de esta cuenta: las de este dispositivo + las vinculadas al usuario */
 const misReservas = () => state.reservations.filter(r => mineIds.includes(r.id) || (yo && r.userId === yo.id));
 
+/* Verifica si el pago de una reserva se acreditó. Se dispara al volver a la app
+   después de pagar en Mercado Pago (que se abrió en otra pestaña). */
+let verificacionPagoActiva = null;
+function iniciarVerificacionPago(reservaId, roomId) {
+  if (verificacionPagoActiva) clearInterval(verificacionPagoActiva);
+  let intentos = 0;
+  const maxIntentos = 40; /* ~2 min a 3 s */
+  const box = $('#confirm-body');
+  const mostrarVerificando = () => {
+    if (!box) return;
+    if (!box.querySelector('.pago-verificando')) {
+      box.insertAdjacentHTML('beforeend', '<div class="pago-verificando muted small" style="margin-top:10px"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> Verificando tu pago… no cierres esta pestaña.</div>');
+    }
+  };
+  mostrarVerificando();
+  verificacionPagoActiva = setInterval(async () => {
+    intentos++;
+    try {
+      const data = await api('/api/state');
+      state = data.state;
+      const r = (state.reservations || []).find(x => x.id === reservaId);
+      if (r && (r.estado === 'confirmada' || r.estado === 'cancelada')) {
+        clearInterval(verificacionPagoActiva);
+        verificacionPagoActiva = null;
+        if (r.estado === 'confirmada') {
+          toast('¡Seña recibida! Tu reserva está confirmada.', 'ok');
+          if (yo) cargarNotificaciones();
+          renderMineRapido();
+          $('#confirm-body').innerHTML = `
+            <div class="success">
+              <div class="ok-mark"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div>
+              <h3>¡Reserva confirmada!</h3>
+              <p>La seña se acreditó correctamente. Mirala en Mis reservas.</p>
+              <button class="btn" id="bk-mine"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Ver mis reservas</button>
+            </div>`;
+          const bm = $('#bk-mine'); if (bm) bm.onclick = () => { mostrarMisReservas(); };
+        } else {
+          toast('El pago no se completó a tiempo. El horario se liberó.', 'warn');
+          $('#confirm-body').innerHTML = '<p class="muted">El horario se liberó. Podés intentar reservar de nuevo.</p>';
+        }
+        return;
+      }
+      if (intentos >= maxIntentos) {
+        clearInterval(verificacionPagoActiva);
+        verificacionPagoActiva = null;
+        const pv = document.querySelector('.pago-verificando'); if (pv) pv.remove();
+        toast('Todavía no se acreditó el pago. Lo seguimos verificando en segundo plano.', 'warn');
+      }
+    } catch (e) { /* ignorar errores transitorios */ }
+  }, 3000);
+  /* También verificar al volver a la pestaña */
+  document.addEventListener('visibilitychange', async () => {
+    if (document.visibilityState === 'visible' && verificacionPagoActiva) {
+      try {
+        const data = await api('/api/state');
+        state = data.state;
+        const r = (state.reservations || []).find(x => x.id === reservaId);
+        if (r && (r.estado === 'confirmada' || r.estado === 'cancelada')) {
+          clearInterval(verificacionPagoActiva);
+          verificacionPagoActiva = null;
+          if (r.estado === 'confirmada') {
+            toast('¡Seña recibida! Tu reserva está confirmada.', 'ok');
+            if (yo) cargarNotificaciones();
+            renderMineRapido();
+          }
+        }
+      } catch (e) {}
+    }
+  });
+}
+
 function renderMineRapido() {
   const host = $('#home-mine');
   if (!host || host.hidden) return;
@@ -351,7 +422,9 @@ async function pagarSenaDesde(r) {
   }
   if (data.url && urlSegura(data.url)) {
     toast('Te llevamos a Mercado Pago para pagar la seña…', 'ok');
-    setTimeout(() => { location.href = urlSegura(data.url); }, 1300);
+    setTimeout(() => {
+      try { window.open(urlSegura(data.url), '_blank', 'noopener'); } catch (e) { location.href = urlSegura(data.url); }
+    }, 1300);
     return;
   }
   const room = state.rooms.find(x => x.id === r.roomId);
@@ -2294,7 +2367,13 @@ async function confirmBooking() {
       }
     };
     renderMineRapido();
-    if (pagarUrl) { toast('Te llevamos a Mercado Pago para pagar la seña…', 'ok'); setTimeout(() => { location.href = pagarUrl; }, 1500); }
+    if (pagarUrl) {
+      toast('Te llevamos a Mercado Pago para pagar la seña…', 'ok');
+      setTimeout(() => {
+        try { window.open(pagarUrl, '_blank', 'noopener'); } catch (e) { location.href = pagarUrl; }
+      }, 1300);
+      iniciarVerificacionPago(data.reservation.id, sel.roomId);
+    }
     return;
   }
   const room = state.rooms.find(r => r.id === sel.roomId);
