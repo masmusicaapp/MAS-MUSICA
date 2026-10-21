@@ -1,4 +1,4 @@
-# Pendientes y cosas para revisar — Más Música (v105)
+# Pendientes y cosas para revisar — Más Música (v106)
 
 Actualizado: 20/10/2026. Este archivo es solo una guía de trabajo; la app no lo usa.
 
