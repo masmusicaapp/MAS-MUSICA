@@ -168,7 +168,11 @@ async function api(path, { method = 'GET', body, admin = false } = {}) {
   });
   let data = {};
   try { data = await res.json(); } catch (e) { /* sin cuerpo */ }
-  if (!res.ok) throw new Error(data.error || `Error de conexión (${res.status})`);
+  if (!res.ok) {
+    const err = new Error(data.error || `Error de conexión (${res.status})`);
+    err.status = res.status;
+    throw err;
+  }
   return data;
 }
 
@@ -3272,7 +3276,12 @@ async function verificarSesion() {
       adminMode = esSuper();
       return true;
     }
-  } catch (e) { guardarToken(''); yo = null; }
+  } catch (e) {
+    /* Solo borrar la sesión si el servidor dice explícitamente que el token es inválido.
+       Si fue un error de red (sin conexión, timeout, etc.), mantenemos el token para
+       no sacar al usuario de la app al volver de Mercado Pago o al recargar. */
+    if (e && e.status === 401) { guardarToken(''); yo = null; }
+  }
   return false;
 }
 
