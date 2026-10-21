@@ -1,4 +1,4 @@
-# Pendientes y cosas para revisar — Más Música (v106)
+﻿# Pendientes y cosas para revisar — Más Música (v107)
 
 Actualizado: 20/10/2026. Este archivo es solo una guía de trabajo; la app no lo usa.
 
@@ -111,3 +111,4 @@ Actualizado: 20/10/2026. Este archivo es solo una guía de trabajo; la app no lo
 - [ ] Reservar desde el mapa en el celular.
 - [ ] Subir una foto desde la cámara del celular.
 - [ ] Que las reseñas con muchas visitas se lean bien en pantalla chica.
+
