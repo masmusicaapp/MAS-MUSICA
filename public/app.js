@@ -7863,18 +7863,20 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape' && avisoCierreModal) { e.preventDefault(); closeModal(); }
 });
 
-/* Modal de confirmación personalizado (reemplaza a confirm() nativo) */
+/* Modal de confirmación personalizado (reemplaza a confirm() nativo).
+   Escapamos los textos: aunque hoy son texto plano, así ningún dato del usuario
+   (nombre de reserva, banda, cuenta o sala) puede inyectar HTML. */
 function confirmarAccion(mensaje, titulo = '¿Estás seguro?', textoAceptar = 'Aceptar', textoCancelar = 'Cancelar', tipo = 'peligro') {
   return new Promise(resolve => {
     const colorAceptar = tipo === 'peligro' ? 'btn-danger' : 'btn-primary';
     openModal(`
       <div class="confirmar-modal">
         <div class="confirmar-icono">${tipo === 'peligro' ? '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>' : '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>'}</div>
-        <h3>${titulo}</h3>
-        <p class="confirmar-mensaje">${mensaje}</p>
+        <h3>${esc(titulo)}</h3>
+        <p class="confirmar-mensaje">${esc(mensaje)}</p>
         <div class="confirmar-botones">
-          <button class="btn" id="confirmar-no">${textoCancelar}</button>
-          <button class="btn ${colorAceptar}" id="confirmar-si">${textoAceptar}</button>
+          <button class="btn" id="confirmar-no">${esc(textoCancelar)}</button>
+          <button class="btn ${colorAceptar}" id="confirmar-si">${esc(textoAceptar)}</button>
         </div>
       </div>
     `);
