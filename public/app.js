@@ -3313,13 +3313,12 @@ function actualizarBarraSesion() {
   actualizarAccionesHeader();
 }
 
-/* En el Inicio la campana se cambia por el engranaje de Ajustes.
-   (Antes dependía de la vista "Mis reservas" separada, que ya no existe) */
+/* Con sesión, la campana de avisos y el engranaje de Ajustes se muestran
+   siempre, en cualquier pantalla. */
 function actualizarAccionesHeader() {
-  const enInicio = navActual === 'inicio';
-  $('#btn-ajustes').hidden = !yo || !enInicio;
-  $('#btn-notif').hidden = !yo || enInicio;
-  if (yo && !enInicio) pintarBadgeNotif();
+  $('#btn-ajustes').hidden = !yo;
+  $('#btn-notif').hidden = !yo;
+  if (yo) pintarBadgeNotif();
   renderHeaderSalaLogo();
 }
 
