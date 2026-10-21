@@ -270,8 +270,8 @@ let filtroSalas = 'todas';   /* 'todas' | 'favoritas' */
 function goStep(n) {
   curStep = n;
   for (let i = 1; i <= 4; i++) $('#step-' + i).hidden = i !== n;
-  /* "Mis reservas" solo acompaña a la vista de Salas (pasos 2-4); en el Inicio se oculta */
-  $('#home-mine').hidden = n === 1;
+  /* "Mis reservas" se ve en el Inicio (paso 1), sin tocar nada */
+  $('#home-mine').hidden = false;
   renderMineRapido();
   if (n === 1) renderResumenInicio();
   renderSalasStrip();   /* logo de la sala actual en la esquina */
@@ -316,7 +316,7 @@ function iniciarVerificacionPago(reservaId, roomId) {
               <p>La seña se acreditó correctamente. Mirala en Mis reservas.</p>
               <button class="btn" id="bk-mine"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Ver mis reservas</button>
             </div>`;
-          const bm = $('#bk-mine'); if (bm) bm.onclick = () => { mostrarMisReservas(); };
+          const bm = $('#bk-mine'); if (bm) bm.onclick = () => { irAMisReservasInicio(); };
         } else {
           toast('El pago no se completó a tiempo. El horario se liberó.', 'warn');
           $('#confirm-body').innerHTML = '<p class="muted">El horario se liberó. Podés intentar reservar de nuevo.</p>';
@@ -2394,7 +2394,7 @@ async function confirmBooking() {
 
         <p class="cr-fine">El saldo de ${fmtMoney(data.pago.saldo)} se abona en la sala el día de tu turno.</p>
       </div>`;
-    $('#bk-mine').onclick = () => { mostrarMisReservas(); };
+    $('#bk-mine').onclick = () => { irAMisReservasInicio(); };
     const btnPrueba = $('#bk-pagar-prueba');
     if (btnPrueba) btnPrueba.onclick = async () => {
       btnPrueba.disabled = true;
@@ -2405,7 +2405,7 @@ async function confirmBooking() {
         if (yo) cargarNotificaciones();
         renderMineRapido();
         $('#confirm-body').innerHTML = okConfirmada();
-        $('#bk-mine').onclick = () => { mostrarMisReservas(); };
+        $('#bk-mine').onclick = () => { irAMisReservasInicio(); };
       } catch (err) {
         toast(err.message || 'No se pudo simular el pago', 'error');
         btnPrueba.disabled = false;
@@ -2443,7 +2443,7 @@ async function confirmBooking() {
       <button class="btn" id="bk-mine"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Ver mi perfil</button>
     </div>`;
   $('#bk-again').onclick = () => { sel.range = null; sel.roomId = null; sel.slot = null; sel.bandaNombre = ''; goStep(1); renderCalendar(); };
-  $('#bk-mine').onclick = () => { mostrarMisReservas(); };
+  $('#bk-mine').onclick = () => { irAMisReservasInicio(); };
   renderMineRapido();   /* la reserva nueva ya figura en "Mis reservas" */
   toast('Reserva registrada', 'ok');
 }
@@ -2452,14 +2452,27 @@ async function confirmBooking() {
 let busquedaMine = '';
 let filtroMisReservas = '';   /* '' | 'proximas' | 'historial' (se elige en Ajustes) */
 
-function mostrarMisReservas() {
+function mostrarPerfil() {
+  ocultarVistas();
+  $('#view-public').hidden = true;
+  $('#view-mine').hidden = false;
+  setNav('perfil');
+  renderMine();
+}
+
+/* Va al Inicio y baja hasta "Mis reservas" (que vive debajo del calendario) */
+function irAMisReservasInicio() {
   ocultarVistas();
   $('#view-public').hidden = false;
+  $('#view-mine').hidden = true;
   setNav('inicio');
   const hm = $('#home-mine');
-  if (hm) { hm.hidden = false; hm.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+  if (hm) { hm.hidden = false; }
   renderMineRapido();
+  if (hm) hm.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
+
+function mostrarMisReservas() { mostrarPerfil(); }
 
 function volverAReservar() {
   ocultarVistas();
@@ -2620,7 +2633,7 @@ function nuevaReserva() {
   toast('Elegí la sala', 'ok');
 }
 
-function irMisReservas() { mostrarMisReservas(); }
+function irMisReservas() { mostrarPerfil(); }
 
 /* ================= Comunidad (solo músicos) ================= */
 function irComunidad() {
@@ -3313,12 +3326,11 @@ function actualizarBarraSesion() {
   actualizarAccionesHeader();
 }
 
-/* Con sesión, la campana de avisos y el engranaje de Ajustes se muestran
-   siempre, en cualquier pantalla. */
+/* Dentro del Perfil la campana se cambia por el engranaje de Ajustes */
 function actualizarAccionesHeader() {
-  $('#btn-ajustes').hidden = !yo;
-  $('#btn-notif').hidden = !yo;
-  if (yo) pintarBadgeNotif();
+  $('#btn-ajustes').hidden = !yo || $('#view-mine').hidden;
+  $('#btn-notif').hidden = !yo || !$('#view-mine').hidden;
+  if (yo && $('#view-mine').hidden) pintarBadgeNotif();
   renderHeaderSalaLogo();
 }
 
@@ -4582,7 +4594,7 @@ function irReservasFiltradas(tipo) {
   busquedaMine = '';
   const inp = $('#home-search');
   if (inp) inp.value = '';
-  irSalas();   /* "Mis reservas" vive en la vista de Salas, no en el Inicio */
+  irInicio();   /* "Mis reservas" vive en el Inicio */
   const host = $('#home-mine');
   if (host) setTimeout(() => host.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
 }
@@ -5703,7 +5715,8 @@ function wirePublic() {
   $$('#dock-container [data-nav]').forEach(b => {
     b.onclick = () => ACCIONES_NAV[b.dataset.nav]();
   });
-  $('#home-search').oninput = e => { busquedaMine = e.target.value; renderMineRapido(); };
+  const inpBuscar = $('#home-search');
+  if (inpBuscar) inpBuscar.oninput = e => { busquedaMine = e.target.value; renderMineRapido(); };
   /* Perfil / Ajustes: filas, apariencia, avisos y accesos */
   $('#mine-user').onclick = e => {
     const a = e.target.closest('[data-auth]');
