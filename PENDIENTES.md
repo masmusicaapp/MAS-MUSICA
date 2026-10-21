@@ -4,14 +4,11 @@ Actualizado: 21/10/2026. Este archivo es solo una guía de trabajo; la app no lo
 
 ## 0. Cambios recientes
 
-- [x] **Administración central: se sacó el deslizamiento de la barra de pestañas** (v120):
-      la fila de pestañas del panel (Inicio, Solicitudes, Reservas del día, Salas, Pagos y
-      Señas…) quedaba "pegada" arriba en celular y al costado en escritorio mientras
-      scrolleabas, y se corría sola al tocar una pestaña para centrarla. Ahora la barra
-      acompaña el scroll normal del panel (no se pega) y ya no se corre sola. También se
-      quitó la animación de la rayita que marca la pestaña activa. Aplica al panel central
-      (`#view-admin`) y al panel de la sala (`#view-panel`). Cambia cliente (CSS + JS) →
-      versión v120.
+- [x] **Administración central: se quitó el deslizamiento lateral (swipe) para cambiar de
+      pestaña** (v120). Antes, en el celular, al deslizar el dedo de derecha a izquierda
+      (o al revés) sobre el panel se pasaba a la pestaña siguiente/anterior. Ese gesto se
+      sacó: ahora se cambia de pestaña **solo tocándola**. Cambia cliente (JS) → versión
+      v120.
 - [x] **Arreglo de textos cortados en "Pagos y Señas"** (v119): los rótulos de las
       tarjetas ("Comisión +Música", "Asignado a salas", "Ya transferido"…) y los títulos
       de las tablas de liquidación se recortaban con puntos suspensivos en pantallas
