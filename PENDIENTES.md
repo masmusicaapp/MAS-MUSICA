@@ -1,9 +1,15 @@
-﻿# Pendientes y cosas para revisar — Más Música (v120)
+﻿# Pendientes y cosas para revisar — Más Música (v121)
 
 Actualizado: 21/10/2026. Este archivo es solo una guía de trabajo; la app no lo usa.
 
 ## 0. Cambios recientes
 
+- [x] **Inicio: la barra de las 5 opciones ya no tapa "Mis reservas"** (v121). Cuando había
+      varias reservas, las últimas tarjetas quedaban por debajo de la barra inferior en el
+      celular (y en escritorio el panel se salía de su recuadro). Ahora, en celular el
+      listado deja aire abajo (siempre queda por encima de la barra) y en escritorio el
+      panel de "Mis reservas" scrollea dentro de su recuadro. Solo CSS → cambio de cliente,
+      versión v121.
 - [x] **Administración central: se quitó el deslizamiento lateral (swipe) para cambiar de
       pestaña** (v120). Antes, en el celular, al deslizar el dedo de derecha a izquierda
       (o al revés) sobre el panel se pasaba a la pestaña siguiente/anterior. Ese gesto se
