@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Política de privacidad · Más Música</title>
+<meta name="theme-color" content="#00a038">
+<link rel="icon" href="assets/logo_musica.png">
+<style>
+  :root {
+    --verde: #00a038;
+    --verde-osc: #007d2c;
+    --texto: #16263d;
+    --muted: #5b6b7d;
+    --linea: #dde5ec;
+    --fondo: #f4f7f9;
+    --panel: #ffffff;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--fondo);
+    color: var(--texto);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.65;
+  }
+  header {
+    background: var(--panel);
+    border-bottom: 1px solid var(--linea);
+    padding: 14px 18px;
+  }
+  .barra {
+    max-width: 860px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+  .barra img { height: 30px; width: auto; display: block; }
+  .barra a.volver {
+    margin-left: auto;
+    color: var(--verde-osc);
+    font-weight: 600;
+    font-size: .92rem;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .barra a.volver:hover { text-decoration: underline; }
+  main {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 26px 18px 10px;
+  }
+  .caja {
+    background: var(--panel);
+    border: 1px solid var(--linea);
+    border-radius: 14px;
+    padding: 26px 26px 10px;
+    box-shadow: 0 6px 22px rgba(22, 38, 61, .06);
+  }
+  h1 { margin: 0 0 6px; font-size: 1.7rem; line-height: 1.2; }
+  .fecha { margin: 0 0 18px; color: var(--muted); font-size: .9rem; }
+  h2 {
+    margin: 26px 0 8px;
+    font-size: 1.06rem;
+    line-height: 1.3;
+    color: var(--verde-osc);
+  }
+  p { margin: 0 0 11px; }
+  ul { margin: 0 0 12px; padding-left: 22px; }
+  li { margin: 0 0 6px; }
+  strong { color: var(--texto); }
+  a { color: var(--verde-osc); }
+  .nota {
+    margin: 14px 0 18px;
+    padding: 12px 14px;
+    background: #eefaf2;
+    border: 1px solid #c9ecd7;
+    border-radius: 10px;
+    font-size: .93rem;
+    color: #235c39;
+  }
+  .contacto {
+    margin: 10px 0 20px;
+    padding: 14px 16px;
+    background: var(--fondo);
+    border: 1px solid var(--linea);
+    border-radius: 10px;
+  }
+  .contacto p { margin: 0 0 6px; }
+  .contacto p:last-child { margin-bottom: 0; }
+  footer {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 16px 18px 40px;
+    text-align: center;
+    color: var(--muted);
+    font-size: .86rem;
+  }
+  footer a { color: var(--muted); }
+  @media (max-width: 520px) {
+    main { padding: 16px 12px 6px; }
+    .caja { padding: 20px 16px 6px; border-radius: 12px; }
+    h1 { font-size: 1.4rem; }
+    .barra a.volver { margin-left: 0; }
+  }
+  @media print {
+    body { background: #fff; }
+    header, footer { display: none; }
+    .caja { border: 0; box-shadow: none; padding: 0; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="barra">
+    <img src="assets/logo_musica_negro.png" alt="Más Música">
+    <a class="volver" href="./"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg> Volver a la app</a>
+  </div>
+</header>
+
+<main>
+  <div class="caja">
+    <h1>Política de privacidad</h1>
+    <p class="fecha">Versión 1.0 · Última actualización: 21 de octubre de 2026</p>
+
+    <p>Esta política explica qué datos personales recopila <strong>Más Música</strong>, para qué los usa y qué derechos tenés sobre ellos. Al crear una cuenta, reservar o usar la app, aceptás el tratamiento de tus datos que se describe acá, además de los <a href="terminos.html">términos y condiciones</a>.</p>
+
+    <div class="nota">Más Música cumple con la Ley 25.326 de Protección de Datos Personales de la República Argentina. Tus datos no se venden ni se comparten con terceros con fines comerciales.</div>
+
+    <h2>1. Qué datos recopilamos</h2>
+    <p>Al registrarte o usar la app, podemos recopilar:</p>
+    <ul>
+      <li><strong>Datos de cuenta:</strong> nombre y apellido, nombre de usuario, email, teléfono, localidad, instrumentos que tocás.</li>
+      <li><strong>Datos de reserva:</strong> sala elegida, fecha, horario, nombre de la banda (si reservás como banda) y teléfono de contacto.</li>
+      <li><strong>Datos de pago:</strong> si pagás una seña, Mercado Pago procesa el pago. Más Música solo guarda el estado del pago (aprobado, pendiente, rechazado) y el identificador de la transacción. <strong>No guardamos datos de tu tarjeta.</strong></li>
+      <li><strong>Datos de la sala (dueños):</strong> nombre de la sala, dirección, horarios, precios, fotos, equipamiento y datos de cobro (titular, alias, CVU, banco).</li>
+      <li><strong>Datos de uso:</strong> mensajes en el Chat Global, reseñas de salas, notificaciones y pedidos de ayuda.</li>
+      <li><strong>Datos técnicos:</strong> dirección IP (para seguridad y freno de intentos de login), tipo de navegador y dispositivo.</li>
+    </ul>
+
+    <h2>2. Para qué usamos tus datos</h2>
+    <ul>
+      <li>Crear y mantener tu cuenta.</li>
+      <li>Gestionar reservas, cancelaciones y la disponibilidad de horarios.</li>
+      <li>Procesar pagos de señas y suscripciones al Chat Global.</li>
+      <li>Enviar notificaciones y avisos dentro de la app (y por email si está configurado).</li>
+      <li>Mostrar la información de las salas a los músicos que buscan ensayar.</li>
+      <li>Prevenir fraude, abuso y accesos no autorizados.</li>
+      <li>Cumplir con obligaciones legales y contables (facturación, retención de datos de pago).</li>
+    </ul>
+
+    <h2>3. Con quién compartimos tus datos</h2>
+    <ul>
+      <li><strong>Mercado Pago:</strong> procesa los pagos de señas y suscripciones. Se rige por su propia política de privacidad.</li>
+      <li><strong>Sala de ensayo:</strong> al reservar, la sala recibe tu nombre, teléfono y el horario reservado. No recibe tu email ni otros datos personales.</li>
+      <li><strong>Administración de Más Música:</strong> los super administradores pueden ver reservas, usuarios y datos de salas para gestionar la plataforma.</li>
+      <li><strong>Otros músicos:</strong> en el Chat Global solo se ve tu nombre de usuario y tus mensajes. Las reservas de otros músicos se muestran sin nombres (solo horarios ocupados).</li>
+    </ul>
+    <p>No compartimos tus datos con terceros con fines publicitarios ni de marketing.</p>
+
+    <h2>4. Cuánto tiempo guardamos tus datos</h2>
+    <ul>
+      <li>Los datos de tu cuenta se guardan mientras tu cuenta esté activa.</li>
+      <li>Las reservas (incluyendo las canceladas) se conservan para auditoría y facturación.</li>
+      <li>Los mensajes del Chat Global se conservan mientras la cuenta esté activa.</li>
+      <li>Los pedidos de ayuda (olvidé contraseña, cuenta bloqueada) se conservan hasta que se resuelven.</li>
+      <li>Si pedís la baja de tu cuenta, tus datos personales se eliminan o anonimizan en un plazo razonable, salvo los que debamos conservar por obligación legal (datos de pago, facturación).</li>
+    </ul>
+
+    <h2>5. Tus derechos</h2>
+    <p>Según la Ley 25.326, tenés derecho a:</p>
+    <ul>
+      <li><strong>Acceder</strong> a tus datos personales que tenemos.</li>
+      <li><strong>Rectificar</strong> datos incorrectos o desactualizados (podés editar tu perfil desde la app).</li>
+      <li><strong>Suprimir</strong> tus datos (pedir la baja de tu cuenta).</li>
+      <li><strong>Oponerte</strong> al tratamiento de tus datos en los casos que la ley lo permita.</li>
+    </ul>
+    <p>Para ejercer estos derechos, escribinos al contacto que aparece al final. También podés usar “Pedí ayuda” desde la pantalla de acceso de la app.</p>
+
+    <h2>6. Seguridad</h2>
+    <p>Protegemos tus datos con:</p>
+    <ul>
+      <li>Contraseñas encriptadas (nunca se guardan en texto plano).</li>
+      <li>Sesiones con token seguro y expiración automática (30 días).</li>
+      <li>Freno de intentos de login (8 intentos por IP cada 15 minutos).</li>
+      <li>Los datos de cobro de las salas (alias, CVU) son privados: solo los ve el dueño de la sala y la administración.</li>
+      <li>Los emails de los usuarios no se exponen en la app pública.</li>
+    </ul>
+    <p>Ningún sistema es 100% seguro. Si detectás un problema de seguridad, avisános.</p>
+
+    <h2>7. Cookies y almacenamiento local</h2>
+    <p>Más Música usa el almacenamiento local del navegador (localStorage) para guardar tu sesión y tus preferencias. No usamos cookies de terceros ni herramientas de seguimiento publicitario. El service worker cachea archivos estáticos (HTML, CSS, JS, imágenes) para que la app funcione sin conexión; no cachea datos personales ni la API.</p>
+
+    <h2>8. Menores de edad</h2>
+    <p>La app puede ser usada por menores de edad, pero requiere la autorización de un padre, madre o representante legal para crear una cuenta y reservar. No recopilamos datos de menores de forma deliberada más allá de lo necesario para el servicio.</p>
+
+    <h2>9. Cambios a esta política</h2>
+    <p>Podemos actualizar esta política. Si los cambios son importantes, te avisamos en la app. La versión vigente siempre está disponible en esta página.</p>
+
+    <h2>10. Contacto</h2>
+    <div class="contacto">
+      <p>Escribinos a <a href="mailto:masmusica.app@gmail.com">masmusica.app@gmail.com</a>.</p>
+      <p>También podés usar “Pedí ayuda” desde la pantalla de acceso de la app.</p>
+      <p>WhatsApp: <a href="https://wa.me/5491121847587">+54 9 1121847587</a></p>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <p>Más Música · <a href="terminos.html">Términos y condiciones</a> · <a href="precios.html">Precios</a> · <a href="./">Volver a la app</a></p>
+</footer>
+
+</body>
+</html>
