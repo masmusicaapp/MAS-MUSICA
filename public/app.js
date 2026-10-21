@@ -5085,6 +5085,11 @@ function renderPanelSala() {
   $('#ps-eq-microfonos').value = eq.microfonos || '';
   $('#ps-eq-consola').value = eq.consola || '';
   $('#ps-eq-otros').value = eq.otros || '';
+  const cob = r.cobro || {};
+  $('#ps-cobro-titular').value = cob.titular || '';
+  $('#ps-cobro-banco').value = cob.banco || '';
+  $('#ps-cobro-alias').value = cob.alias || '';
+  $('#ps-cobro-cvu').value = cob.cvu || '';
   panelLogoTmp = '';
   panelPortadaTmp = '';
   panelFotosTmp = [];
@@ -5295,6 +5300,12 @@ async function guardarPanelSala() {
       otros: $('#ps-eq-otros').value.trim(),
     },
     catalogo: panelCatalogo,
+    cobro: {
+      titular: $('#ps-cobro-titular').value.trim(),
+      banco: $('#ps-cobro-banco').value.trim(),
+      alias: $('#ps-cobro-alias').value.trim(),
+      cvu: $('#ps-cobro-cvu').value.trim(),
+    },
     fotos,
   };
   if (panelLogoTmp) body.logo = panelLogoTmp;
@@ -7471,12 +7482,20 @@ async function renderPagosAdmin() {
               <th>Para la sala</th>
               <th>Ya transferido</th>
               <th>Por liquidar</th>
+              <th>Datos de cobro</th>
               <th>Acción</th>
             </tr>
           </thead>
           <tbody>
             ${data.salas.map(s => {
               const pendiente = Number(s.porLiquidar) || 0;
+              const c = s.cobro || {};
+              const destinos = [
+                c.alias ? `<span class="muted small">Alias:</span> <b>${esc(c.alias)}</b>` : '',
+                c.cvu ? `<span class="muted small">CVU:</span> <b>${esc(c.cvu)}</b>` : '',
+                c.titular ? `<span class="muted small">${esc(c.titular)}</span>` : '',
+                c.banco ? `<span class="muted small">${esc(c.banco)}</span>` : '',
+              ].filter(Boolean).join('<br>');
               return `
               <tr>
                 <td><strong>${esc(s.sala)}</strong></td>
@@ -7489,6 +7508,7 @@ async function renderPagosAdmin() {
                     ${fmtMoney(pendiente)}
                   </span>
                 </td>
+                <td>${destinos || '<span class="pill pill-warn">Sin datos de cobro</span>'}</td>
                 <td>
                   ${pendiente > 0 ? `
                     <button class="btn btn-primary btn-sm btn-liquidar-sala" data-room-id="${esc(s.roomId)}" data-room-name="${esc(s.sala)}" data-monto="${pendiente}">
