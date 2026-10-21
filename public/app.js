@@ -2495,12 +2495,67 @@ function setNav(nav) {
   document.body.classList.toggle('nav-mapa', nav === 'mapa');
   $$('#dock-container [data-nav]').forEach(b => b.classList.toggle('active', b.dataset.nav === nav));
   $('#dock-container').hidden = nav === 'admin'; /* el admin usa todo el alto */
+  /* Al cambiar de sección, la barra siempre vuelve a mostrarse */
+  const dockNav = $('#dock-container');
+  if (dockNav) dockNav.classList.remove('dock-oculto');
   actualizarAccionesHeader();
 }
 
 function scrollMainArriba() {
   const m = document.querySelector('main:not([hidden])');
   if (m) m.scrollTop = 0;
+}
+
+/* Al deslizar hacia abajo, la barra de las 5 opciones se oculta; al deslizar hacia
+   arriba, vuelve. Se detecta el scroll de cualquier contenedor con scroll interno
+   (las vistas <main>, el panel de admin, etc.) capturando el evento en el documento. */
+function prepararDockAutoOcultar() {
+  if (window._dockAutoOcultarOk) return;
+  window._dockAutoOcultarOk = true;
+
+  const UMBRAL = 6;   /* mínimo de píxeles para considerar un cambio de dirección */
+  let ultimo = 0;     /* última posición conocida del scroller activo */
+  let scroller = null;
+
+  const dock = () => document.getElementById('dock-container');
+
+  function mostrar() {
+    const d = dock();
+    if (d) d.classList.remove('dock-oculto');
+  }
+  function ocultar() {
+    const d = dock();
+    /* No ocultar en el mapa (la barra ahí va transparente) ni si no hay barra */
+    if (d && !document.body.classList.contains('nav-mapa')) d.classList.add('dock-oculto');
+  }
+
+  document.addEventListener('scroll', e => {
+    const el = e.target;
+    /* Solo nos interesan elementos con scroll real (no el documento) */
+    if (!el || el === document || el.scrollHeight <= el.clientHeight) return;
+
+    /* Si cambia el contenedor que scrollea, reiniciar la referencia */
+    if (el !== scroller) {
+      scroller = el;
+      ultimo = el.scrollTop;
+      mostrar();
+      return;
+    }
+
+    const y = el.scrollTop;
+    /* Cerca del tope, siempre visible */
+    if (y <= 8) { ultimo = y; mostrar(); return; }
+
+    const dif = y - ultimo;
+    if (Math.abs(dif) < UMBRAL) return;
+
+    if (dif > 0) ocultar();   /* desliza hacia abajo: se esconde */
+    else mostrar();           /* desliza hacia arriba: reaparece */
+    ultimo = y;
+  }, { passive: true, capture: true });
+
+  /* Al cambiar de vista, la barra siempre vuelve a mostrarse */
+  window._dockMostrar = mostrar;
 }
 
 /* Swipe horizontal para cambiar de pestañas en Administración central (celular)
@@ -8315,6 +8370,9 @@ async function init() {
 
   /* Swipe para cambiar de página en celular */
   prepararSwipeNavegacion();
+
+  /* La barra inferior se oculta al deslizar hacia abajo y vuelve al deslizar hacia arriba */
+  prepararDockAutoOcultar();
 
   /* Fallback: si no hay sesión y el auth-body está vacío, forzar pantalla de login */
   if (!yo && !$('#auth-body').innerHTML.trim()) {
