@@ -1,12 +1,12 @@
 /* =====================================================================
-   BARRERA DE SEGURIDAD: el header y el dock están ocultos hasta que la
-   app marca body.app-activa (evita que se vea contenido sin sesión).
+   BARRERA DE SEGURIDAD: el header y el dock estÃ¡n ocultos hasta que la
+   app marca body.app-activa (evita que se vea contenido sin sesiÃ³n).
    ===================================================================== */
 body:not(.app-activa) #app-header,
 body:not(.app-activa) #dock-container { display: none !important; }
 body.app-activa #app-header,
 body.app-activa #dock-container { display: flex !important; }
-/* Ocultar el dock cuando el panel de admin está abierto */
+/* Ocultar el dock cuando el panel de admin estÃ¡ abierto */
 body.admin-abierto #dock-container { display: none !important; }
 /* El auth siempre se muestra si no hay app-activa */
 body:not(.app-activa) #view-auth { display: flex !important; }
@@ -14,7 +14,7 @@ body:not(.app-activa) #view-auth { display: flex !important; }
 :root {
   /* ===== TEMA OSCURO (por defecto) ===== */
   --bg: #0d1b2f;
-  --bg-grad: #14263f;      /* extremo cálido del degradado del fondo */
+  --bg-grad: #14263f;      /* extremo cÃ¡lido del degradado del fondo */
   --bg-deep: #0a1120;      /* huecos muy profundos */
   --panel: #16263d;
   --panel2: #1e3350;
@@ -36,7 +36,7 @@ body:not(.app-activa) #view-auth { display: flex !important; }
   --soft: rgba(255, 255, 255, .16);
   --soft2: rgba(255, 255, 255, .1);
   --sombra: 0 12px 40px rgba(0, 0, 0, .55);
-  /* Colores por sala (Reservas del día del panel de administración) */
+  /* Colores por sala (Reservas del dÃ­a del panel de administraciÃ³n) */
   --rc0: #3fd26b; --rc1: #5da2ff; --rc2: #f2b13a;
   --rc3: #e879f9; --rc4: #2dd4bf; --rc5: #fb7185;
 }
@@ -108,7 +108,7 @@ body {
   font-family: "Barlow", "Segoe UI", system-ui, -apple-system, sans-serif;
   background: radial-gradient(1200px 600px at 80% -10%, var(--bg-grad) 0%, var(--bg) 55%) fixed;
   color: var(--text);
-  /* Vista tipo app: pantalla fija (sin scroll de página) */
+  /* Vista tipo app: pantalla fija (sin scroll de pÃ¡gina) */
   height: 100vh;
   height: 100dvh;
   display: flex;
@@ -116,7 +116,7 @@ body {
   overflow: hidden;
 }
 
-/* Marca de agua: logo fijo y muy sutil detrás de todo el contenido */
+/* Marca de agua: logo fijo y muy sutil detrÃ¡s de todo el contenido */
 body::before {
   content: '';
   position: fixed;
@@ -319,7 +319,7 @@ main {
   flex-wrap: wrap;
 }
 
-/* ---------- Tipografía de títulos (referencia: Barlow Condensed) ---------- */
+/* ---------- TipografÃ­a de tÃ­tulos (referencia: Barlow Condensed) ---------- */
 h1, h2, .auth-title {
   font-family: "Barlow Condensed", "Barlow", sans-serif;
   font-style: italic; font-weight: 900;
@@ -345,7 +345,7 @@ h3.sub {
 .mapa-tarjeta-card { position: absolute !important; top: 50% !important; left: 50% !important; transform: translate(-50%, -50%) !important; width: calc(100% - 32px) !important; max-width: 312px !important; background: var(--panel); border: 1px solid var(--line); border-radius: 22px; box-shadow: 0 24px 60px rgba(0, 0, 0, .45); color: var(--text); font-family: inherit; overflow: hidden; }
 .mapa-tarjeta-close { position: absolute; top: 10px; right: 10px; z-index: 3; width: 32px; height: 32px; border: 0; border-radius: 50%; background: rgba(0, 0, 0, .45); color: #fff; font-size: 20px; line-height: 1; cursor: pointer; display: grid; place-items: center; backdrop-filter: blur(2px); }
 .mapa-tarjeta-close:hover { background: rgba(0, 0, 0, .62); }
-/* Diseño limpio de la tarjeta del mapa */
+/* DiseÃ±o limpio de la tarjeta del mapa */
 .mt-cover { position: relative; width: 100%; height: 108px; background: var(--panel2); overflow: hidden; }
 .mt-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .mt-cover.sin-foto img { object-fit: contain; opacity: .22; padding: 22px; }
@@ -365,7 +365,7 @@ h3.sub {
 .mt-fav { flex: 0 0 auto !important; width: 44px; padding: 0 !important; font-size: 1.2rem; line-height: 1; }
 .mt-fav.on { color: #ef4444; border-color: #ef4444; }
 
-/* ===== Tarjeta de reserva: estilo modal (según diseño del usuario) ===== */
+/* ===== Tarjeta de reserva: estilo modal (segÃºn diseÃ±o del usuario) ===== */
 .rm-cover { position: relative; height: 120px; background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 55%, #22c55e 130%); display: flex; align-items: center; justify-content: center; overflow: hidden; }
 .rm-cover img { width: 100%; height: 100%; object-fit: cover; display: block; cursor: pointer; }
 .rm-cover-sin span { font-size: 28px; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; color: rgba(255, 255, 255, .92); max-width: 88%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -397,7 +397,7 @@ h3.sub {
 .rm-btn-danger { background: transparent; border-color: rgba(248, 113, 113, .4); color: #f87171; }
 .rm-btn-danger:hover { background: rgba(239, 68, 68, .12); }
 
-/* ===== Tarjeta del popup en escritorio (proporciones del diseño: 380px) ===== */
+/* ===== Tarjeta del popup en escritorio (proporciones del diseÃ±o: 380px) ===== */
 @media (min-width: 960px) {
   .mapa-tarjeta-card { max-width: 380px !important; }
   .rm-cover { height: 150px; }
@@ -407,7 +407,7 @@ h3.sub {
   .rm-title { font-size: 1.4rem; }
   .rm-date { font-size: .9rem; padding: 9px 16px; }
   .rm-btn { height: 52px; font-size: 1rem; border-radius: 16px; }
-  /* la tarjeta de sala también respira mejor en pantalla grande */
+  /* la tarjeta de sala tambiÃ©n respira mejor en pantalla grande */
   .mt-cover { height: 130px; }
   .mt-cuerpo { padding: 0 18px 18px; }
   .mt-nombre { font-size: 1.1rem; }
@@ -515,7 +515,7 @@ h3.sub {
 .slot.available:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(23, 192, 91, .35); }
 .slot.reserved, .slot.blocked, .slot.past { opacity: .45; cursor: not-allowed; text-decoration: line-through; }
 
-/* ---------- Confirmación ---------- */
+/* ---------- ConfirmaciÃ³n ---------- */
 .summary {
   display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px;
   background: var(--panel2); border: 1px solid var(--line); border-radius: 12px; padding: 14px; margin-bottom: 16px;
@@ -595,7 +595,7 @@ textarea:focus {
 }
 @keyframes pop { from { transform: scale(.4); opacity: 0; } }
 
-/* Selección de rango de horas */
+/* SelecciÃ³n de rango de horas */
 .slot.in-range { border-color: var(--accent); background: rgba(0, 160, 56, .2); box-shadow: inset 0 0 0 1px var(--accent); }
 .range-bar {
   display: flex; justify-content: space-between; align-items: center; gap: 12px;
@@ -640,7 +640,7 @@ textarea:focus {
 .hist-filters { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
 .hist-filters select { width: auto; min-width: 200px; margin-top: 0; }
 .hist-filters input { flex: 1; min-width: 180px; margin-top: 0; }
-/* ================= PANEL DE ADMINISTRACIÓN ================= */
+/* ================= PANEL DE ADMINISTRACIÃN ================= */
 .admin-head {
   display: flex; align-items: center; gap: 12px;
   margin: 0 2px 14px; padding-top: 2px;
@@ -652,13 +652,13 @@ textarea:focus {
   border: 1px solid rgba(0, 160, 56, .5);
   box-shadow: 0 6px 18px rgba(0, 160, 56, .22);
 }
-/* El logo de la sala en el encabezado del panel (reemplaza el ícono ) */
+/* El logo de la sala en el encabezado del panel (reemplaza el Ã­cono ) */
 #panel-head-logo { overflow: hidden; }
 #panel-head-logo img { width: 100%; height: 100%; object-fit: cover; object-position: center; display: block; border-radius: inherit; }
 .admin-head h1 { font-size: 1.45rem; line-height: 1.05; margin: 0; }
 .admin-head p { margin: 4px 0 0; }
 
-/* Pestañas del panel: barra scrollable con indicador inferior (referencia) */
+/* PestaÃ±as del panel: barra scrollable con indicador inferior (referencia) */
 .admin-tabs {
   display: flex; gap: 2px; flex-wrap: nowrap;
   overflow-x: auto; margin: 0 0 18px; padding: 0;
@@ -680,7 +680,7 @@ textarea:focus {
 }
 .admin-tab:hover { color: var(--text); }
 .admin-tab.active { color: var(--text); font-weight: 700; }
-/* Indicador deslizante bajo las pestañas */
+/* Indicador deslizante bajo las pestaÃ±as */
 .admin-tabs {
   position: sticky;
 }
@@ -694,7 +694,7 @@ textarea:focus {
 }
 .admin-tab .pill { background: var(--danger); color: #fff; box-shadow: none; }
 
-/* ---------- Reservas del día (referencia del diseño) ---------- */
+/* ---------- Reservas del dÃ­a (referencia del diseÃ±o) ---------- */
 .admin-day {
   display: flex; align-items: center; gap: 8px;
   background: var(--panel); border: 1px solid var(--line);
@@ -1019,7 +1019,7 @@ tr:hover td {
   letter-spacing: -.01em;
 }
 
-/* Barra de acciones fija al pie del modal (el botón guardar siempre visible) */
+/* Barra de acciones fija al pie del modal (el botÃ³n guardar siempre visible) */
 .modal-acciones {
   position: sticky;
   bottom: -22px;                 /* pega al borde inferior del modal */
@@ -1032,7 +1032,7 @@ tr:hover td {
 }
 .modal-acciones .btn-primary { flex: 1; }
 
-/* Modal de confirmación */
+/* Modal de confirmaciÃ³n */
 .confirmar-modal {
   display: flex;
   flex-direction: column;
@@ -1076,7 +1076,7 @@ tr:hover td {
   border-radius: 14px;
 }
 
-/* ---------- Asignar / cambiar dueño (Administración central Salas) ---------- */
+/* ---------- Asignar / cambiar dueÃ±o (AdministraciÃ³n central Salas) ---------- */
 .own-ctx { margin: 4px 0 12px; font-size: .88rem; color: var(--muted); }
 .own-ctx b { color: var(--text); }
 .own-lista { display: grid; gap: 6px; max-height: 42vh; overflow-y: auto; margin: 8px 0 4px; padding-right: 2px; }
@@ -1116,14 +1116,14 @@ tr:hover td {
 #toast.warn { border-color: var(--warn); }
 #toast.error { border-color: var(--danger); }
 
-/* Carga y conexión */
+/* Carga y conexiÃ³n */
 .loading { position: fixed; inset: 0; display: grid; place-items: center; background: var(--bg); z-index: 100; }
 .loading p { color: var(--muted); text-align: center; }
 .spinner { width: 42px; height: 42px; border: 4px solid var(--line); border-top-color: var(--accent); border-radius: 50%; animation: spin .9s linear infinite; margin: 0 auto 14px; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* ============ PANTALLA DE ARRANQUE (splash) ============
-   Igualador de 5 barras verdes + marca "+ MÚSICA" abajo. */
+   Igualador de 5 barras verdes + marca "+ MÃSICA" abajo. */
 .splash {
   position: fixed; inset: 0; z-index: 200;
   background: var(--bg);
@@ -1164,7 +1164,7 @@ tr:hover td {
   .sp-barras i { animation: none; transform: scaleY(.7); }
 }
 
-/* Logo según el tema: se muestra una u otra versión (blanca / oscura) */
+/* Logo segÃºn el tema: se muestra una u otra versiÃ³n (blanca / oscura) */
 img.logo-tema-b { display: none; }
 :root[data-tema="claro"] img.logo-tema-o { display: none; }
 :root[data-tema="claro"] img.logo-tema-b { display: unset; }
@@ -1178,7 +1178,7 @@ img.logo-tema-b { display: none; }
 .conn-error code { background: var(--panel2); padding: 2px 7px; border-radius: 6px; }
 .conn-error a { color: var(--accent2); }
 
-/* ---------- Vista tipo app (móvil, safe-area) ---------- */
+/* ---------- Vista tipo app (mÃ³vil, safe-area) ---------- */
 html { -webkit-tap-highlight-color: transparent; }
 body { touch-action: manipulation; }
 .app-header {
@@ -1208,7 +1208,7 @@ main {
   .header-actions { gap: 4px; }
   .header-actions .btn { padding: 7px 9px; font-size: .95rem; white-space: nowrap; }
   .header-actions .txt { display: none; }
-  /* La campana en mobile queda como píldora compacta (solo el ícono) */
+  /* La campana en mobile queda como pÃ­ldora compacta (solo el Ã­cono) */
   .header-actions .btn-notif { height: 40px; padding: 0 12px; }
   .header-actions .btn-notif .notif-txt { display: none; }
 
@@ -1223,7 +1223,7 @@ main {
   .cal-day .dot { top: 2px; right: 3px; font-size: .55rem; padding: 0 4px; }
   .cal-nav .btn-sm { padding: 5px 8px; font-size: .8rem; }
 
-  /* Cuadrículas */
+  /* CuadrÃ­culas */
   .slots-grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); }
   .slot { padding: 10px; font-size: .92rem; }
   .rooms-grid { grid-template-columns: 1fr; }
@@ -1273,7 +1273,7 @@ main {
 .place-photo img { width: 100%; height: 170px; object-fit: cover; display: block; }
 .place-photo figcaption { padding: 10px 12px; font-size: .9rem; color: var(--muted); }
 
-/* Catálogo de equipos por sala */
+/* CatÃ¡logo de equipos por sala */
 .ficha-catalogo { margin-bottom: 6px; }
 .catalogo-item {
   background: var(--panel2); border: 1px solid var(--line); border-radius: 12px;
@@ -1341,7 +1341,7 @@ main {
 .nav-btn.active { color: var(--accent2); font-weight: 700; }
 .nav-btn.active svg { color: var(--accent2); }
 
-/* Botón central elevado (Reservar) */
+/* BotÃ³n central elevado (Reservar) */
 .nav-btn-center {
   position: relative; height: 100%;
   display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
@@ -1368,8 +1368,8 @@ main {
 }
 
 
-/* En el Mapa (celular) la barra de 5 opciones va transparente: los íconos
-   flotan sobre el mapa, sin cápsula de fondo. En escritorio el riel no cambia. */
+/* En el Mapa (celular) la barra de 5 opciones va transparente: los Ã­conos
+   flotan sobre el mapa, sin cÃ¡psula de fondo. En escritorio el riel no cambia. */
 @media (max-width: 959px) {
   body.nav-mapa .bottom-nav {
     background: transparent;
@@ -1441,7 +1441,7 @@ main {
 .mine-band-info { display: flex; flex-direction: column; line-height: 1.25; min-width: 0; }
 .mine-band-info strong { font-size: 1rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-/* Tarjeta de reserva con cabecera vertical de la banda (estilo Más Fútbol) */
+/* Tarjeta de reserva con cabecera vertical de la banda (estilo MÃ¡s FÃºtbol) */
 .mine-card {
   background: var(--panel2);
   border: 1px solid var(--line);
@@ -1482,7 +1482,7 @@ main {
 .mine-card-body { padding: 12px 14px; display: grid; gap: 6px; }
 .mine-card.res-past .mine-card-top { filter: saturate(.5) brightness(.75); }
 
-/* Selector de banda en la confirmación */
+/* Selector de banda en la confirmaciÃ³n */
 .band-picker {
   display: grid; gap: 10px;
   padding: 12px; margin-bottom: 14px;
@@ -1517,7 +1517,7 @@ main {
 .crop-frame:active { cursor: grabbing; }
 .crop-canvas { width: 100%; height: 100%; display: block; }
 .crop-frame.ancho { width: 100%; max-width: 340px; }
-/* El logo se encuadra en círculo (igual que se ve en el perfil) */
+/* El logo se encuadra en cÃ­rculo (igual que se ve en el perfil) */
 .crop-frame.circulo { border-radius: 50%; border-width: 3px; border-color: rgba(255, 255, 255, .22); }
 .crop-frame.circulo .crop-grid {
   background-size: 33.34% 33.34%;
@@ -1742,7 +1742,7 @@ main {
 .mine-card-txt { min-width: 0; }
 .mine-card-txt strong { display: block; }
 
-/* Sección de foto grupal en el formulario */
+/* SecciÃ³n de foto grupal en el formulario */
 .grupo-foto {
   border: 1px dashed var(--line);
   border-radius: 14px;
@@ -2024,7 +2024,7 @@ main {
 }
 .auth-ayuda-contacto .btn:hover { border-color: var(--accent); color: var(--accent); }
 
-/* Panel de pedidos de ayuda (administración) */
+/* Panel de pedidos de ayuda (administraciÃ³n) */
 .ayuda-item { margin-bottom: 10px; }
 .ayuda-item.ayuda-resuelta { opacity: .6; }
 .ayuda-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
@@ -2041,7 +2041,7 @@ main {
 
 .auth-form .check { margin: 0; }
 
-/* Campos con validación */
+/* Campos con validaciÃ³n */
 .campo { display: block; margin: 0; width: 100%; }
 
 .campo-lbl {
@@ -2125,7 +2125,7 @@ main {
 }
 .campo.checking .campo-msg { display: block; color: var(--muted); }
 
-/* Contraseña: mostrar / ocultar */
+/* ContraseÃ±a: mostrar / ocultar */
 .pass-wrap { position: relative; display: block; }
 .pass-wrap input { padding-right: 46px; }
 .pass-eye {
@@ -2143,7 +2143,7 @@ main {
 }
 .pass-eye:hover .pass-eye-svg { transform: scale(1.1); }
 
-/* Medidor de fuerza de la contraseña */
+/* Medidor de fuerza de la contraseÃ±a */
 .fuerza { display: flex; align-items: center; gap: 5px; margin-top: 7px; }
 .fuerza i { flex: 1 1 0; height: 4px; border-radius: 999px; background: var(--line); transition: background .2s; }
 .fuerza[data-n="1"] i:nth-child(-n+1) { background: var(--danger); }
@@ -2157,7 +2157,7 @@ main {
 .auth-foto .sala-foto-edit { margin: 0; }
 .auth-foto-txt { display: flex; flex-direction: column; gap: 4px; }
 
-/* Botón grande de envío */
+/* BotÃ³n grande de envÃ­o */
 .btn-lg { padding: 14px; font-size: 1.05rem; border-radius: 12px; }
 
 .center { text-align: center; }
@@ -2223,7 +2223,7 @@ main {
 }
 .btn-icono { position: relative; }
 
-/* ================= CAMPANA DE NOTIFICACIONES (píldora estilo app) ================= */
+/* ================= CAMPANA DE NOTIFICACIONES (pÃ­ldora estilo app) ================= */
 .btn-notif {
   position: relative; flex: 0 0 auto;
   display: inline-flex; align-items: center; gap: 9px;
@@ -2262,7 +2262,7 @@ main {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.12); }
 }
-/* Logo de Instagram en la cabecera: chip redondo con el isologotipo real, a juego con el diseño */
+/* Logo de Instagram en la cabecera: chip redondo con el isologotipo real, a juego con el diseÃ±o */
 .btn-ig {
   position: relative; flex: 0 0 auto;
   width: 42px; height: 42px;
@@ -2276,7 +2276,7 @@ main {
 .btn-ig svg { width: 25px; height: 25px; display: block; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .25)); }
 .btn-ig:hover { transform: translateY(-1px); border-color: var(--accent); box-shadow: 0 4px 14px rgba(0, 160, 56, .28); }
 .btn-ig:active { transform: scale(.94); }
-/* Logo de mi sala en la cabecera: chip redondo al lado del de Instagram (solo el dueño, si tiene logo) */
+/* Logo de mi sala en la cabecera: chip redondo al lado del de Instagram (solo el dueÃ±o, si tiene logo) */
 .btn-sala-logo {
   position: relative; flex: 0 0 auto;
   width: 42px; height: 42px; padding: 0;
@@ -2517,7 +2517,7 @@ main {
 }
 .notif-vacio b { display: block; color: var(--text); font-size: 1rem; margin-bottom: 4px; }
 
-/* Tarjeta de reserva resaltada al llegar desde una notificación */
+/* Tarjeta de reserva resaltada al llegar desde una notificaciÃ³n */
 .res-destacada {
   outline: 2px solid var(--accent); outline-offset: 1px;
   box-shadow: 0 0 0 4px rgba(0, 160, 56, .18);
@@ -2635,7 +2635,7 @@ main {
 .aj-salir:hover { background: rgba(255, 155, 143, .12); }
 .aj-salir .aj-ico { color: var(--salmon); }
 
-/* Aviso del filtro de Mis reservas (Próximas / Historial) */
+/* Aviso del filtro de Mis reservas (PrÃ³ximas / Historial) */
 .filtro-aviso {
   display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
   background: rgba(0, 160, 56, .1); border: 1px solid rgba(0, 160, 56, .4);
@@ -2645,12 +2645,12 @@ main {
 .filtro-aviso strong { color: var(--accent2); }
 .filtro-aviso .btn { margin-left: auto; }
 
-/* Ayuda y términos (modales de Ajustes) */
+/* Ayuda y tÃ©rminos (modales de Ajustes) */
 .ayuda-lista { margin: 0 0 14px; padding-left: 18px; display: flex; flex-direction: column; gap: 8px; font-size: .93rem; }
 .terminos p { margin: 0 0 10px; font-size: .92rem; color: var(--muted); }
 .terminos strong { color: var(--text); }
 
-/* Enlaces a los términos: casilla del registro y pie del inicio */
+/* Enlaces a los tÃ©rminos: casilla del registro y pie del inicio */
 .link-term { color: var(--accent); font-weight: 600; text-decoration: underline; }
 .auth-terminos { margin: 14px 0 0; text-align: center; font-size: .84rem; color: var(--muted); }
 .pie-legal { text-align: center; padding: 18px 16px 12px; }
@@ -2663,7 +2663,7 @@ main {
 .ayuda-contacto .btn { flex: 0 0 auto; }
 .ayuda-ico { flex: 0 0 auto; }
 
-/* Tarjeta resumen de la cuenta madre (Ajustes del panel de administración) */
+/* Tarjeta resumen de la cuenta madre (Ajustes del panel de administraciÃ³n) */
 #cm-resumen {
   display: flex; gap: 12px; align-items: center;
   background: linear-gradient(135deg, rgba(0, 160, 56, .12), transparent 65%), var(--panel2);
@@ -2757,7 +2757,7 @@ main {
 .hora-fila strong { min-width: 110px; }
 .hora-fila .check { margin: 0 6px 0 0; }
 .dias-fila { margin-bottom: 10px; }
-/* Ficha rediseñada: datos clave en tarjetas, dirección en fila y grillas compactas */
+/* Ficha rediseÃ±ada: datos clave en tarjetas, direcciÃ³n en fila y grillas compactas */
 .ficha-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 8px; margin-bottom: 10px; }
 .ficha-dato { background: var(--panel2); border: 1px solid var(--line); border-radius: 12px; padding: 9px 10px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .ficha-dato span { display: flex; align-items: center; gap: 4px; font-size: .7rem; font-weight: 600; color: var(--muted); letter-spacing: .2px; }
@@ -2771,7 +2771,7 @@ main {
 .fh-dia strong { font-weight: 700; }
 .fh-dia span { color: var(--muted); white-space: nowrap; }
 .fh-dia.cerrado span { font-style: italic; opacity: .75; }
-/* ===== Íconos SVG de ficha y tarjeta (reemplazan a los emojis) ===== */
+/* ===== Ãconos SVG de ficha y tarjeta (reemplazan a los emojis) ===== */
 .mt-logo-ico svg { width: 26px; height: 26px; }
 .mt-chip svg, .mt-tel svg { width: 14px; height: 14px; flex: 0 0 auto; }
 .mt-acciones .btn svg { width: 17px; height: 17px; flex: 0 0 auto; }
@@ -2780,7 +2780,7 @@ main {
 .ficha-dir svg { width: 15px; height: 15px; flex: 0 0 auto; }
 .row .btn svg { width: 17px; height: 17px; flex: 0 0 auto; }
 
-/* ===== Reseñas de las salas ===== */
+/* ===== ReseÃ±as de las salas ===== */
 .estrellas { display: inline-flex; align-items: center; gap: 1px; color: #f5a623; }
 .estrellas .est { display: inline-flex; }
 .estrellas .est svg { width: 15px; height: 15px; }
@@ -2843,7 +2843,7 @@ main {
 .tabla th { color: var(--muted); font-size: .74rem; text-transform: uppercase; letter-spacing: .4px; }
 .acciones-td { display: flex; flex-wrap: wrap; gap: 6px; }
 
-/* ================= PANEL DEL DUE�O ================= */
+/* ================= PANEL DEL DUEï¿½O ================= */
 #view-panel { padding: 12px 14px 30px; }
 .panel-estado { margin-bottom: 12px; }
 .hora-fila input[type=time] { width: auto; }
@@ -2949,7 +2949,7 @@ main {
 .leaflet-bar a:hover { background: var(--panel2) !important; }
 
 /* ---------- Google Maps (cuando se carga una clave en Ajustes) ---------- */
-/* El popup es el mismo que en OpenStreetMap: sólo cambia la "cápsula" que dibuja Google */
+/* El popup es el mismo que en OpenStreetMap: sÃ³lo cambia la "cÃ¡psula" que dibuja Google */
 #mapa .gm-style-iw-c {
   background: var(--panel) !important;
   border: 1px solid var(--line) !important;
@@ -2973,7 +2973,7 @@ main {
 #mapa img.gm-ui-hover-effect:hover { opacity: 1 !important; }
 #mapa .gm-style-iw .pop-detalle { color: var(--text); }
 
-/* Íconos de los botones del mapa (Mi ubicación y Ver todas) */
+/* Ãconos de los botones del mapa (Mi ubicaciÃ³n y Ver todas) */
 .mapa-ico { width: 20px; height: 20px; display: block; flex: 0 0 auto; }
 .row .btn .mapa-ico { width: 20px; height: 20px; }
 
@@ -2995,14 +2995,14 @@ main {
   font-size: .9rem;
   transition: transform .15s;
 }
-/* El !important es necesario: Leaflet fuerza width:auto en las imágenes de marcadores
-   y, si no, la foto se dibuja a tamaño natural y solo se ve un recorte del centro. */
+/* El !important es necesario: Leaflet fuerza width:auto en las imÃ¡genes de marcadores
+   y, si no, la foto se dibuja a tamaÃ±o natural y solo se ve un recorte del centro. */
 .mk-sala img { width: 100% !important; height: 100% !important; object-fit: cover; object-position: center; display: block; transform: scale(1.4); }
 .mk-sala:hover { transform: scale(1.12); }
-/* Sala sin logo propio: círculo verde con el logo de Más Música en negro */
+/* Sala sin logo propio: cÃ­rculo verde con el logo de MÃ¡s MÃºsica en negro */
 .mk-sala.mk-marca { background: var(--accent); border-color: var(--accent); }
 .mk-sala.mk-marca img { width: 16px !important; height: 16px !important; object-fit: contain; transform: none; }
-/* Tu ubicación: círculo verde con el logo de Más Música en negro */
+/* Tu ubicaciÃ³n: cÃ­rculo verde con el logo de MÃ¡s MÃºsica en negro */
 .mk-yo {
   width: 24px !important;
   height: 24px !important;
@@ -3034,7 +3034,7 @@ main {
   display: flex;
 }
 
-/* Popup con el detalle de la sala: foto horizontal, logo, dirección y teléfono */
+/* Popup con el detalle de la sala: foto horizontal, logo, direcciÃ³n y telÃ©fono */
 .pop-detalle {
   gap: 0;
   min-width: 240px;
@@ -3146,7 +3146,7 @@ main {
 .mapa-ayuda { margin: 10px 0 0; }
 
 /* ---------- Mapa a pantalla completa (celular) ----------
-   El mapa cubre TODA la pantalla; el título, los botones y las 5 opciones
+   El mapa cubre TODA la pantalla; el tÃ­tulo, los botones y las 5 opciones
    flotan por encima. La lista de salas se pliega en una hoja flotante. */
 @media (max-width: 959px) {
   body.nav-mapa #app-header { display: none; }
@@ -3198,7 +3198,7 @@ main {
 }
 
 /* ---------- Mapa a pantalla completa (escritorio) ----------
-   En pantallas anchas el mapa también cubre toda la ventana: el riel
+   En pantallas anchas el mapa tambiÃ©n cubre toda la ventana: el riel
    lateral flota sobre el mapa, los botones / van abajo a la derecha
    sobre el mapa y la lista de salas es un panel lateral siempre visible. */
 @media (min-width: 960px) {
@@ -3227,7 +3227,7 @@ main {
   }
   body.nav-mapa .nav-btn svg { filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .55)); }
 
-  /* Control de zoom y créditos de OpenStreetMap: abajo a la izquierda
+  /* Control de zoom y crÃ©ditos de OpenStreetMap: abajo a la izquierda
      (a la izquierda del panel de salas, afuera del riel) */
   body.nav-mapa #mapa .leaflet-top.leaflet-left {
     left: 16px; top: auto; bottom: 64px;
@@ -3241,7 +3241,7 @@ main {
   }
   body.nav-mapa #mapa .leaflet-control-attribution a { color: rgba(255, 255, 255, .9); }
 
-  /* Botones del mapa (mi ubicación / ver todas / favoritas) flotando
+  /* Botones del mapa (mi ubicaciÃ³n / ver todas / favoritas) flotando
      abajo a la derecha, sobre el mapa */
   body.nav-mapa #view-mapa .panel-head {
     position: fixed;
@@ -3297,10 +3297,10 @@ main {
 
 /* =====================================================================
    FORMATO ESCRITORIO (pantallas anchas)
-   El dock inferior pasa a ser un riel lateral y el contenido se amplía.
+   El dock inferior pasa a ser un riel lateral y el contenido se amplÃ­a.
    ===================================================================== */
 @media (min-width: 960px) {
-  /* El contenido se corre para dejar lugar al riel (solo si el riel está visible) */
+  /* El contenido se corre para dejar lugar al riel (solo si el riel estÃ¡ visible) */
   body:has(#dock-container:not([hidden])) { padding-left: 108px; }
 
   /* ---------- Riel lateral con las 5 opciones ---------- */
@@ -3371,13 +3371,13 @@ main {
     align-items: start;
   }
 
-  /* ---------- Grillas más generosas ---------- */
+  /* ---------- Grillas mÃ¡s generosas ---------- */
   .rooms-grid { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
   .slots-grid { grid-template-columns: repeat(auto-fill, minmax(175px, 1fr)); gap: 12px; }
   .stats-cards { grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
   .place-grid { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
 
-  /* ---------- Mapa más grande ---------- */
+  /* ---------- Mapa mÃ¡s grande ---------- */
   #mapa {
     height: calc(100dvh - 300px);
     min-height: 460px;
@@ -3401,7 +3401,7 @@ main {
     gap: 16px;
     align-items: start;
   }
-  /* Feedback al pasar el mouse (en táctil no aplica) */
+  /* Feedback al pasar el mouse (en tÃ¡ctil no aplica) */
   .room-card, .inst-card, .mine-card, .place-photo {
     transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
   }
@@ -3419,9 +3419,9 @@ main {
 }
 
 /* =====================================================================
-   ESCRITORIO v2 — todas las medidas de computadora (1024 px en adelante)
+   ESCRITORIO v2 â todas las medidas de computadora (1024 px en adelante)
    Se adapta de notebook 1280x720 hasta monitores 2K/4K.
-   Solo CSS: no cambia la lógica de la app.
+   Solo CSS: no cambia la lÃ³gica de la app.
    ===================================================================== */
 @media (min-width: 1024px) {
   :root { --riel: clamp(96px, 7vw, 140px); }
@@ -3480,7 +3480,7 @@ main {
   }
   }
 
-  /* ---------- Inicio: ocupa toda la pantalla, sin huecos vacíos ---------- */
+  /* ---------- Inicio: ocupa toda la pantalla, sin huecos vacÃ­os ---------- */
   #step-1 {
     grid-template-columns: minmax(420px, 1.15fr) minmax(0, 1fr);
     gap: clamp(16px, 1.6vw, 32px);
@@ -3511,7 +3511,7 @@ main {
   #step-1 .cal-day .dot { font-size: clamp(.62rem, .2vw + .5rem, .85rem); top: 5px; right: 7px; }
   #step-1 .panel > .muted.small { margin: clamp(10px, 1.5vh, 18px) 0 0; font-size: clamp(.8rem, .2vw + .7rem, 1rem); }
 
-  /* El panel de Inicio solo lleva el ingreso cuando no hay sesión */
+  /* El panel de Inicio solo lleva el ingreso cuando no hay sesiÃ³n */
   #inicio-resumen > .row { margin-top: clamp(12px, 1.6vh, 20px); }
 
   /* ---------- Resto de pantallas: grillas que aprovechan el ancho ---------- */
@@ -3535,7 +3535,7 @@ main {
 }
 
 /* =====================================================================
-   PANEL DE ADMINISTRACIÓN — menú lateral y agenda (escritorio)
+   PANEL DE ADMINISTRACIÃN â menÃº lateral y agenda (escritorio)
    ===================================================================== */
 .admin-tab-group { display: none; }
 .admin-stats { grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); }
@@ -3650,7 +3650,7 @@ main {
 .inicio-card h3 { margin: 0 0 8px; font-size: .95rem; }
 .inicio-pie { margin-top: auto; padding-top: 12px; }
 
-/* Próximas reservas: una fila por reserva, en columnas alineadas */
+/* PrÃ³ximas reservas: una fila por reserva, en columnas alineadas */
 .inicio-prox { list-style: none; margin: 0; padding: 0; }
 .inicio-prox li {
   display: grid; grid-template-columns: 108px minmax(0, 1fr) auto; gap: 10px; align-items: center;
@@ -3663,7 +3663,7 @@ main {
 .inicio-puntaje { display: flex; align-items: center; gap: 6px; margin: 0 0 8px; font-size: .9rem; }
 .inicio-puntaje b { font-weight: 800; }
 
-/* Accesos rápidos: botones que reparten el alto de la tarjeta */
+/* Accesos rÃ¡pidos: botones que reparten el alto de la tarjeta */
 .inicio-links { display: grid; grid-auto-rows: 1fr; gap: 8px; flex: 1; }
 .inicio-link {
   display: flex; align-items: center; gap: 8px; width: 100%; padding: 0 14px; min-height: 42px;
@@ -3710,7 +3710,7 @@ main {
 .promo-link:hover { background: rgba(0, 160, 56, .22); }
 .promo-flyer-img { display: block; width: 100%; max-height: 420px; object-fit: contain; border-radius: 12px; margin: 8px 0; background: #0a1322; }
 
-/* El mismo formato de menú lateral para el panel de sala */
+/* El mismo formato de menÃº lateral para el panel de sala */
 @media (min-width: 1024px) {
   #view-panel:not([hidden]) {
     display: grid; grid-template-columns: clamp(196px, 13.5vw, 232px) minmax(0, 1fr);
@@ -3719,8 +3719,8 @@ main {
   #view-panel > .admin-head { grid-column: 1 / -1; }
   #view-panel > #panel-estado { grid-column: 1 / -1; }
   #view-panel > .admin-tabs {
-    /* Sin fila fija: #panel-estado va arriba a todo el ancho y el menú queda debajo,
-       al lado del contenido. Antes se pisaban (el menú tapaba el resumen). */
+    /* Sin fila fija: #panel-estado va arriba a todo el ancho y el menÃº queda debajo,
+       al lado del contenido. Antes se pisaban (el menÃº tapaba el resumen). */
     grid-column: 1;
     position: sticky; top: 12px; align-self: start;
     max-height: calc(100dvh - 150px); overflow-y: auto; scrollbar-width: thin;
@@ -3740,7 +3740,7 @@ main {
   #view-panel > .admin-tabs .admin-tab.admin-tab-inicio { font-size: .95rem; margin-bottom: 6px; padding: 8px 10px; }
 }
 
-/* Encabezado del panel de sala: el botón Volver queda a la derecha */
+/* Encabezado del panel de sala: el botÃ³n Volver queda a la derecha */
 #view-panel > .admin-head .btn { margin-left: auto; }
 #view-panel > #panel-estado:empty { display: none; }
 
@@ -3765,7 +3765,7 @@ main {
 .mov-foot { margin: 10px 0 0; font-size: .82rem; color: var(--muted); }
 
 /* =====================================================================
-   AJUSTES DE ALINEACIÓN DE TEXTO PARA CELULAR
+   AJUSTES DE ALINEACIÃN DE TEXTO PARA CELULAR
    ===================================================================== */
 
 /* Ajustes generales para celular */
@@ -3796,7 +3796,7 @@ main {
     max-width: 100%;
   }
 
-  /* Descripciones y subtítulos */
+  /* Descripciones y subtÃ­tulos */
   .room-card .cap,
   .notif-txt span,
   .aj-cuenta-txt > span,
@@ -3807,7 +3807,7 @@ main {
     overflow-wrap: break-word;
   }
 
-  /* Stats y números */
+  /* Stats y nÃºmeros */
   .stat strong,
   .stat span {
     white-space: nowrap;
@@ -4008,7 +4008,7 @@ main {
   }
 }
 
-/* Ajustes extra para pantallas muy pequeñas */
+/* Ajustes extra para pantallas muy pequeÃ±as */
 @media (max-width: 380px) {
   .aj-cuenta-txt > strong {
     font-size: 1.1rem;
@@ -4039,7 +4039,7 @@ main {
   }
 }
 
-/* ---------- Cuentas de control (administrador y dueño de sala) ---------- */
+/* ---------- Cuentas de control (administrador y dueÃ±o de sala) ---------- */
 body.modo-control #nav-instrumentos,
 body.modo-control #btn-filtro-fav,
 body.modo-control #fav-ver,
@@ -4049,8 +4049,8 @@ body.modo-control #mine-integrantes,
 body.modo-control label:has(> #pd-instrumentos) { display: none !important; }
 
 /* =====================================================================
-   RISEL LATERAL DE ESCRITORIO (5 opciones): ícono + etiqueta, alineado
-   con el menú del panel de administración
+   RISEL LATERAL DE ESCRITORIO (5 opciones): Ã­cono + etiqueta, alineado
+   con el menÃº del panel de administraciÃ³n
    ===================================================================== */
 @media (min-width: 1024px) {
   :root { --riel: clamp(228px, 16vw, 262px); }
@@ -4070,7 +4070,7 @@ body.modo-control label:has(> #pd-instrumentos) { display: none !important; }
     box-shadow: none; grid-template-columns: none;
   }
 
-  /* Cada opción: una fila con ícono y texto a la izquierda */
+  /* Cada opciÃ³n: una fila con Ã­cono y texto a la izquierda */
   .nav-btn, .nav-btn-center {
     flex-direction: row; justify-content: flex-start; align-items: center;
     gap: 10px; width: 100%; height: 48px; padding: 0 12px;
@@ -4087,7 +4087,7 @@ body.modo-control label:has(> #pd-instrumentos) { display: none !important; }
   }
   .nav-btn.active svg, .nav-btn-center.active svg { color: var(--accent2); }
 
-  /* "Mapa" deja de ser un círculo que sobresale y queda como una fila más */
+  /* "Mapa" deja de ser un cÃ­rculo que sobresale y queda como una fila mÃ¡s */
   .nav-btn-center { padding-bottom: 0; justify-content: flex-start; }
   .nav-circle-btn {
     position: static; width: 30px; height: 30px; border-width: 0; border-radius: 9px;
@@ -4100,9 +4100,9 @@ body.modo-control label:has(> #pd-instrumentos) { display: none !important; }
   .home-indicator { display: none; }
 }
 
-/* Administración y Panel de sala: visibles también en celular (cuentas de administración).
+/* AdministraciÃ³n y Panel de sala: visibles tambiÃ©n en celular (cuentas de administraciÃ³n).
    En estas cuentas se oculta "Instrumentos" (body.modo-control), por lo que la barra
-   sigue mostrando 5 opciones y el botón central (Mapa) queda perfectamente centrado. */
+   sigue mostrando 5 opciones y el botÃ³n central (Mapa) queda perfectamente centrado. */
 #nav-admin:not([hidden]),
 #nav-panel:not([hidden]) { display: flex; }
 /* Etiqueta corta en celular; la larga en el riel de escritorio */
@@ -4112,10 +4112,10 @@ body.modo-control label:has(> #pd-instrumentos) { display: none !important; }
   .nav-label-corto { display: none; }
 }
 
-/* ================= COMUNIDAD (solo músicos) ================= */
+/* ================= COMUNIDAD (solo mÃºsicos) ================= */
 /* Solo queda el chat global a pantalla completa (contenedor #comu-chats):
-   sus estilos están en "CHAT GLOBAL A PANTALLA COMPLETA" más abajo.
-   Acá va únicamente el contenedor, que también usan la suscripción y el estado de carga. */
+   sus estilos estÃ¡n en "CHAT GLOBAL A PANTALLA COMPLETA" mÃ¡s abajo.
+   AcÃ¡ va Ãºnicamente el contenedor, que tambiÃ©n usan la suscripciÃ³n y el estado de carga. */
 .comu-chats { display: flex; flex-direction: column; gap: 10px; }
 
 /* Chat global grupal */
@@ -4136,7 +4136,7 @@ body.modo-control label:has(> #pd-instrumentos) { display: none !important; }
   border-radius: 14px 14px 0 0;
 }
 
-/* Botón de volver: sale del chat y vuelve al Inicio */
+/* BotÃ³n de volver: sale del chat y vuelve al Inicio */
 .chat-global-volver {
   flex: none;
   width: 38px;
@@ -4342,21 +4342,21 @@ body.chat-abierto .chat-global-form {
 /* [bloque viejo .suscripcion-planes / .suscripcion-plan-nombre eliminado: no se usaba] */
 
 /* =====================================================================
-   MEJORAS DE DISEÑO — Actualización visual de toda la app
+   MEJORAS DE DISEÃO â ActualizaciÃ³n visual de toda la app
    ===================================================================== */
 
 /* ---------- MEJORAS GENERALES ---------- */
 
-/* Tipografía más clara */
+/* TipografÃ­a mÃ¡s clara */
 h1, h2, h3 { letter-spacing: -.01em; }
 h2 { font-size: 1.4rem; margin-bottom: 12px; }
 h3 { font-size: 1.1rem; }
 
-/* Bordes más suaves en toda la app */
+/* Bordes mÃ¡s suaves en toda la app */
 .btn { border-radius: 14px; }
 .card, .room-card { border-radius: 16px; }
 
-/* Transiciones más suaves */
+/* Transiciones mÃ¡s suaves */
 button, a, .btn { transition: all .2s ease; }
 
 /* ---------- CARDS DE SALAS ---------- */
@@ -4380,7 +4380,7 @@ button, a, .btn { transition: all .2s ease; }
   border-color: var(--accent);
 }
 
-/* Foto más grande */
+/* Foto mÃ¡s grande */
 .room-card .room-foto {
   width: 80px; height: 80px;
   border-radius: 16px;
@@ -4398,7 +4398,7 @@ button, a, .btn { transition: all .2s ease; }
   color: var(--accent2);
 }
 
-/* Botón "Ver horarios" más llamativo */
+/* BotÃ³n "Ver horarios" mÃ¡s llamativo */
 .room-card .btn-primary {
   background: linear-gradient(135deg, var(--accent), var(--accent2));
   border: none;
@@ -4413,7 +4413,7 @@ button, a, .btn { transition: all .2s ease; }
   box-shadow: 0 8px 22px rgba(0, 160, 56, .4);
 }
 
-/* Favorito con animación */
+/* Favorito con animaciÃ³n */
 .room-card .fav-btn {
   transition: transform .3s ease;
 }
@@ -4442,7 +4442,7 @@ button, a, .btn { transition: all .2s ease; }
 .perfil-stat strong { font-size: 1.3rem; color: var(--accent2); display: block; }
 .perfil-stat span { font-size: .72rem; color: var(--muted); }
 
-/* Botones de acción del perfil */
+/* Botones de acciÃ³n del perfil */
 #view-mine .btn {
   border-radius: 14px;
   padding: 12px 16px;
@@ -4456,7 +4456,7 @@ button, a, .btn { transition: all .2s ease; }
 
 /* ---------- AJUSTES ---------- */
 
-/* Secciones con títulos */
+/* Secciones con tÃ­tulos */
 .aj-seccion {
   margin-bottom: 16px;
 }
@@ -4484,7 +4484,7 @@ button, a, .btn { transition: all .2s ease; }
   border-color: var(--accent);
 }
 
-/* Toggle más grande */
+/* Toggle mÃ¡s grande */
 .aj-fila input[type="checkbox"] {
   width: 48px; height: 28px;
   border-radius: 14px;
@@ -4493,7 +4493,7 @@ button, a, .btn { transition: all .2s ease; }
   width: 22px; height: 22px;
 }
 
-/* Botón cerrar sesión más visible */
+/* BotÃ³n cerrar sesiÃ³n mÃ¡s visible */
 .btn-logout {
   background: linear-gradient(135deg, var(--danger), var(--salmon));
   border: none;
@@ -4561,7 +4561,7 @@ button, a, .btn { transition: all .2s ease; }
 }
 
 /* ===================================================================
-   SUSCRIPCION AL CHAT  ·  diseno "mas-musica-suscripcion" (mobile)
+   SUSCRIPCION AL CHAT  Â·  diseno "mas-musica-suscripcion" (mobile)
    =================================================================== */
 
 /* La pantalla va a sangre (como el mock): se quita la tarjeta del panel
@@ -5298,7 +5298,7 @@ main#view-comunidad:has(.suscripcion-wrap) > .panel {
 
 /* ========== TITULOS DE ADMINISTRACION CENTRAL ========== */
 
-/* T�tulo principal del panel de admin (cuando se entra al admin) */
+/* Tï¿½tulo principal del panel de admin (cuando se entra al admin) */
 #view-admin .panel-head h2 {
   font-family: "Barlow Condensed", "Barlow", sans-serif;
   font-style: italic;
@@ -5311,7 +5311,7 @@ main#view-comunidad:has(.suscripcion-wrap) > .panel {
   gap: 8px;
 }
 
-/* Subt�tulos (h3) dentro del admin */
+/* Subtï¿½tulos (h3) dentro del admin */
 #view-admin h3.sub {
   font-family: "Barlow Condensed", "Barlow", sans-serif;
   font-style: italic;
@@ -5322,7 +5322,7 @@ main#view-comunidad:has(.suscripcion-wrap) > .panel {
   margin: 20px 0 10px;
 }
 
-/* P�rrafos de ayuda/descripci�n bajo los t�tulos */
+/* Pï¿½rrafos de ayuda/descripciï¿½n bajo los tï¿½tulos */
 #view-admin .panel-head + p,
 #view-admin .panel-head + .muted {
   margin-top: -6px;
@@ -5330,7 +5330,7 @@ main#view-comunidad:has(.suscripcion-wrap) > .panel {
   line-height: 1.5;
 }
 
-/* T�tulo "Administraci�n central" en la hero de solicitudes */
+/* Tï¿½tulo "Administraciï¿½n central" en la hero de solicitudes */
 #tab-solicitudes .sol-hero h2 {
   font-family: "Barlow Condensed", "Barlow", sans-serif;
   font-style: italic;
@@ -5364,7 +5364,7 @@ main#view-comunidad:has(.suscripcion-wrap) > .panel {
   display: block;
 }
 
-/* Las barras de búsqueda también son <label>, pero no son etiquetas de campo:
+/* Las barras de bÃºsqueda tambiÃ©n son <label>, pero no son etiquetas de campo:
    recuperan su forma de barra (icono + input en la misma fila, texto centrado). */
 #view-admin .salas-buscar,
 #view-admin .cuentas-buscar {
@@ -5435,7 +5435,7 @@ main#view-comunidad:has(.suscripcion-wrap) > .panel {
   border-color: var(--accent);
 }
 
-/* Barra de b�squeda del admin */
+/* Barra de bï¿½squeda del admin */
 #view-admin .salas-buscar,
 #view-admin .cuentas-buscar {
   border-radius: 14px;
@@ -5467,8 +5467,8 @@ main#view-comunidad:has(.suscripcion-wrap) > .panel {
 
 /* ========== CELULAR: QUE NO SE APLASTEN NI SE CORTEN LOS TEXTOS ========== */
 @media (max-width: 959px) {
-  /* Salas (pública): los botones del encabezado se acomodan en dos filas
-     en vez de aplastarse y partir el texto en 3 o 4 líneas. */
+  /* Salas (pÃºblica): los botones del encabezado se acomodan en dos filas
+     en vez de aplastarse y partir el texto en 3 o 4 lÃ­neas. */
   #step-2 .panel-head .row {
     flex-wrap: wrap;
   }
@@ -5485,35 +5485,35 @@ main#view-comunidad:has(.suscripcion-wrap) > .panel {
     flex: 0 0 auto;
   }
 
-  /* Estadísticas del admin ("Pendientes de pago"): que el texto pase a dos
-     líneas antes que quedar cortado. */
+  /* EstadÃ­sticas del admin ("Pendientes de pago"): que el texto pase a dos
+     lÃ­neas antes que quedar cortado. */
   .admin-stats .stat span {
     white-space: normal;
   }
 }
 
 /* =====================================================================
-   BARRA INFERIOR EN CELULAR (diseño "tab bar")
-   - El ícono de la opción activa va dentro de una cápsula pintada.
+   BARRA INFERIOR EN CELULAR (diseÃ±o "tab bar")
+   - El Ã­cono de la opciÃ³n activa va dentro de una cÃ¡psula pintada.
    - La rayita de "inicio" va adentro de la barra, centrada y bien abajo.
-   - Botón flotante "＋" arriba a la derecha, que arranca una reserva.
+   - BotÃ³n flotante "ï¼" arriba a la derecha, que arranca una reserva.
    Solo celular: en escritorio el dock es el riel lateral.
    ===================================================================== */
 @media (max-width: 959px) {
-  /* Un poco más de alto abajo para alojar la rayita adentro */
+  /* Un poco mÃ¡s de alto abajo para alojar la rayita adentro */
   .bottom-nav {
     height: 68px;
     border-radius: 28px;
     padding: 6px 8px 16px;
-    /* Las columnas se crean solas según las opciones visibles de cada rol:
-       así, si un rol tiene menos opciones (ej.: el dueño de sala no tiene
+    /* Las columnas se crean solas segÃºn las opciones visibles de cada rol:
+       asÃ­, si un rol tiene menos opciones (ej.: el dueÃ±o de sala no tiene
        "Mapa"), las que quedan se reparten por igual sin dejar un hueco. */
     grid-template-columns: none;
     grid-auto-flow: column;
     grid-auto-columns: 1fr;
   }
 
-  /* Cada opción: el ícono dentro de una cápsula que se pinta al estar activa */
+  /* Cada opciÃ³n: el Ã­cono dentro de una cÃ¡psula que se pinta al estar activa */
   .nav-btn { gap: 3px; }
   .nav-btn svg {
     width: 46px; height: 34px;
@@ -5535,7 +5535,7 @@ main#view-comunidad:has(.suscripcion-wrap) > .panel {
 
 }
 
-/* ===== Reorganización (v3): opciones de salas, secciones de la sala y pie de Ajustes ===== */
+/* ===== ReorganizaciÃ³n (v3): opciones de salas, secciones de la sala y pie de Ajustes ===== */
 .rooms-toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 14px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
 .sala-sec { border: 1px solid var(--line); border-radius: 12px; background: var(--panel2); margin: 0 0 10px; overflow: hidden; }
 .sala-sec > summary { cursor: pointer; list-style: none; padding: 12px 14px; font-weight: 700; color: var(--text); display: flex; align-items: center; justify-content: flex-start; gap: 8px; user-select: none; }
@@ -5557,7 +5557,7 @@ main#view-comunidad:has(.suscripcion-wrap) > .panel {
   .mt-cover { height: 100px; }
   .mt-cuerpo { padding: 0 14px 14px; }
   .mt-nombre { font-size: 1rem; }
-  /* En pantalla chica el botón principal ocupa todo el ancho y "Ficha" + van abajo */
+  /* En pantalla chica el botÃ³n principal ocupa todo el ancho y "Ficha" + van abajo */
   .mt-acciones { flex-wrap: wrap; }
   .mt-acciones #tarjeta-reservar { flex: 1 1 100%; }
   .mt-acciones #tarjeta-ficha { flex: 1 1 auto; }
@@ -5593,7 +5593,7 @@ main#view-comunidad:has(.suscripcion-wrap) > .panel {
 .chat-msg-sticker { display: inline-block; width: 64px; height: 64px; color: var(--accent2); }
 .chat-msg-sticker svg { width: 100%; height: 100%; }
 
-/* ===== Chat global: menú de adjuntos, video e invitaciones ===== */
+/* ===== Chat global: menÃº de adjuntos, video e invitaciones ===== */
 .chat-adj-panel {
   display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
   padding: 10px; background: var(--panel2); border: 1px solid var(--line);
@@ -5641,7 +5641,7 @@ main#view-comunidad:has(.suscripcion-wrap) > .panel {
 .ci-btn.on { background: transparent; color: var(--accent2); border-color: var(--accent2); }
 .ci-count { font-size: .72rem; color: var(--muted); }
 
-/* ===== Chat global: invitación con horario + reserva tentativa ===== */
+/* ===== Chat global: invitaciÃ³n con horario + reserva tentativa ===== */
 .chat-inv-fecha {
   display: flex; align-items: center; gap: 6px; font-size: .78rem; color: var(--muted);
   margin: 2px 0 6px; width: 100%;
@@ -5678,8 +5678,8 @@ main#view-comunidad:has(.suscripcion-wrap) > .panel {
   .chat-msg-video, .chat-msg-img { max-width: 100%; }
 }
 
-/* Los íconos SVG heredan el tamaño de letra en los contenedores que antes
-   mostraban un emoji grande (encabezados, arte de estados vacíos, marcas). */
+/* Los Ã­conos SVG heredan el tamaÃ±o de letra en los contenedores que antes
+   mostraban un emoji grande (encabezados, arte de estados vacÃ­os, marcas). */
 .admin-head-ico svg,
 .sol-crown svg,
 .sol-empty-art svg,
@@ -5694,11 +5694,11 @@ main#view-comunidad:has(.suscripcion-wrap) > .panel {
 .band-emoji svg,
 .crop-empty svg,
 .inst-emoji svg { width: 1em; height: 1em; display: block; }
-/* Íconos que acompañan texto en títulos y etiquetas: alineados con la letra */
+/* Ãconos que acompaÃ±an texto en tÃ­tulos y etiquetas: alineados con la letra */
 h1 svg, h2 svg, h3 svg, .sub svg, .tag svg, .badge svg, .stat span svg { vertical-align: -0.14em; }
 
 
-/* ---------- Confirma tu reserva (pantalla de pago de se�a) ---------- */
+/* ---------- Confirma tu reserva (pantalla de pago de seña) ---------- */
 .confirma-reserva { display: grid; gap: 12px; }
 .cr-stepper { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 6px; }
 .cr-step { font-size: 12px; color: var(--muted); }
@@ -5732,3 +5732,15 @@ h1 svg, h2 svg, h3 svg, .sub svg, .tag svg, .badge svg, .stat span svg { vertica
 .cr-btn-primary:active { transform: scale(.99); }
 .cr-btn-secondary { background: var(--panel); color: var(--text); border: 1px solid var(--line); }
 .cr-fine { text-align: center; color: var(--muted); font-size: 13px; margin-top: 4px; line-height: 1.5; }
+
+/* ---------- Mis reservas (compacto) ---------- */
+.mine-card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; margin-bottom: 8px; }
+.mine-card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
+.mine-card-head strong { font-size: 14px; }
+.mine-card-body { display: flex; flex-direction: column; gap: 2px; font-size: 13px; }
+.mine-card-body span { color: var(--muted); }
+.mine-card-body span:first-child { color: var(--text); font-weight: 600; }
+.mine-card-actions { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+.mine-card-actions .btn { font-size: 12px; padding: 6px 10px; }
+.mine-card.cancelada { opacity: .6; }
+.mine-card.res-past { opacity: .7; }
