@@ -5786,3 +5786,21 @@ h1 svg, h2 svg, h3 svg, .sub svg, .tag svg, .badge svg, .stat span svg { vertica
 #pagos-tabla-salas td .muted {
   word-break: break-word;
 }
+
+/* =====================================================================
+   ADMINISTRACIÓN CENTRAL: sacar el deslizamiento de la barra de pestañas
+   La barra de pestañas del panel de administración quedaba "pegada"
+   arriba (en celular) o al costado (en escritorio) mientras scrolleás,
+   y se corría sola al tocar una pestaña. Ahora la barra acompaña el
+   scroll normal del panel: no se pega ni se desliza.
+   ===================================================================== */
+#view-admin > .admin-tabs,
+#view-panel > .admin-tabs {
+  position: static;
+  top: auto;
+}
+/* La rayita que marca la pestaña activa: quieta, sin animación.
+   (Se sigue mostrando en la pestaña activa.) */
+.admin-tab-indicator {
+  transition: none;
+}
