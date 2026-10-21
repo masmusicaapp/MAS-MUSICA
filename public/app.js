@@ -409,7 +409,7 @@ function renderMineRapido() {
           ${r.estado === 'pendiente_pago' ? `<button class="btn btn-sm btn-primary" data-mine-pagar="${r.id}">Pagar seña</button>` : ''}
           <button class="btn btn-sm btn-danger" data-mine-cancel="${r.id}">Cancelar</button>
         </div>` : ''}
-        ${cancelada && esMia ? `<div class="mine-card-actions"><button class="btn btn-sm" data-mine-eliminar="${r.id}">Eliminar</button></div>` : ''}
+        ${esMia && (cancelada || pasada) && r.pagoEstado !== 'aprobado' ? `<div class="mine-card-actions"><button class="btn btn-sm" data-mine-eliminar="${r.id}">Eliminar</button></div>` : ''}
       </div>`;
   }).join('');
 }
@@ -5887,8 +5887,10 @@ function wirePublic() {
       if (el) {
         const r = state.reservations.find(x => x.id === el.dataset.mineEliminar);
         if (!r) return;
+        const yaPaso = esPasada(r);
+        const queEs = yaPaso ? 'esta reserva pasada' : 'esta reserva cancelada';
         const okRes = await confirmarAccion(
-          `¿Eliminar esta reserva cancelada del historial? No se puede deshacer.`,
+          `¿Eliminar ${queEs} del historial? No se puede deshacer.`,
           '¿Eliminar reserva?',
           'Sí, eliminar',
           'No, mantener',
