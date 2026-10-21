@@ -407,6 +407,7 @@ function renderMineRapido() {
         </div>
         ${(!pasada && !cancelada && esMia && r.estado === 'pendiente_pago') ? `<button class="btn btn-sm btn-primary" data-mine-pagar="${r.id}">Pagar seña</button>` : ''}
         ${(!pasada && !cancelada && esMia) ? `<button class="btn btn-sm btn-danger" data-mine-cancel="${r.id}">Cancelar</button>` : ''}
+        ${cancelada && esMia ? `<button class="btn btn-sm" data-mine-eliminar="${r.id}">Eliminar</button>` : ''}
       </div>`;
   }).join('');
 }
@@ -5823,7 +5824,34 @@ function wirePublic() {
       return;
     }
     const b = e.target.closest('[data-mine-cancel]');
-    if (!b) return;
+    if (!b) {
+      const el = e.target.closest('[data-mine-eliminar]');
+      if (el) {
+        const r = state.reservations.find(x => x.id === el.dataset.mineEliminar);
+        if (!r) return;
+        const okRes = await confirmarAccion(
+          `¿Eliminar esta reserva cancelada del historial? No se puede deshacer.`,
+          '¿Eliminar reserva?',
+          'Sí, eliminar',
+          'No, mantener',
+          'peligro'
+        );
+        if (!okRes) return;
+        try {
+          const data = await api(`/api/reservations/${r.id}`, { method: 'DELETE' });
+          state = data.state;
+          mineIds = mineIds.filter(id => id !== r.id);
+          localStorage.setItem(MINE_KEY, JSON.stringify(mineIds));
+          renderMineRapido();
+          renderMine();
+          toast('Reserva eliminada del historial.', 'ok');
+        } catch (err) {
+          toast(err.message, 'error');
+        }
+        return;
+      }
+      return;
+    }
     const r = state.reservations.find(x => x.id === b.dataset.mineCancel);
     if (!r) return;
     const okRes = await confirmarAccion(
