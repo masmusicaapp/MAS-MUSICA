@@ -388,26 +388,28 @@ function renderMineRapido() {
   cuerpo.innerHTML = aviso + (query ? `<h3 class="sub">Resultados para "${esc(busquedaMine)}"</h3>` : '')
     + lista.map(r => {
     const room = state.rooms.find(x => x.id === r.roomId);
-    const banda = bandaPorNombre(r.name);
     const sala = room ? room.name : 'Sala eliminada';
     const pasada = esPasada(r);
     const cancelada = r.estado === 'cancelada';
-    const alq = (r.alquiler || []).length;
     const esMia = mineIds.includes(r.id) || (yo && r.userId === yo.id);
+    const badgeCls = cancelada ? 'badge-past' : pasada ? 'badge-past' : 'badge-next';
+    const badgeTxt = cancelada ? 'Cancelada' : pasada ? 'Pasada' : r.estado === 'pendiente_pago' ? 'Falta pagar' : 'Próxima';
     return `
-      <div class="quick-item ${pasada ? 'res-past' : ''} ${cancelada ? 'cancelada' : ''}" data-res="${r.id}" ${banda ? `data-band="${banda.id}"` : ''}>
-        ${banda && banda.foto ? `<img class="quick-avatar" src="${esc(banda.foto)}" alt="" data-foto="${esc(banda.foto)}" data-foto-alt="${esc(banda.nombre)}">` : ''}
-        <div class="quick-when">
-          <strong>${fmtDate(r.date)}</strong>
-          <span><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> ${r.start} – ${r.end}</span>
+      <div class="mine-card ${pasada ? 'res-past' : ''} ${cancelada ? 'cancelada' : ''}">
+        <div class="mine-card-head">
+          <strong>${fmtDate(r.date)} · ${r.start}–${r.end}</strong>
+          <span class="badge ${badgeCls}">${badgeTxt}</span>
         </div>
-        <div class="quick-what">
-          <strong>${esc(sala)} <span class="badge ${cancelada ? 'badge-past' : pasada ? 'badge-past' : 'badge-next'}">${cancelada ? 'Cancelada' : pasada ? 'Pasada' : r.estado === 'pendiente_pago' ? 'Falta pagar la seña' : 'Próxima'}</span></strong>
-          <span class="muted small">${esc(r.name)} · <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> ${fmtMoney(precioReserva(r))}${alq ? ' · <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v10H4z"/><path d="M9 6V4a3 3 0 0 1 6 0v2"/><path d="M9 14h6"/></svg> ' + alq : ''}</span>
+        <div class="mine-card-body">
+          <span>${esc(sala)}</span>
+          <span class="muted small">${esc(r.name)} · ${fmtMoney(precioReserva(r))}</span>
         </div>
-        ${(!pasada && !cancelada && esMia && r.estado === 'pendiente_pago') ? `<button class="btn btn-sm btn-primary" data-mine-pagar="${r.id}">Pagar seña</button>` : ''}
-        ${(!pasada && !cancelada && esMia) ? `<button class="btn btn-sm btn-danger" data-mine-cancel="${r.id}">Cancelar</button>` : ''}
-        ${cancelada && esMia ? `<button class="btn btn-sm" data-mine-eliminar="${r.id}">Eliminar</button>` : ''}
+        ${esMia && !pasada && !cancelada ? `
+        <div class="mine-card-actions">
+          ${r.estado === 'pendiente_pago' ? `<button class="btn btn-sm btn-primary" data-mine-pagar="${r.id}">Pagar seña</button>` : ''}
+          <button class="btn btn-sm btn-danger" data-mine-cancel="${r.id}">Cancelar</button>
+        </div>` : ''}
+        ${cancelada && esMia ? `<div class="mine-card-actions"><button class="btn btn-sm" data-mine-eliminar="${r.id}">Eliminar</button></div>` : ''}
       </div>`;
   }).join('');
 }
