@@ -1,9 +1,33 @@
-﻿# Pendientes y cosas para revisar — Más Música (v124)
+﻿# Pendientes y cosas para revisar - Más Música (v125)
 
 Actualizado: 21/10/2026. Este archivo es solo una guía de trabajo; la app no lo usa.
 
 ## 0. Cambios recientes
 
+- [x] **Prueba con 4 "primeros usuarios" y 2 arreglos graves** (v125). Se probó la app en
+      producción con 4 perfiles (apurado, desconfiado, celular con internet lento, el que
+      rompe todo). Dos hallazgos graves, ya arreglados:
+  - **Seguridad — XSS en los diálogos de confirmación.** El modal de confirmar
+    (`confirmarAccion` → `openModal`) armaba el HTML con `innerHTML` e interpolaba datos
+    del usuario **sin escapar** (nombre de reserva, nombre de banda, nombre de cuenta,
+    nombre de sala). Un nombre como `"><img src=x onerror=...>` se guardaba tal cual y se
+    ejecutaba al abrir el diálogo. Arreglo: `confirmarAccion` ahora escapa título, mensaje
+    y textos de los botones con `esc()`. Verificado: el payload se ve como texto y no se
+    ejecuta. Cambio de cliente.
+  - **Privacidad — fuga de datos en `GET /api/state` (público, sin sesión).** El endpoint
+    devolvía **todo** el estado menos unos pocos campos: se filtraban los pedidos de ayuda
+    con **emails reales** de usuarios, solicitudes de pago, suscripciones crudas, bandas,
+    etc. Arreglo: `publicState` ahora usa una **lista blanca** (settings, promociones,
+    blocks, bands, placePhotos, rooms, resenas, reservations). Verificado: `/api/state`
+    público ya no expone emails ni datos privados, y la app sigue cargando sin errores.
+    Cambio de servidor + cliente ¿ versión v125.
+  - **Otros hallazgos anotados abajo (sección 9)** para próximas rondas: el email de
+    contacto de `terminos.html` se ve como `[email protected]` (Cloudflare Email
+    Obfuscation, se apaga desde el panel de Cloudflare); falta Política de Privacidad y
+    página de precios; el Chat Global no aclara "final, IVA incluido" en la pantalla de
+    suscripción; `styles.css`/`app.js` sin minificar; tablas con `min-width` altos en
+    celular; sin indicadores de "cargando" ni anti-doble-tap; y la reserva con requests
+    simultáneos en el flujo con Mercado Pago (no reproducible en modo simulado).
 - [x] **El músico puede eliminar sus reservas pasadas** (v124). En **Mis reservas** (Inicio),
       además de las reservas canceladas, ahora también se pueden borrar del historial las
       reservas que **ya pasaron**. Reglas: solo el dueño de la reserva (o la sala/administración)
@@ -186,4 +210,33 @@ Actualizado: 21/10/2026. Este archivo es solo una guía de trabajo; la app no lo
 - [ ] Reservar desde el mapa en el celular.
 - [ ] Subir una foto desde la cámara del celular.
 - [ ] Que las reseñas con muchas visitas se lean bien en pantalla chica.
+
+## 10. Hallazgos de la prueba con 4 usuarios (v125)
+
+- [ ] **Email de contacto roto en `terminos.html`.** La sección 14 "Contacto" se ve como
+      `[email protected]` porque **Cloudflare Email Obfuscation** ofusca la dirección y el
+      JS que la decodifica no corre. El HTML tiene el email correcto. Arreglo: entrar al
+      panel de Cloudflare del dominio, **Scrape Shield ¿ Email Address Obfuscation ¿ apagar**.
+      No es cambio de código.
+- [ ] **Falta Política de Privacidad y página de Precios.** Hoy el tratamiento de datos está
+      dentro de la sección 9 de los términos, sin página propia ni link en el registro/pie.
+      Conviene una `privacidad.html` enlazada, y una página de precios que explique el plan
+      de sala (hoy el plan "emprendedor" no se ve en ninguna pantalla pública).
+- [ ] **El Chat Global no aclara el precio.** En la pantalla de suscripción dice "$5.000/mes"
+      pero no dice si es **final o +IVA**. Debe decir "final, IVA incluido" (ya se desglosa
+      así en Administración ¿ Pagos y Señas).
+- [ ] **Sincronizar el `sw.js`** (hecho en v125: la lista `ESTATICOS` ya apunta a `?v=125`).
+      Mantener esa lista al día en cada bump para que el offline no sirva versiones viejas.
+- [ ] **Minificar `app.js` (451 KB) y `styles.css` (204 KB).** Es el principal lastre en
+      celular con internet lento (la carga inicial supera los 600 KB de código propio).
+      Además, cargar el mapa (Leaflet, de unpkg) **solo al abrir el mapa**, no en el `<head>`.
+- [ ] **Tablas y filas que se desbordan en 320–360 px.** `.mov-table` (`min-width 560px`),
+      `#pagos-tabla-salas/reservas` (`640/720px`), `.res-row` (mínimo ~360 px) y el inicio
+      (`#step-1`, mínimo 330 px). Bajar a `1fr auto` / 100% en pantallas chicas.
+- [ ] **Sin indicadores de "cargando" ni anti-doble-tap.** Falta feedback (spinner/skeleton)
+      y deshabilitar el botón **antes** del `await` en cada acción de red.
+- [ ] **Reserva con requests simultáneos (modo Mercado Pago).** En modo simulado el servidor
+      serializa y no se duplica (probado: uno 201, otro 409). En el flujo con cobro hay un
+      `await` entre el chequeo y el guardado, así que conviene un chequeo atómico antes del
+      guardado. Revisar cuando se pruebe la seña real.
 
