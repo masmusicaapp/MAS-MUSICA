@@ -22,6 +22,22 @@ Ejemplo con la Sala 1 ($15.000 la hora), seña 30 % y comisión 8 %:
 
 La seña entra a **tu cuenta de Mercado Pago**; después le liquidás a cada sala lo que le toca.
 
+## Suscripción al chat (músicos)
+
+El **Chat Global** es solo para músicos (`rol USER`) y cuesta **$5.000 por mes**
+(precio final, **IVA incluido**). Usa el mismo circuito que la seña:
+
+1. El músico toca "Suscribirme ahora" → el servidor crea una solicitud y una preferencia de pago.
+2. Se abre Mercado Pago en otra pestaña y el músico paga los $5.000.
+3. Mercado Pago avisa (`/api/pagos/webhook`); el servidor consulta el pago y **activa el acceso** (30 días).
+4. Al volver a la app (`?chat=ok`), si el pago ya se acreditó, el chat se abre solo.
+
+La renovación es acumulativa: si el músico paga antes de que venza, los días se **suman**
+desde el vencimiento actual (no se pierden días).
+
+Con el cobro **apagado** o **simulado** (ver más abajo), la suscripción se activa directo,
+sin pasar por Mercado Pago.
+
 ## Activarlo
 
 Tres modos, según las variables de entorno con las que arranques el servidor:
