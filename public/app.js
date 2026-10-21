@@ -2452,10 +2452,11 @@ let filtroMisReservas = '';   /* '' | 'proximas' | 'historial' (se elige en Ajus
 
 function mostrarMisReservas() {
   ocultarVistas();
-  $('#view-public').hidden = true;
-  $('#view-mine').hidden = false;
-  setNav('perfil');
-  renderMine();
+  $('#view-public').hidden = false;
+  setNav('inicio');
+  const hm = $('#home-mine');
+  if (hm) { hm.hidden = false; hm.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+  renderMineRapido();
 }
 
 function volverAReservar() {
