@@ -3589,7 +3589,9 @@ function pantallaAuth(vista = 'inicio') {
           <button type="button" class="auth-link" data-vista="login">Iniciar sesión</button>
         </p>
         <p class="auth-terminos">Al usar Más Música aceptás los
-          <a class="link-term" href="terminos.html" target="_blank" rel="noopener">términos y condiciones</a>.
+          <a class="link-term" href="terminos.html" target="_blank" rel="noopener">términos y condiciones</a>,
+          la <a class="link-term" href="privacidad.html" target="_blank" rel="noopener">política de privacidad</a>
+          y los <a class="link-term" href="precios.html" target="_blank" rel="noopener">precios</a>.
         </p>
       </div>`;
     return;
@@ -3685,7 +3687,7 @@ function pantallaAuth(vista = 'inicio') {
           ${campoPassword('mu-pass2', 'Repetí la contraseña', { valida: 'pass2', ph: 'Igual que arriba' })}
           ${campoAuth('mu-loc', 'Localidad o zona', { ph: 'Ej.: Villa Carlos Paz', max: 80 })}
           ${campoAuth('mu-inst', '¿Qué instrumento tocás?', { ph: 'Ej.: Bajo, Guitarra (separados por coma)', max: 200 })}
-          <label class="check"><input type="checkbox" id="mu-terms"> <span>Acepto los <a class="link-term" href="terminos.html" target="_blank" rel="noopener">términos y condiciones</a></span></label>
+          <label class="check"><input type="checkbox" id="mu-terms"> <span>Acepto los <a class="link-term" href="terminos.html" target="_blank" rel="noopener">términos y condiciones</a> y la <a class="link-term" href="privacidad.html" target="_blank" rel="noopener">política de privacidad</a></span></label>
           <button class="btn btn-primary btn-block btn-lg" type="submit">Crear mi cuenta</button>
         </form>
         <p class="auth-cuenta">¿Olvidaste tu contraseña o tu cuenta está bloqueada?
@@ -3711,7 +3713,7 @@ function pantallaAuth(vista = 'inicio') {
             ${campoAuth('sg-tel', 'Teléfono', { req: true, valida: 'telefono', ac: 'tel', ph: 'Ej.: 15854455', max: 30 })}
             ${campoPassword('sg-pass', 'Contraseña', { fuerza: true, ph: 'Mínimo 6 caracteres' })}
             <label class="check"><input type="checkbox" id="sg-soy"> Soy responsable de esta sala</label>
-            <label class="check"><input type="checkbox" id="du-terms"> <span>Acepto los <a class="link-term" href="terminos.html" target="_blank" rel="noopener">términos y condiciones</a></span></label>
+            <label class="check"><input type="checkbox" id="du-terms"> <span>Acepto los <a class="link-term" href="terminos.html" target="_blank" rel="noopener">términos y condiciones</a> y la <a class="link-term" href="privacidad.html" target="_blank" rel="noopener">política de privacidad</a></span></label>
             <button class="btn btn-primary btn-block btn-lg" type="submit">Continuar <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button>
           </form>
           <p class="auth-cuenta">¿Olvidaste tu contraseña o tu cuenta está bloqueada?
@@ -4780,6 +4782,14 @@ function modalAyuda() {
 function modalTerminos() {
   const v = window.open('terminos.html', '_blank');
   if (!v) location.href = 'terminos.html';
+}
+function modalPrivacidad() {
+  const v = window.open('privacidad.html', '_blank');
+  if (!v) location.href = 'privacidad.html';
+}
+function modalPrecios() {
+  const v = window.open('precios.html', '_blank');
+  if (!v) location.href = 'precios.html';
 }
 
 /* ---------- Panel del dueño de la sala ---------- */
