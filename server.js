@@ -338,6 +338,9 @@ function salaNueva(datos = {}) {
     capacity: 4,
     features: [],
     equipos: { instrumentos: '', amplificadores: '', bateria: '', microfonos: '', consola: '', otros: '' },
+    /* Datos de cobro: a dónde se le transfiere a la sala lo que le corresponde
+       de cada seña (seña menos comisión). Solo lo ven la sala y la administración. */
+    cobro: { titular: '', alias: '', cvu: '', banco: '' },
     /* Catálogo de equipos propio de la sala (con foto, descripción y si se alquila).
        Cada ítem: { id, nombre, descripcion, foto, alquiler, precioAlquiler } */
     catalogo: [],
@@ -404,6 +407,17 @@ function normalizarCatalogo(lista) {
   })).filter(it => it.nombre);
 }
 
+/* Datos de cobro de la sala (a dónde se transfiere lo que le corresponde) */
+function normalizarCobro(c) {
+  const o = (c && typeof c === 'object') ? c : {};
+  return {
+    titular: String(o.titular || '').trim().slice(0, 80),
+    alias: String(o.alias || '').trim().slice(0, 60),
+    cvu: String(o.cvu || '').replace(/[^\d]/g, '').slice(0, 22),
+    banco: String(o.banco || '').trim().slice(0, 80),
+  };
+}
+
 /* Amplía las salas viejas con los campos nuevos (migración) */
 function migrarSala(r) {
   const base = salaNueva({ id: r.id, estado: r.estado || 'aprobada' });
@@ -414,6 +428,7 @@ function migrarSala(r) {
   out.capacity = Math.max(1, parseInt(r.capacity, 10) || 1);
   out.features = Array.isArray(r.features) ? r.features.map(String).slice(0, 20) : [];
   out.equipos = Object.assign(base.equipos, r.equipos || {});
+  out.cobro = normalizarCobro(r.cobro);
   out.catalogo = normalizarCatalogo(r.catalogo);
   out.fotos = Array.isArray(r.fotos) ? r.fotos : [];
   out.fotoPortada = String(r.fotoPortada || '').slice(0, 300);
@@ -564,7 +579,13 @@ function publicState(state, req) {
 
   return {
     ...resto,
-    rooms: (state.rooms || []).map(r => Object.assign({}, r, { puntaje: puntajeSala(state, r.id) })),
+    rooms: (state.rooms || []).map(r => {
+      const conP = Object.assign({}, r, { puntaje: puntajeSala(state, r.id) });
+      /* Los datos de cobro son privados: solo los ve el dueño de la sala o la administración */
+      const puedeVerCobro = admin || (miSala && r.id === miSala.id) || (miUserId && r.ownerId === miUserId);
+      if (!puedeVerCobro) delete conP.cobro;
+      return conP;
+    }),
     resenas: (state.resenas || []).slice(-300).map(resenaPublica),
     reservations,
     settings: {
@@ -727,8 +748,22 @@ const INTENTOS_LIMITE = 8;               /* intentos fallidos que se permiten */
 const INTENTOS_VENTANA = 15 * 60 * 1000; /* en una ventana de 15 minutos */
 const intentosPorIP = new Map();
 
+/* Solo se confía en x-forwarded-for cuando la conexión viene de un proxy/túnel
+   propio (loopback o el rango del túnel). Así nadie puede falsificar la cabecera
+   desde afuera para saltarse el freno de fuerza bruta. */
+const PROXIES_CONFIABLES = new Set(['127.0.0.1', '::1', '::ffff:127.0.0.1']);
+function esProxyConfiable(req) {
+  const dir = String(req.socket.remoteAddress || '');
+  if (PROXIES_CONFIABLES.has(dir)) return true;
+  const extra = String(process.env.TRUST_PROXY_IPS || '').split(',').map(s => s.trim()).filter(Boolean);
+  return extra.includes(dir);
+}
 function ipDeReq(req) {
-  return String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || '?').split(',')[0].trim().slice(0, 64);
+  if (esProxyConfiable(req)) {
+    const fwd = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim();
+    if (fwd) return fwd.slice(0, 64);
+  }
+  return String(req.socket.remoteAddress || '?').slice(0, 64);
 }
 function chequearIntento(req, clave) {
   const k = clave + '|' + ipDeReq(req);
@@ -742,6 +777,27 @@ function chequearIntento(req, clave) {
 }
 function liberarIntentos(req, clave) {
   intentosPorIP.delete(clave + '|' + ipDeReq(req));
+}
+
+/* Freno general de escritura: limita cuántas peticiones que cambian datos puede
+   mandar una misma IP en una ventana. No distingue éxito/fallo (es contra el
+   abuso: spam de reservas, reseñas, chat, etc.), con un tope holgado para el uso
+   normal. */
+const ESCRITURA_LIMITE = 120;                 /* peticiones de escritura por ventana */
+const ESCRITURA_VENTANA = 5 * 60 * 1000;      /* en 5 minutos */
+const escrituraPorIP = new Map();
+function limitarEscritura(req) {
+  const k = ipDeReq(req);
+  const ahora = Date.now();
+  let e = escrituraPorIP.get(k);
+  if (!e || e.reset <= ahora) { e = { n: 0, reset: ahora + ESCRITURA_VENTANA }; }
+  e.n++;
+  escrituraPorIP.set(k, e);
+  /* Limpieza liviana para que el mapa no crezca sin control */
+  if (escrituraPorIP.size > 5000) {
+    for (const [kk, vv] of escrituraPorIP) { if (vv.reset <= ahora) escrituraPorIP.delete(kk); }
+  }
+  return { bloqueado: e.n > ESCRITURA_LIMITE, espera: Math.ceil((e.reset - ahora) / 1000) };
 }
 
 /* PIN de emergencia: se guarda SOLO como hash (nunca en texto plano) */
@@ -1305,7 +1361,7 @@ function resumenPagos(state, roomId) {
   filas.forEach(r => {
     const room = state.rooms.find(x => x.id === r.roomId);
     const k = r.roomId;
-    const f = porSala[k] = porSala[k] || { roomId: k, sala: room ? room.name : k, cobrado: 0, comision: 0, paraSala: 0, liquidado: 0, porLiquidar: 0 };
+    const f = porSala[k] = porSala[k] || { roomId: k, sala: room ? room.name : k, cobro: normalizarCobro(room && room.cobro), cobrado: 0, comision: 0, paraSala: 0, liquidado: 0, porLiquidar: 0 };
     if (r.pago.estado === 'aprobado' && r.estado !== 'cancelada') {
       f.cobrado += r.sena; f.comision += r.comision; f.paraSala += r.paraSala;
       if (r.pago.liquidadoEn) f.liquidado += r.paraSala; else f.porLiquidar += r.paraSala;
@@ -1331,6 +1387,7 @@ function sendJson(res, code, obj) {
     'Cache-Control': 'no-store',
     'X-Content-Type-Options': 'nosniff',
     'X-Frame-Options': 'DENY',
+    'Content-Security-Policy': "default-src 'none'; frame-ancestors 'none'",
     'Referrer-Policy': 'strict-origin-when-cross-origin',
   });
   res.end(JSON.stringify(obj));
@@ -1375,6 +1432,31 @@ const MIME = {
   '.mov': 'video/quicktime',
 };
 
+/* Política de seguridad del contenido (CSP) para el HTML.
+   - script-src: la app usa scripts en línea (tema, fallback) y manejadores onclick,
+     por eso hace falta 'unsafe-inline'; el resto son los orígenes externos reales
+     (Leaflet desde unpkg y la API de Google Maps).
+   - img/connect: solo lo que la app usa (self, data:, blobs, tiles de OpenStreetMap,
+     Google Maps y el geocodificador de OpenStreetMap).
+   - object-src 'none': nada de plugins/embeds.
+   - frame-ancestors 'none': nadie puede incrustar la app (anti clickjacking).
+   - base-uri 'self' y form-action 'self': evita secuestro de <base> y envíos a otro sitio. */
+const CSP_HTML = [
+  "default-src 'self'",
+  "script-src 'self' 'unsafe-inline' https://unpkg.com https://maps.googleapis.com",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com",
+  "font-src 'self' data: https://fonts.gstatic.com",
+  "img-src 'self' data: blob: https://*.tile.openstreetmap.org https://tile.openstreetmap.org https://maps.googleapis.com https://maps.gstatic.com https://*.googleapis.com https://*.ggpht.com",
+  "connect-src 'self' https://nominatim.openstreetmap.org https://maps.googleapis.com",
+  "media-src 'self' data: blob:",
+  "worker-src 'self'",
+  "manifest-src 'self'",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'none'",
+].join('; ');
+
 function serveStatic(req, res, url) {
   let p;
   try { p = decodeURIComponent(url.pathname); } catch (e) { res.writeHead(400); return res.end(); }
@@ -1386,7 +1468,7 @@ function serveStatic(req, res, url) {
   fs.readFile(file, (err, data) => {
     if (err) { res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' }); return res.end('No encontrado'); }
     const ext = path.extname(file).toLowerCase();
-    res.writeHead(200, {
+    const cabeceras = {
       'Content-Type': MIME[ext] || 'application/octet-stream',
       /* El HTML nunca se guarda: así el celular siempre toma la última versión.
          El CSS/JS llevan ?v=… en index.html para forzar la descarga cuando cambian. */
@@ -1394,7 +1476,12 @@ function serveStatic(req, res, url) {
       'X-Content-Type-Options': 'nosniff',
       'X-Frame-Options': 'DENY',
       'Referrer-Policy': 'strict-origin-when-cross-origin',
-    });
+    };
+    /* La CSP solo se manda al HTML: define qué puede cargar la página.
+       Bloquea scripts/imágenes/conexiones de orígenes desconocidos, impide
+       incrustar la app en otro sitio y prohíbe <object>/<embed> y cambiar la base. */
+    if (ext === '.html') cabeceras['Content-Security-Policy'] = CSP_HTML;
+    res.writeHead(200, cabeceras);
     res.end(data);
   });
 }
@@ -1407,6 +1494,13 @@ async function handleApi(req, res, url, parts) {
   const state = loadState();
   expirarPendientes(state);
   const P = parts[1];
+
+  /* Freno general: si una misma IP manda demasiadas peticiones que cambian datos
+     (POST/PUT/PATCH/DELETE), se corta por un rato. */
+  if (method !== 'GET' && method !== 'HEAD') {
+    const lim = limitarEscritura(req);
+    if (lim.bloqueado) return sendJson(res, 429, { error: `Demasiadas peticiones. Probá de nuevo en ${lim.espera} s.` });
+  }
 
   /* ======================= AUTENTICACIÓN ======================= */
 
@@ -2936,6 +3030,8 @@ function datosDeSala(body, prev = {}) {
     out.lng = Number.isFinite(lng) ? lng : null;
   }
   if (body.telefono !== undefined) out.telefono = String(body.telefono).slice(0, 30);
+  /* Datos de cobro de la sala: dónde se le transfiere lo que le corresponde */
+  if (body.cobro !== undefined) out.cobro = normalizarCobro(body.cobro);
   /* Foto horizontal de la sala (se guarda como archivo si viene en data URL) */
   if (body.fotoPortada !== undefined) {
     const ruta = fotoORuta(body.fotoPortada, guardarFotoSala(prev.id || uid(), body.fotoPortada, '-portada'));
