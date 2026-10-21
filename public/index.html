@@ -51,7 +51,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@500;600;700&family=Barlow+Condensed:ital,wght@1,900&display=swap">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
       integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
-<link rel="stylesheet" href="styles.css?v=110">
+<link rel="stylesheet" href="styles.css?v=111">
 </head>
 <body>
 
@@ -113,14 +113,6 @@
 
 <!-- ============ VISTA PÚBLICA (músico) ============ -->
 <main id="view-public" hidden>
-  <!-- ============ MIS RESERVAS (en el inicio y al reservar) ============ -->
-  <section class="panel mine-quick" id="home-mine" hidden>
-    <div class="panel-head">
-      <h2><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> Mis reservas</h2>
-    </div>
-    <label class="buscador-mine">Buscar por nombre o banda<input id="home-search" maxlength="60" placeholder="Ej.: MALOIK"></label>
-    <div id="home-mine-body"></div>
-  </section>
 
   <section id="step-1" class="step">
     <div class="panel">
@@ -137,6 +129,14 @@
       <div id="cal-reservas-dia" class="cal-reservas-dia"></div>
       <p class="muted small" id="cal-hint"></p>
     </div>
+
+    <!-- ============ MIS RESERVAS (debajo del calendario) ============ -->
+    <section class="panel mine-quick" id="home-mine" hidden>
+      <div class="panel-head">
+        <h2><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> Mis reservas</h2>
+      </div>
+      <div id="home-mine-body"></div>
+    </section>
 
     <!-- ============ INICIO: botón de ingreso (solo si no hay sesión) ============ -->
     <section class="panel" id="inicio-resumen" hidden></section>
@@ -978,7 +978,7 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-<script src="app.js?v=110"></script>
+<script src="app.js?v=111"></script>
 <script>
   /* Fallback: si a los 1.5s la app no arrancó (init lento o trabado), forzar el arranque.
      Espera a que state esté cargado: llamar a arrancarApp con state en null tiraba
