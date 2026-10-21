@@ -280,6 +280,14 @@ const REGlas_DEFAULT = { cancelacionHoras: 0, turnos: [30, 60, 90, 120], avisoHo
 
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 const toMin = t => { const [h, m] = String(t).split(':').map(Number); return h * 60 + (m || 0); };
+/* Una reserva ya pasó si su fecha es anterior a hoy, o si es hoy y su fin ya pasó */
+function esReservaPasada(r) {
+  const hoy = dateStr(new Date());
+  if (r.date < hoy) return true;
+  if (r.date > hoy) return false;
+  const ahora = new Date();
+  return toMin(r.end) <= ahora.getHours() * 60 + ahora.getMinutes();
+}
 const overlap = (a1, a2, b1, b2) => a1 < b2 && b1 < a2;
 const dateStr = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
@@ -2123,7 +2131,30 @@ async function handleApi(req, res, url, parts) {
     const room = state.rooms.find(x => x.id === r.roomId);
     if (room && room.ownerId) avisar(state, room.ownerId, 'Reserva cancelada', `${r.name} liberó ${room.name} el ${fmtFechaCorta(r.date)} ${r.start}–${r.end}`, 'warn', { reservaId: r.id, roomId: r.roomId, para: 'dueno' });
     persist(state);
-    return sendJson(res, 200, { state: publicState(state) });
+    return sendJson(res, 200, { state: publicState(state, req) });
+  }
+
+  /* Eliminar del historial una reserva cancelada o ya pasada (el músico borra las suyas).
+     Las reservas futuras activas primero hay que cancelarlas. Si tiene seña pagada, no se borra. */
+  if (method === 'DELETE' && P === 'reservations' && parts.length === 3) {
+    const r = state.reservations.find(x => x.id === parts[2]);
+    if (!r) return sendJson(res, 404, { error: 'Reserva no encontrada' });
+    const cancelada = r.estado === 'cancelada';
+    const pasada = esReservaPasada(r);
+    if (!cancelada && !pasada) return sendJson(res, 403, { error: 'Solo se pueden eliminar reservas canceladas o pasadas' });
+    const u = sesionActual(state, req);
+    const esDueña = !!u && (r.userId === u.id || (r.phone && r.phone === u.telefono && r.name === u.nombre));
+    const esAdmin = !!u && (u.rol === 'SUPER_ADMIN' || u.rol === 'ROOM_ADMIN');
+    if (!esDueña && !esAdmin) {
+      const nameOk = r.name.toLowerCase() === String(body.name || '').trim().toLowerCase();
+      const phoneOk = !r.phone || r.phone === String(body.phone || '').trim();
+      if (!nameOk || !phoneOk) return sendJson(res, 403, { error: 'Los datos no coinciden con la reserva' });
+    }
+    /* Si tenía seña pagada y no se reembolsó, no borrar (dejar para auditoría) */
+    if (r.pago && r.pago.estado === 'aprobado') return sendJson(res, 403, { error: 'Esta reserva tiene una seña pagada. Resolvela desde Pagos antes de eliminarla.' });
+    state.reservations = state.reservations.filter(x => x.id !== parts[2]);
+    persist(state);
+    return sendJson(res, 200, { state: publicState(state, req) });
   }
 
   /* ======================= CUENTAS (SUPER_ADMIN) ======================= */
@@ -2598,26 +2629,6 @@ async function handleApi(req, res, url, parts) {
       phone: String(phone || '').slice(0, 20),
       estado: body.estado || r.estado || 'confirmada',
     });
-    persist(state);
-    return sendJson(res, 200, { state: publicState(state) });
-  }
-
-  // Cancelar cualquier reserva
-  if (method === 'DELETE' && P === 'reservations' && parts.length === 3) {
-    const r = state.reservations.find(x => x.id === parts[2]);
-    if (!r) return sendJson(res, 404, { error: 'Reserva no encontrada' });
-    if (r.estado !== 'cancelada') return sendJson(res, 403, { error: 'Solo se pueden eliminar reservas canceladas' });
-    const u = sesionActual(state, req);
-    const esDueña = !!u && (r.userId === u.id || (r.phone && r.phone === u.telefono && r.name === u.nombre));
-    const esAdmin = !!u && (u.rol === 'SUPER_ADMIN' || u.rol === 'ROOM_ADMIN');
-    if (!esDueña && !esAdmin) {
-      const nameOk = r.name.toLowerCase() === String(body.name || '').trim().toLowerCase();
-      const phoneOk = !r.phone || r.phone === String(body.phone || '').trim();
-      if (!nameOk || !phoneOk) return sendJson(res, 403, { error: 'Los datos no coinciden con la reserva' });
-    }
-    /* Si tenía seña pagada y no se reembolsó, no borrar (dejar para auditoría) */
-    if (r.pago && r.pago.estado === 'aprobado') return sendJson(res, 403, { error: 'Esta reserva tiene una seña pagada. Resolvela desde Pagos antes de eliminarla.' });
-    state.reservations = state.reservations.filter(x => x.id !== parts[2]);
     persist(state);
     return sendJson(res, 200, { state: publicState(state) });
   }
