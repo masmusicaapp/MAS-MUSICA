@@ -563,12 +563,22 @@ function copiaDeSeguridadDiaria() {
 
 /* Estado que se envía al cliente (sin PIN, sin cuentas ni sesiones, y con privacidad en reservas) */
 function publicState(state, req) {
-  const { users, sessions, notificaciones, ...resto } = state;
   const admin = req ? esSuper(state, req) : false;
   const u = req ? sesionActual(state, req) : null;
   const miSala = (u && !admin) ? salaDelUsuario(state, u) : null;
   const miUserId = u ? u.id : null;
   const miTel = u ? String(u.telefono || '').trim() : '';
+
+  /* Lista blanca: solo se expone lo que la app necesita. Nunca datos privados
+     (usuarios, sesiones, notificaciones, pedidos de ayuda con emails, solicitudes
+     de pago, suscripciones crudas, etc.). */
+  const resto = {
+    settings: state.settings,
+    promociones: state.promociones || [],
+    blocks: state.blocks || [],
+    bands: state.bands || [],
+    placePhotos: state.placePhotos || [],
+  };
 
   const reservations = (state.reservations || []).map(r => {
     // 1. Super Administrador ve todas las reservas con datos completos
