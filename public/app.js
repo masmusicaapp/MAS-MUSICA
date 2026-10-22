@@ -944,11 +944,14 @@ function fichaSala(id) {
     <div class="row">
       <button class="btn btn-primary" id="ficha-reservar">Ver horarios ${ICO_SVG.flecha}</button>
       <button class="btn" id="ficha-fav">${esFavorita(r.id) ? `${ICO_SVG.corazonOn} Quitar de favoritas` : `${ICO_SVG.corazon} Guardar como favorita`}</button>
+      ${yo && yo.id !== r.ownerId ? `<button class="btn" id="ficha-chat" data-chat-con="${r.ownerId}"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Chatear con el dueño</button>` : ''}
       <button class="btn" id="ficha-cerrar">Cerrar</button>
     </div>`);
   $('#ficha-cerrar').onclick = closeModal;
   $('#ficha-reservar').onclick = () => { closeModal(); elegirSala(r.id); };
   $('#ficha-fav').onclick = () => { alternarFavorita(r.id); fichaSala(r.id); };
+  const btnChat = $('#ficha-chat');
+  if (btnChat) btnChat.onclick = () => { closeModal(); abrirChatDirecto(btnChat.dataset.chatCon, r.name); };
   wireResenas(r.id);
 }
 
@@ -956,6 +959,52 @@ function fichaSala(id) {
 function horarioSalaDe(r) {
   if (r.horario && (r.horarioPropio || Object.values(r.horario).some(Boolean))) return r.horario;
   return state.settings.hours;
+}
+
+/* ---------- Chat directo 1 a 1 ---------- */
+async function abrirChatDirecto(contactoId, nombreSala) {
+  if (!yo) { toast('Iniciá sesión para chatear', 'warn'); return; }
+  const contacto = (state.users || []).find(u => u.id === contactoId);
+  const nombre = contacto ? contacto.nombre : 'Dueño de la sala';
+  openModal(`
+    <div class="chat-directo">
+      <h3><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Chat con ${esc(nombre)}</h3>
+      <p class="muted small">${esc(nombreSala || '')}</p>
+      <div id="chat-directo-msgs" class="chat-directo-msgs"></div>
+      <div class="chat-directo-input">
+        <input type="text" id="chat-directo-texto" placeholder="Escribí un mensaje..." maxlength="600">
+        <button class="btn btn-primary" id="chat-directo-enviar">Enviar</button>
+      </div>
+    </div>
+  `);
+  const msgsDiv = $('#chat-directo-msgs');
+  const input = $('#chat-directo-texto');
+  const btnEnviar = $('#chat-directo-enviar');
+  async function cargarMsgs() {
+    try {
+      const data = await api('/api/chat-directo?con=' + encodeURIComponent(contactoId));
+      const msgs = data.mensajes || [];
+      msgsDiv.innerHTML = msgs.length
+        ? msgs.map(m => `<div class="cd-msg ${m.mio ? 'cd-mio' : 'cd-otro'}"><div class="cd-bubble">${esc(m.texto)}</div><div class="cd-fecha">${fmtHora(m.fecha)}</div></div>`).join('')
+        : '<p class="muted small" style="text-align:center;padding:20px 0;">Todavía no hay mensajes. ¡Escribí el primero!</p>';
+      msgsDiv.scrollTop = msgsDiv.scrollHeight;
+    } catch (e) { msgsDiv.innerHTML = '<p class="muted small">Error al cargar mensajes</p>'; }
+  }
+  await cargarMsgs();
+  async function enviar() {
+    const texto = input.value.trim();
+    if (!texto) return;
+    btnEnviar.disabled = true;
+    try {
+      await api('/api/chat-directo', { method: 'POST', body: { para: contactoId, texto } });
+      input.value = '';
+      await cargarMsgs();
+    } catch (e) { toast(e.message, 'error'); }
+    btnEnviar.disabled = false;
+    input.focus();
+  }
+  btnEnviar.onclick = enviar;
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') enviar(); });
 }
 
 /* ---------- Favoritas ---------- */
