@@ -1013,7 +1013,7 @@ let gmapaFallo = false;     /* la clave de Google no sirvió  seguimos con OpenS
 let cargandoGoogle = null;  /* promesa de la API de Google */
 let huellaMapa = '';        /* qué había dibujado la última vez */
 
-const claveGoogle = () => String((state && state.settings && state.settings.gmapsKey) || '').trim();
+const claveGoogle = () => '';   /* Google Maps desactivado: se usa Leaflet + CartoDB (sin API key) */
 const mapaEsGoogle = () => !!gmap && !gmapaFallo;
 
 /* Carga la API de Google Maps sólo si hay clave. Resuelve true si quedó lista. */
