@@ -13,6 +13,15 @@ body:not(.app-activa) #view-auth { display: flex !important; }
 
 :root {
   /* ===== TEMA OSCURO (por defecto) ===== */
+  /* Escala tipográfica (basada en 1rem = 16px) */
+  --fs-xs: .75rem;    /* 12px - texto muy pequeño, badges */
+  --fs-sm: .875rem;   /* 14px - texto secundario, labels */
+  --fs-base: 1rem;    /* 16px - texto base */
+  --fs-md: 1.125rem;  /* 18px - subtítulos, énfasis */
+  --fs-lg: 1.25rem;   /* 20px - títulos de sección */
+  --fs-xl: 1.5rem;    /* 24px - títulos principales */
+  --fs-2xl: 1.875rem; /* 30px - títulos grandes */
+  --fs-3xl: 2.25rem;  /* 36px - hero */
   --bg: #0d1b2f;
   --bg-grad: #14263f;      /* extremo cÃ¡lido del degradado del fondo */
   --bg-deep: #0a1120;      /* huecos muy profundos */
