@@ -161,19 +161,41 @@ async function api(path, { method = 'GET', body, admin = false } = {}) {
   const headers = { 'Content-Type': 'application/json' };
   if (adminPin) headers['x-admin-pin'] = adminPin;
   if (token) headers['Authorization'] = 'Bearer ' + token;
-  const res = await fetch(path, {
-    method,
-    headers,
-    body: body !== undefined ? JSON.stringify(body) : undefined,
-  });
-  let data = {};
-  try { data = await res.json(); } catch (e) { /* sin cuerpo */ }
-  if (!res.ok) {
-    const err = new Error(data.error || `Error de conexión (${res.status})`);
-    err.status = res.status;
-    throw err;
+  iniciarCarga();
+  try {
+    const res = await fetch(path, {
+      method,
+      headers,
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    });
+    let data = {};
+    try { data = await res.json(); } catch (e) { /* sin cuerpo */ }
+    if (!res.ok) {
+      const err = new Error(data.error || `Error de conexión (${res.status})`);
+      err.status = res.status;
+      throw err;
+    }
+    return data;
+  } finally {
+    finalizarCarga();
   }
-  return data;
+}
+
+/* ================= Indicador de carga global ================= */
+/* Barra fina en la parte superior que se muestra durante cualquier petición de red.
+   Evita que el usuario toque dos veces mientras se espera la respuesta. */
+let _cargaActiva = 0;
+function iniciarCarga() {
+  _cargaActiva++;
+  const bar = document.getElementById('carga-global');
+  if (bar) bar.classList.add('activa');
+}
+function finalizarCarga() {
+  _cargaActiva = Math.max(0, _cargaActiva - 1);
+  if (_cargaActiva === 0) {
+    const bar = document.getElementById('carga-global');
+    if (bar) bar.classList.remove('activa');
+  }
 }
 
 /* ================= Disponibilidad (UX local; el servidor es la autoridad) ================= */
