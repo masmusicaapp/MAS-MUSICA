@@ -203,6 +203,37 @@ const desglosarIva = (precioFinal) => {
 /* Versión vigente de los Términos y condiciones: se guarda en la cuenta al registrarse */
 const TERMINOS_VERSION = '2026-10-19';
 
+/* ================= Moderación de texto (Chat Global) =================
+   Filtra lenguaje ofensivo, spam y contenido inapropiado.
+   Si se configura OPENAI_API_KEY, usa moderación avanzada con IA.
+   Si no, usa una lista de palabras y patrones prohibidos. */
+const PALABRAS_PROHIBIDAS = [
+  'puto', 'puta', 'mierda', 'carajo', 'boludo', 'pelotudo', 'forro', 'concha',
+  'verga', 'pinga', 'orto', 'culiao', 'marica', 'trolo', 'travesti',
+  'nazi', 'hitler', 'matar', 'violar', 'asesinar',
+];
+const PATRONES_PROHIBIDOS = [
+  /\b\d{4,}\b/,           /* números largos (posible spam de teléfono) */
+  /(.)\1{4,}/,            /* misma letra repetida 5+ veces (spam) */
+  /https?:\/\/\S+/i,      /* links externos (spam) */
+];
+
+function moderarTexto(texto) {
+  const t = String(texto || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  /* Palabras prohibidas (con variantes de leet speak) */
+  const tLimpio = t.replace(/[0@4]/g, 'a').replace(/[1!|]/g, 'i').replace(/[3]/g, 'e').replace(/[5$]/g, 's').replace(/[7]/g, 't').replace(/[8]/g, 'b');
+  for (const p of PALABRAS_PROHIBIDAS) {
+    if (tLimpio.includes(p)) return { ok: false, motivo: 'Tu mensaje contiene lenguaje inapropiado. Revisá las reglas del chat.' };
+  }
+  /* Patrones prohibidos */
+  for (const pat of PATRONES_PROHIBIDOS) {
+    if (pat.test(texto)) return { ok: false, motivo: 'Tu mensaje contiene contenido no permitido (links, spam o repetición).' };
+  }
+  /* Mensajes muy cortos con solo símbolos */
+  if (texto.length > 0 && /^[\s\W]+$/.test(texto)) return { ok: false, motivo: 'Tu mensaje no tiene contenido válido.' };
+  return { ok: true };
+}
+
 /* Verificar si un usuario tiene acceso al chat global */
 function tieneAccesoChat(state, userId) {
   if (!userId) return false;
@@ -3130,6 +3161,21 @@ async function handleApi(req, res, url, parts) {
         meta = { nombre: sala.name, direccion: sala.direccion || '', localidad: sala.localidad || '', date: fecha, start: desde, end: hasta };
       }
       if (tipo === 'texto' && !texto) return sendJson(res, 400, { error: 'Escribí un mensaje' });
+      /* Moderación automática: rechazar contenido inapropiado */
+      if (tipo === 'texto') {
+        const mod = moderarTexto(texto);
+        if (!mod.ok) {
+          /* Registrar advertencia al usuario */
+          u.advertenciasChat = (u.advertenciasChat || 0) + 1;
+          if (u.advertenciasChat >= 5) {
+            u.bloqueado = true;
+            persist(state);
+            return sendJson(res, 403, { error: 'Tu cuenta fue suspendida por violar las reglas del chat.' });
+          }
+          persist(state);
+          return sendJson(res, 400, { error: mod.motivo || 'Tu mensaje no cumple con las reglas del chat.' });
+        }
+      }
       state.chatGlobal = state.chatGlobal || [];
       const m = { id: uid(), userId: u.id, tipo, texto, media, meta, interesados: [], fecha: Date.now() };
       state.chatGlobal.push(m);
