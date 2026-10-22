@@ -1390,6 +1390,8 @@ function enviarRecordatorios(state) {
 
     /* Aviso en la app: al que reservó y a los que se anotaron */
     const ids = new Set([r.userId, ...(r.invitados || [])].filter(Boolean));
+    /* También avisar al dueño de la sala */
+    if (room && room.ownerId) ids.add(room.ownerId);
     ids.forEach(id => avisar(state, id, 'Se acerca tu ensayo', texto, 'ok', { reservaId: r.id, roomId: r.roomId }));
 
     /* Y por mail, si el músico tiene email cargado (nunca interrumpe si falla) */
