@@ -503,6 +503,30 @@ h3.sub {
 .room-card.inactive { opacity: .55; }
 
 /* ---------- Horarios ---------- */
+/* ================= Indicador de carga global ================= */
+.carga-global {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 3px;
+  width: 0%;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  z-index: 9999;
+  transition: width .2s ease, opacity .3s ease;
+  opacity: 0;
+  pointer-events: none;
+}
+.carga-global.activa {
+  width: 100%;
+  opacity: 1;
+  animation: carga-pulso 1.2s ease-in-out infinite;
+}
+@keyframes carga-pulso {
+  0% { width: 0%; opacity: 1; }
+  50% { width: 70%; opacity: 1; }
+  100% { width: 100%; opacity: .6; }
+}
+
 .slots-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
 .slot {
   background: var(--panel2); border: 1px solid var(--line); border-radius: 12px;
