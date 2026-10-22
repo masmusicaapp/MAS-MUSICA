@@ -2549,10 +2549,13 @@ function prepararDockAutoOcultar() {
     const d = dock();
     if (d) d.classList.remove('dock-oculto');
   }
+  function esEscritorio() {
+    return window.matchMedia('(min-width: 960px)').matches;
+  }
   function ocultar() {
     const d = dock();
-    /* No ocultar en el mapa (la barra ahí va transparente) ni si no hay barra */
-    if (d && !document.body.classList.contains('nav-mapa')) d.classList.add('dock-oculto');
+    /* No ocultar en escritorio (la barra siempre visible) ni en el mapa */
+    if (d && !esEscritorio() && !document.body.classList.contains('nav-mapa')) d.classList.add('dock-oculto');
   }
 
   document.addEventListener('scroll', e => {
