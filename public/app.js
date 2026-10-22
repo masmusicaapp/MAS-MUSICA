@@ -305,7 +305,16 @@ function goStep(n) {
 
 /* ---------- Acceso rápido a Mis reservas desde el inicio ---------- */
 /* Reservas de esta cuenta: las de este dispositivo + las vinculadas al usuario */
-const misReservas = () => state.reservations.filter(r => mineIds.includes(r.id) || (yo && r.userId === yo.id));
+const misReservas = () => {
+  let lista = state.reservations.filter(r => mineIds.includes(r.id) || (yo && r.userId === yo.id));
+  /* El dueño de sala ve también las reservas de sus clientes en el inicio */
+  if (yo && yo.rol === 'ROOM_ADMIN') {
+    const salasPropias = ((state && state.rooms) || []).filter(r => r.ownerId === yo.id).map(r => r.id);
+    const delasala = state.reservations.filter(r => salasPropias.includes(r.roomId));
+    lista = lista.concat(delasala.filter(r => !lista.some(x => x.id === r.id)));
+  }
+  return lista;
+};
 
 /* Verifica si el pago de una reserva se acreditó. Se dispara al volver a la app
    después de pagar en Mercado Pago (que se abrió en otra pestaña). */
@@ -388,6 +397,7 @@ function renderMineRapido() {
     ? state.reservations.filter(r => r.name.toLowerCase().includes(query))
       .sort((a, b) => (a.date + a.start).localeCompare(b.date + b.start))
     : mias.slice().sort((a, b) => {
+      /* Primero las próximas (no pasadas), ordenadas por fecha+hora (primeros turnos primero) */
       const fa = esPasada(a) ? 1 : 0, fb = esPasada(b) ? 1 : 0;
       if (fa !== fb) return fa - fb;
       return fa ? (b.date + b.start).localeCompare(a.date + a.start)
