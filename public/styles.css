@@ -59,8 +59,8 @@ body:not(.app-activa) #view-auth { display: flex !important; }
   --panel2: #f1f2ec;
   --line: #dee1d9;
   --text: #0d1a2e;
-  --muted: #55616f;
-  --label: #5d6a7d;
+  --muted: #3d4a5c;
+  --label: #3d4a5c;
   --accent: #00a038;
   --accent2: #00782c;
   --ok: #0e9447;
@@ -87,8 +87,8 @@ body:not(.app-activa) #view-auth { display: flex !important; }
     --panel2: #f1f2ec;
     --line: #dee1d9;
     --text: #0d1a2e;
-    --muted: #55616f;
-    --label: #5d6a7d;
+    --muted: #3d4a5c;
+    --label: #3d4a5c;
     --accent: #00a038;
     --accent2: #00782c;
     --ok: #0e9447;
