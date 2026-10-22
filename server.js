@@ -2174,15 +2174,7 @@ async function handleApi(req, res, url, parts) {
       const phoneOk = !r.phone || r.phone === String(body.phone || '').trim();
       if (!nameOk || !phoneOk) return sendJson(res, 403, { error: 'Los datos no coinciden con la reserva' });
     } else {
-      /* Regla de cancelación configurada por la administración */
-      const limite = Math.max(0, parseInt(state.settings.reglas.cancelacionHoras, 10) || 0);
-      if (limite > 0) {
-        const limiteMin = toMin(r.start);
-        const dif = (new Date(r.date + 'T00:00:00').getTime() + limiteMin * 60000) - Date.now();
-        if (dif < limite * 3600000) {
-          return sendJson(res, 403, { error: `Para cancelar con menos de ${limite} h de anticipación escribí a la sala` });
-        }
-      }
+      /* Se puede cancelar siempre. Si es fuera del plazo, la seña se retiene (no se reembolsa). */
     }
     /* Seña ya pagada: se devuelve si cancela la sala/administración o si se cancela dentro del plazo */
     if (r.pago && r.pago.estado === 'aprobado') {
