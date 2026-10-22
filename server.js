@@ -423,6 +423,7 @@ function defaultState() {
     mensajes: [],
     resenas: [],         /* reseñas de los músicos sobre las salas donde reservaron */
     chatGlobal: [],
+    chatDirecto: [],
     chatSubscriptions: [],
     chatSolicitudes: [],
     promociones: demoPromociones(),
@@ -1690,6 +1691,92 @@ async function handleApi(req, res, url, parts) {
   if (method !== 'GET' && method !== 'HEAD') {
     const lim = limitarEscritura(req);
     if (lim.bloqueado) return sendJson(res, 429, { error: `Demasiadas peticiones. Probá de nuevo en ${lim.espera} s.` });
+  }
+
+  /* ======================= CHAT DIRECTO (1 a 1) ======================= */
+
+  /* Listar conversaciones del usuario */
+  if (method === 'GET' && url.pathname === '/api/chat-directo/conversaciones') {
+    const u = sesionActual(state, req);
+    if (!u) return sendJson(res, 401, { error: 'Iniciá sesión' });
+    const msgs = (state.chatDirecto || []).filter(m => m.de === u.id || m.para === u.id);
+    const contactos = new Map();
+    msgs.forEach(m => {
+      const otro = m.de === u.id ? m.para : m.de;
+      const anterior = contactos.get(otro);
+      if (!anterior || m.fecha > anterior.ultimo) {
+        contactos.set(otro, { userId: otro, ultimo: m.fecha, ultimoTexto: m.texto || '', sinLeer: 0 });
+      }
+    });
+    /* Contar no leídos */
+    msgs.forEach(m => {
+      if (m.para === u.id && !m.leido) {
+        const c = contactos.get(m.de);
+        if (c) c.sinLeer++;
+      }
+    });
+    const lista = [...contactos.values()].map(c => {
+      const usr = (state.users || []).find(x => x.id === c.userId);
+      return {
+        userId: c.userId,
+        nombre: usr ? usr.nombre : 'Usuario',
+        usuario: usr ? usr.usuario : '??',
+        foto: usr ? (usr.foto || '') : '',
+        ultimo: c.ultimo,
+        ultimoTexto: c.ultimoTexto,
+        sinLeer: c.sinLeer,
+      };
+    }).sort((a, b) => b.ultimo - a.ultimo);
+    return sendJson(res, 200, { conversaciones: lista });
+  }
+
+  /* Obtener mensajes con un usuario */
+  if (method === 'GET' && url.pathname === '/api/chat-directo') {
+    const u = sesionActual(state, req);
+    if (!u) return sendJson(res, 401, { error: 'Iniciá sesión' });
+    const con = String(url.searchParams.get('con') || '').trim();
+    if (!con) return sendJson(res, 400, { error: 'Falta el contacto' });
+    const msgs = (state.chatDirecto || [])
+      .filter(m => (m.de === u.id && m.para === con) || (m.de === con && m.para === u.id))
+      .sort((a, b) => a.fecha - b.fecha)
+      .slice(-100)
+      .map(m => ({
+        id: m.id,
+        de: m.de,
+        para: m.para,
+        texto: m.texto || '',
+        fecha: m.fecha,
+        mio: m.de === u.id,
+        leido: !!m.leido,
+      }));
+    /* Marcar como leídos los recibidos */
+    (state.chatDirecto || []).forEach(m => {
+      if (m.para === u.id && m.de === con && !m.leido) m.leido = true;
+    });
+    persist(state);
+    return sendJson(res, 200, { mensajes: msgs });
+  }
+
+  /* Enviar mensaje directo */
+  if (method === 'POST' && url.pathname === '/api/chat-directo') {
+    const u = sesionActual(state, req);
+    if (!u) return sendJson(res, 401, { error: 'Iniciá sesión' });
+    const para = String(body.para || '').trim();
+    const texto = String(body.texto || '').trim().slice(0, 600);
+    if (!para) return sendJson(res, 400, { error: 'Falta el destinatario' });
+    if (!texto) return sendJson(res, 400, { error: 'Escribí un mensaje' });
+    const destinatario = (state.users || []).find(x => x.id === para);
+    if (!destinatario) return sendJson(res, 404, { error: 'Usuario no encontrado' });
+    /* Moderación */
+    const mod = moderarTexto(texto);
+    if (!mod.ok) return sendJson(res, 400, { error: mod.motivo || 'Mensaje no permitido' });
+    state.chatDirecto = state.chatDirecto || [];
+    const m = { id: uid(), de: u.id, para, texto, fecha: Date.now(), leido: false };
+    state.chatDirecto.push(m);
+    if (state.chatDirecto.length > 1000) state.chatDirecto = state.chatDirecto.slice(-1000);
+    avisar(state, para, 'Nuevo mensaje', `${u.nombre}: ${texto.slice(0, 60)}`, 'info', { chatDirecto: true, de: u.id });
+    persist(state);
+    return sendJson(res, 201, { ok: true, mensaje: m });
   }
 
   /* ======================= AUTENTICACIÓN ======================= */
