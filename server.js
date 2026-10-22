@@ -885,6 +885,7 @@ function usuarioPublico(u) {
     nombre: u.nombre,
     usuario: u.usuario,
     email: u.email,
+    emailVerificado: !!u.emailVerificado,
     telefono: u.telefono || '',
     foto: u.foto || '',
     localidad: u.localidad || '',
@@ -1087,6 +1088,7 @@ function crearUsuario(state, datos, rol) {
     nombre,
     usuario,
     email,
+    emailVerificado: false,
     telefono: String(datos.telefono || '').trim().slice(0, 30),
     pass: hashPassword(password),
     foto: guardarFotoUsuario(id, datos.foto, '') || '',
@@ -1641,6 +1643,41 @@ async function handleApi(req, res, url, parts) {
 
   /* ======================= AUTENTICACIÓN ======================= */
 
+  // Verificar email (link del mail de confirmación)
+  if (method === 'GET' && url.pathname === '/api/auth/verificar-email') {
+    const tok = String(url.searchParams.get('token') || '').trim();
+    if (!tok) return sendJson(res, 400, { error: 'Falta el token' });
+    const u = (state.users || []).find(x => x.tokenVerifEmail === tok);
+    if (!u) return sendJson(res, 404, { error: 'Token inválido o ya usado' });
+    if (u.tokenVerifExpira && u.tokenVerifExpira < Date.now()) {
+      return sendJson(res, 410, { error: 'El link expiró. Pedí uno nuevo desde tu perfil.' });
+    }
+    u.emailVerificado = true;
+    delete u.tokenVerifEmail;
+    delete u.tokenVerifExpira;
+    persist(state);
+    return sendJson(res, 200, { ok: true, mensaje: 'Email confirmado correctamente' });
+  }
+
+  // Reenviar mail de verificación
+  if (method === 'POST' && url.pathname === '/api/auth/reenviar-verificacion') {
+    const u = sesionActual(state, req);
+    if (!u) return sendJson(res, 401, { error: 'Iniciá sesión' });
+    if (u.emailVerificado) return sendJson(res, 400, { error: 'Tu email ya está verificado' });
+    const tok = crypto.randomBytes(24).toString('hex');
+    u.tokenVerifEmail = tok;
+    u.tokenVerifExpira = Date.now() + 1000 * 60 * 60 * 24;
+    persist(state);
+    if (RESEND_KEY) {
+      const link = `${BASE_URL || ''}/?verificarEmail=${tok}`;
+      enviarMail(u.email, 'Confirmá tu email · Más Música',
+        `Hola ${u.nombre},\n\nPara confirmar tu email, abrí este link:\n\n${link}\n\nEl link es válido por 24 horas.\n\nMás Música`,
+        `<p>Hola <strong>${u.nombre}</strong>,</p><p>Para confirmar tu email, tocá el botón:</p><p><a href="${link}" style="display:inline-block;padding:12px 24px;background:#00a038;color:#fff;border-radius:8px;text-decoration:none;font-weight:700;">Confirmar mi email</a></p><p>O copiá y pegá este link:<br><span style="font-size:.85rem;color:#555;">${link}</span></p><p>El link es válido por 24 horas.</p>`
+      ).catch(() => {});
+    }
+    return sendJson(res, 200, { ok: true, mensaje: 'Te enviamos un nuevo link de verificación' });
+  }
+
   // Crear cuenta de músico
   if (method === 'POST' && url.pathname === '/api/auth/registro') {
     const it = chequearIntento(req, 'registro');
@@ -1650,8 +1687,20 @@ async function handleApi(req, res, url, parts) {
     try { nuevo = crearUsuario(state, body, 'USER'); }
     catch (e) { return sendJson(res, e.code || 400, { error: e.message }); }
     nuevo.terminos = { version: TERMINOS_VERSION, fecha: Date.now() };
+    /* Token de verificación de email (válido 24 h) */
+    const tokenVerif = crypto.randomBytes(24).toString('hex');
+    nuevo.tokenVerifEmail = tokenVerif;
+    nuevo.tokenVerifExpira = Date.now() + 1000 * 60 * 60 * 24;
     const token = crearSesion(state, nuevo.id);
     avisar(state, nuevo.id, '¡Bienvenido a Más Música!', 'Tu cuenta ya está activa. Buscá tu sala de ensayo y reservá.', 'ok');
+    /* Enviar mail de confirmación (si Resend está configurado) */
+    if (RESEND_KEY) {
+      const link = `${BASE_URL || ''}/?verificarEmail=${tokenVerif}`;
+      enviarMail(nuevo.email, 'Confirmá tu email · Más Música',
+        `Hola ${nuevo.nombre},\n\nGracias por crear tu cuenta en Más Música. Para confirmar tu email, abrí este link:\n\n${link}\n\nEl link es válido por 24 horas.\n\nSi no creaste esta cuenta, ignorá este mensaje.\n\nMás Música`,
+        `<p>Hola <strong>${nuevo.nombre}</strong>,</p><p>Gracias por crear tu cuenta en Más Música. Para confirmar tu email, tocá el botón:</p><p><a href="${link}" style="display:inline-block;padding:12px 24px;background:#00a038;color:#fff;border-radius:8px;text-decoration:none;font-weight:700;">Confirmar mi email</a></p><p>O copiá y pegá este link en tu navegador:<br><span style="font-size:.85rem;color:#555;">${link}</span></p><p>El link es válido por 24 horas.</p><p style="font-size:.85rem;color:#888;">Si no creaste esta cuenta, ignorá este mensaje.</p>`
+      ).catch(() => {});
+    }
     /* La administración se entera de cada registro (notificación en la app + mail si está configurado) */
     avisarAdministracion(state, '🎸 Nuevo registro',
       `@${nuevo.usuario} · ${nuevo.nombre}${nuevo.email ? ' · ' + nuevo.email : ''}${nuevo.localidad ? ' · ' + nuevo.localidad : ''}`, 'info');
@@ -1672,6 +1721,17 @@ async function handleApi(req, res, url, parts) {
     try { duenio = crearUsuario(state, body, 'ROOM_ADMIN'); }
     catch (e) { return sendJson(res, e.code || 400, { error: e.message }); }
     duenio.terminos = { version: TERMINOS_VERSION, fecha: Date.now() };
+    /* Token de verificación de email */
+    const tokenVerif = crypto.randomBytes(24).toString('hex');
+    duenio.tokenVerifEmail = tokenVerif;
+    duenio.tokenVerifExpira = Date.now() + 1000 * 60 * 60 * 24;
+    if (RESEND_KEY) {
+      const link = `${BASE_URL || ''}/?verificarEmail=${tokenVerif}`;
+      enviarMail(duenio.email, 'Confirmá tu email · Más Música',
+        `Hola ${duenio.nombre},\n\nGracias por registrar tu sala en Más Música. Para confirmar tu email, abrí este link:\n\n${link}\n\nEl link es válido por 24 horas.\n\nMás Música`,
+        `<p>Hola <strong>${duenio.nombre}</strong>,</p><p>Gracias por registrar tu sala en Más Música. Para confirmar tu email, tocá el botón:</p><p><a href="${link}" style="display:inline-block;padding:12px 24px;background:#00a038;color:#fff;border-radius:8px;text-decoration:none;font-weight:700;">Confirmar mi email</a></p><p>O copiá y pegá este link:<br><span style="font-size:.85rem;color:#555;">${link}</span></p><p>El link es válido por 24 horas.</p>`
+      ).catch(() => {});
+    }
     const s = body.sala;
     const id = uid();
     const horario = horarioVacio();
