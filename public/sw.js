@@ -2,14 +2,14 @@
    ⚠️ IMPORTANTE: al hacer un bump de versión (?v=XX en index.html),
    actualizar TAMBIÉN las líneas de styles.css y app.js acá abajo.
    Si no, el service worker sirve versiones viejas en modo offline. */
-const CACHE = 'mas-musica-v128';
+const CACHE = 'mas-musica-v129';
 
 const ESTATICOS = [
   './',
   './index.html',
   './terminos.html',
-  './styles.css?v=128',
-  './app.js?v=128',
+  './styles.css?v=129',
+  './app.js?v=129',
   './manifest.webmanifest',
   './assets/logo_musica.png',
   './assets/logo_musica_negro.png',
