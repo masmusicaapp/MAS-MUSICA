@@ -4284,14 +4284,6 @@ async function borrarNotificacion(id, itemEl) {
 /* Borrar todas las notificaciones */
 async function borrarTodasNotificaciones() {
   if (!notificaciones.length) return;
-  const okBorrarTodas = await confirmarAccion(
-    '¿Borrar todos los avisos?',
-    '¿Borrar todo?',
-    'Sí, borrar todo',
-    'No',
-    'peligro'
-  );
-  if (!okBorrarTodas) return;
   try {
     await api('/api/notificaciones', { method: 'DELETE' });
     notificaciones = [];
