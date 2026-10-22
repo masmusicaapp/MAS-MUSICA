@@ -134,7 +134,7 @@ Actualizado: 21/10/2026. Este archivo es solo una guía de trabajo; la app no lo
 
 ## 4. Términos y condiciones
 
-- [ ] Las 10 cuentas actuales **no tienen guardada la aceptación** (se pide solo al
+- [x] Las 10 cuentas actuales **no tienen guardada la aceptación** (se pide solo al
       registrarse). Decidir si al entrar les pedimos una vez aceptar (bloqueante o
       solo un aviso) para que quede registrada también en las cuentas viejas.
 
@@ -176,9 +176,9 @@ Actualizado: 21/10/2026. Este archivo es solo una guía de trabajo; la app no lo
 
 ## 7. Funciones que todavía no existen
 
-- [ ] **Chat 1 a 1 con la sala** (hoy hay chat global e invitaciones).
+- [x] **Chat 1 a 1 con la sala** (hoy hay chat global e invitaciones).
 - [ ] **Recuperar contraseña sin el administrador** (hoy depende de un pedido de ayuda).
-- [ ] **Recordatorio también para el dueño de la sala** (hoy el aviso antes del ensayo
+- [x] **Recordatorio también para el dueño de la sala** (hoy el aviso antes del ensayo
       va solo al músico y a los anotados).
 - [ ] **Reseñas**: si más adelante hay usuarios muy activos, revisar el tope
       (hoy son 10 por cuenta y sala, configurable en `MAX_RESENAS_POR_SALA`).
@@ -218,22 +218,22 @@ Actualizado: 21/10/2026. Este archivo es solo una guía de trabajo; la app no lo
       JS que la decodifica no corre. El HTML tiene el email correcto. Arreglo: entrar al
       panel de Cloudflare del dominio, **Scrape Shield ¿ Email Address Obfuscation ¿ apagar**.
       No es cambio de código.
-- [ ] **Falta Política de Privacidad y página de Precios.** Hoy el tratamiento de datos está
+- [x] **Falta Política de Privacidad y página de Precios.** Hoy el tratamiento de datos está
       dentro de la sección 9 de los términos, sin página propia ni link en el registro/pie.
       Conviene una `privacidad.html` enlazada, y una página de precios que explique el plan
       de sala (hoy el plan "emprendedor" no se ve en ninguna pantalla pública).
-- [ ] **El Chat Global no aclara el precio.** En la pantalla de suscripción dice "$5.000/mes"
+- [x] **El Chat Global no aclara el precio.** En la pantalla de suscripción dice "$5.000/mes"
       pero no dice si es **final o +IVA**. Debe decir "final, IVA incluido" (ya se desglosa
       así en Administración ¿ Pagos y Señas).
-- [ ] **Sincronizar el `sw.js`** (hecho en v125: la lista `ESTATICOS` ya apunta a `?v=125`).
+- [x] **Sincronizar el `sw.js`** (hecho en v125: la lista `ESTATICOS` ya apunta a `?v=125`).
       Mantener esa lista al día en cada bump para que el offline no sirva versiones viejas.
 - [ ] **Minificar `app.js` (451 KB) y `styles.css` (204 KB).** Es el principal lastre en
       celular con internet lento (la carga inicial supera los 600 KB de código propio).
       Además, cargar el mapa (Leaflet, de unpkg) **solo al abrir el mapa**, no en el `<head>`.
-- [ ] **Tablas y filas que se desbordan en 320–360 px.** `.mov-table` (`min-width 560px`),
+- [x] **Tablas y filas que se desbordan en 320–360 px.** `.mov-table` (`min-width 560px`),
       `#pagos-tabla-salas/reservas` (`640/720px`), `.res-row` (mínimo ~360 px) y el inicio
       (`#step-1`, mínimo 330 px). Bajar a `1fr auto` / 100% en pantallas chicas.
-- [ ] **Sin indicadores de "cargando" ni anti-doble-tap.** Falta feedback (spinner/skeleton)
+- [x] **Sin indicadores de "cargando" ni anti-doble-tap.** Falta feedback (spinner/skeleton)
       y deshabilitar el botón **antes** del `await` en cada acción de red.
 - [ ] **Reserva con requests simultáneos (modo Mercado Pago).** En modo simulado el servidor
       serializa y no se duplica (probado: uno 201, otro 409). En el flujo con cobro hay un
