@@ -3822,7 +3822,7 @@ main {
 .mov-mes { text-transform: capitalize; min-width: 160px; text-align: center; }
 .mov-stats { margin-top: 14px; }
 .mov-wrap { overflow-x: auto; margin-top: 14px; border: 1px solid var(--line); border-radius: 12px; }
-.mov-table { width: 100%; border-collapse: collapse; font-size: .88rem; min-width: 560px; }
+.mov-table { width: 100%; border-collapse: collapse; font-size: .88rem; min-width: 100%; }
 .mov-table th, .mov-table td { padding: 9px 12px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
 .mov-table th { background: var(--panel2); color: var(--label); font-size: .74rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; }
 .mov-table tr:last-child td { border-bottom: 0; }
@@ -5838,8 +5838,8 @@ h1 svg, h2 svg, h3 svg, .sub svg, .tag svg, .badge svg, .stat span svg { vertica
 #pagos-tabla-reservas table {
   min-width: 100%;
 }
-#pagos-tabla-salas table { min-width: 640px; }
-#pagos-tabla-reservas table { min-width: 720px; }
+#pagos-tabla-salas table { min-width: 100%; }
+#pagos-tabla-reservas table { min-width: 100%; }
 #pagos-tabla-salas th,
 #pagos-tabla-reservas th,
 #pagos-tabla-salas td,
