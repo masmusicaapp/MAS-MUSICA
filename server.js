@@ -3520,7 +3520,7 @@ if (process.argv.includes('--crear-admin')) {
   const i = process.argv.indexOf('--crear-admin');
   crearAdminDesdeCLI(process.argv.slice(i + 1));
 } else {
-  server.listen(PORT, () => {
+  server.listen(PORT, '0.0.0.0', () => {
     const state = loadState();
     const creada = asegurarSuperAdmin(state);
     console.log(`🎸 Más Música corriendo en http://localhost:${PORT}`);
