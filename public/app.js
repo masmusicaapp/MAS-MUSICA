@@ -8567,6 +8567,23 @@ async function init() {
   }, 1500);
 })();
 
+/* Verificación de email (?verificarEmail=TOKEN) */
+(function () {
+  const tok = new URLSearchParams(location.search).get('verificarEmail');
+  if (!tok) return;
+  history.replaceState(null, '', location.pathname + location.hash);
+  setTimeout(async () => {
+    try {
+      const r = await fetch('/api/auth/verificar-email?token=' + encodeURIComponent(tok));
+      const d = await r.json();
+      if (r.ok) toast(d.mensaje || 'Email confirmado correctamente', 'ok');
+      else toast(d.error || 'No se pudo verificar el email', 'error');
+    } catch (e) {
+      toast('Error al verificar el email', 'error');
+    }
+  }, 1500);
+})();
+
 /* ---------- Botón "atrás" del teléfono ---------- */
 /* La app es de una sola pantalla: el botón atrás cierra lo que está encima
    (modal o pasos de la reserva) o vuelve a Inicio, antes de salir. */
