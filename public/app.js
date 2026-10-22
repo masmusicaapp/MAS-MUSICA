@@ -2426,11 +2426,34 @@ async function confirmBooking() {
           : data.pago.simulado
             ? `<button class="btn cr-btn-primary" id="bk-pagar-prueba">Pagar la seña (prueba)</button>`
             : '<p class="muted small">El cobro de la seña no está activo.</p>'}
+        <button class="btn cr-btn-secondary" id="bk-cancelar-reserva"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Cancelar reserva</button>
         <button class="btn cr-btn-secondary" id="bk-mine"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Ver mis reservas</button>
 
         <p class="cr-fine">El saldo de ${fmtMoney(data.pago.saldo)} se abona en la sala el día de tu turno.</p>
       </div>`;
     $('#bk-mine').onclick = () => { irAMisReservasInicio(); };
+    const btnCancelar = $('#bk-cancelar-reserva');
+    if (btnCancelar) btnCancelar.onclick = async () => {
+      btnCancelar.disabled = true;
+      try {
+        const ok = await confirmarAccion(
+          '¿Cancelar esta reserva? El horario volverá a quedar libre.',
+          '¿Cancelar reserva?',
+          'Sí, cancelar',
+          'No, mantener',
+          'peligro'
+        );
+        if (!ok) { btnCancelar.disabled = false; return; }
+        const data = await api(`/api/reservations/${data.reservation.id}/cancel`, { method: 'POST', body: { name: data.reservation.name, phone: data.reservation.phone } });
+        if (data && data.state) state = data.state;
+        toast('Reserva cancelada. El horario quedó libre.', 'ok');
+        sel.range = null; sel.roomId = null; sel.slot = null; sel.bandaNombre = '';
+        goStep(1); renderCalendar();
+      } catch (err) {
+        toast(err.message || 'No se pudo cancelar', 'error');
+        btnCancelar.disabled = false;
+      }
+    };
     const btnPrueba = $('#bk-pagar-prueba');
     if (btnPrueba) btnPrueba.onclick = async () => {
       btnPrueba.disabled = true;
