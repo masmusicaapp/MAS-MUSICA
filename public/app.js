@@ -4287,6 +4287,7 @@ async function borrarTodasNotificaciones() {
   try {
     await api('/api/notificaciones', { method: 'DELETE' });
     notificaciones = [];
+    sinLeer = 0;
     renderPanelNotif();
     pintarBadgeNotif();
     toast('Avisos borrados', 'ok');
