@@ -1130,8 +1130,8 @@ function initMapa() {
   const inicial = conLugares.length ? [Number(conLugares[0].lat), Number(conLugares[0].lng)] : [-31.4201, -64.1888];
   mapa = L.map(cont, { zoomControl: true, scrollWheelZoom: false })
     .setView(inicial, conLugares.length ? 12 : 4);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19, attribution: '&copy; OpenStreetMap',
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+    maxZoom: 19, attribution: '&copy; OpenStreetMap, &copy; CARTO',
   }).addTo(mapa);
   return mapa;
 }
