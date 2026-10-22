@@ -954,6 +954,24 @@ function leerRemitente() {
 const RESEND_KEY = leerClaveResend();
 const RESEND_FROM = leerRemitente();
 
+/* Logo de la app para los emails (URL absoluta) */
+function logoMail() {
+  const base = BASE_URL || '';
+  return base ? `<img src="${base}/assets/logo_musica.png" alt="Más Música" width="48" height="48" style="border-radius:12px;margin-bottom:12px;" />` : '';
+}
+
+/* Envuelve el HTML del mail con el logo y un pie común */
+function htmlMail(cuerpo) {
+  return `<div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#16263d;">
+    ${logoMail()}
+    <h2 style="margin:0 0 12px;color:#007d2c;font-size:1.3rem;">Más Música</h2>
+    ${cuerpo}
+    <hr style="border:none;border-top:1px solid #dde5ec;margin:24px 0 12px;">
+    <p style="font-size:.8rem;color:#5b6b7d;margin:0;">Salas de ensayo · Más Música<br>
+    <a href="${BASE_URL || ''}" style="color:#007d2c;">Abrir la app</a></p>
+  </div>`;
+}
+
 async function enviarMail(para, asunto, texto, html) {
   if (!RESEND_KEY || !para || !validarEmail(para)) return false;
   try {
@@ -1672,7 +1690,7 @@ async function handleApi(req, res, url, parts) {
       const link = `${BASE_URL || ''}/?verificarEmail=${tok}`;
       enviarMail(u.email, 'Confirmá tu email · Más Música',
         `Hola ${u.nombre},\n\nPara confirmar tu email, abrí este link:\n\n${link}\n\nEl link es válido por 24 horas.\n\nMás Música`,
-        `<p>Hola <strong>${u.nombre}</strong>,</p><p>Para confirmar tu email, tocá el botón:</p><p><a href="${link}" style="display:inline-block;padding:12px 24px;background:#00a038;color:#fff;border-radius:8px;text-decoration:none;font-weight:700;">Confirmar mi email</a></p><p>O copiá y pegá este link:<br><span style="font-size:.85rem;color:#555;">${link}</span></p><p>El link es válido por 24 horas.</p>`
+        htmlMail(`<p>Hola <strong>${u.nombre}</strong>,</p><p>Para confirmar tu email, tocá el botón:</p><p><a href="${link}" style="display:inline-block;padding:12px 24px;background:#00a038;color:#fff;border-radius:8px;text-decoration:none;font-weight:700;">Confirmar mi email</a></p><p>O copiá y pegá este link:<br><span style="font-size:.85rem;color:#555;">${link}</span></p><p>El link es válido por 24 horas.</p>`)
       ).catch(() => {});
     }
     return sendJson(res, 200, { ok: true, mensaje: 'Te enviamos un nuevo link de verificación' });
@@ -1698,7 +1716,7 @@ async function handleApi(req, res, url, parts) {
       const link = `${BASE_URL || ''}/?verificarEmail=${tokenVerif}`;
       enviarMail(nuevo.email, 'Confirmá tu email · Más Música',
         `Hola ${nuevo.nombre},\n\nGracias por crear tu cuenta en Más Música. Para confirmar tu email, abrí este link:\n\n${link}\n\nEl link es válido por 24 horas.\n\nSi no creaste esta cuenta, ignorá este mensaje.\n\nMás Música`,
-        `<p>Hola <strong>${nuevo.nombre}</strong>,</p><p>Gracias por crear tu cuenta en Más Música. Para confirmar tu email, tocá el botón:</p><p><a href="${link}" style="display:inline-block;padding:12px 24px;background:#00a038;color:#fff;border-radius:8px;text-decoration:none;font-weight:700;">Confirmar mi email</a></p><p>O copiá y pegá este link en tu navegador:<br><span style="font-size:.85rem;color:#555;">${link}</span></p><p>El link es válido por 24 horas.</p><p style="font-size:.85rem;color:#888;">Si no creaste esta cuenta, ignorá este mensaje.</p>`
+        htmlMail(`<p>Hola <strong>${nuevo.nombre}</strong>,</p><p>Gracias por crear tu cuenta en Más Música. Para confirmar tu email, tocá el botón:</p><p><a href="${link}" style="display:inline-block;padding:12px 24px;background:#00a038;color:#fff;border-radius:8px;text-decoration:none;font-weight:700;">Confirmar mi email</a></p><p>O copiá y pegá este link en tu navegador:<br><span style="font-size:.85rem;color:#555;">${link}</span></p><p>El link es válido por 24 horas.</p><p style="font-size:.85rem;color:#888;">Si no creaste esta cuenta, ignorá este mensaje.</p>`)
       ).catch(() => {});
     }
     /* La administración se entera de cada registro (notificación en la app + mail si está configurado) */
@@ -1729,7 +1747,7 @@ async function handleApi(req, res, url, parts) {
       const link = `${BASE_URL || ''}/?verificarEmail=${tokenVerif}`;
       enviarMail(duenio.email, 'Confirmá tu email · Más Música',
         `Hola ${duenio.nombre},\n\nGracias por registrar tu sala en Más Música. Para confirmar tu email, abrí este link:\n\n${link}\n\nEl link es válido por 24 horas.\n\nMás Música`,
-        `<p>Hola <strong>${duenio.nombre}</strong>,</p><p>Gracias por registrar tu sala en Más Música. Para confirmar tu email, tocá el botón:</p><p><a href="${link}" style="display:inline-block;padding:12px 24px;background:#00a038;color:#fff;border-radius:8px;text-decoration:none;font-weight:700;">Confirmar mi email</a></p><p>O copiá y pegá este link:<br><span style="font-size:.85rem;color:#555;">${link}</span></p><p>El link es válido por 24 horas.</p>`
+        htmlMail(`<p>Hola <strong>${duenio.nombre}</strong>,</p><p>Gracias por registrar tu sala en Más Música. Para confirmar tu email, tocá el botón:</p><p><a href="${link}" style="display:inline-block;padding:12px 24px;background:#00a038;color:#fff;border-radius:8px;text-decoration:none;font-weight:700;">Confirmar mi email</a></p><p>O copiá y pegá este link:<br><span style="font-size:.85rem;color:#555;">${link}</span></p><p>El link es válido por 24 horas.</p>`)
       ).catch(() => {});
     }
     const s = body.sala;
