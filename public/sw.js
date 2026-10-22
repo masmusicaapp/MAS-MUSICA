@@ -1,4 +1,7 @@
-/* Service worker de Más Música — cache para funcionamiento offline */
+/* Service worker de Más Música — cache para funcionamiento offline
+   ⚠️ IMPORTANTE: al hacer un bump de versión (?v=XX en index.html),
+   actualizar TAMBIÉN las líneas de styles.css y app.js acá abajo.
+   Si no, el service worker sirve versiones viejas en modo offline. */
 const CACHE = 'mas-musica-v128';
 
 const ESTATICOS = [
