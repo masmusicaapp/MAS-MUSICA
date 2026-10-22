@@ -1585,7 +1585,7 @@ const CSP_HTML = [
   "script-src 'self' 'unsafe-inline' https://unpkg.com https://maps.googleapis.com",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com",
   "font-src 'self' data: https://fonts.gstatic.com",
-  "img-src 'self' data: blob: https://*.tile.openstreetmap.org https://tile.openstreetmap.org https://maps.googleapis.com https://maps.gstatic.com https://*.googleapis.com https://*.ggpht.com",
+  "img-src 'self' data: blob: https://*.tile.openstreetmap.org https://tile.openstreetmap.org https://*.basemaps.cartocdn.com https://maps.googleapis.com https://maps.gstatic.com https://*.googleapis.com https://*.ggpht.com",
   "connect-src 'self' https://nominatim.openstreetmap.org https://maps.googleapis.com",
   "media-src 'self' data: blob:",
   "worker-src 'self'",
