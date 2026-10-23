@@ -2493,8 +2493,9 @@ async function confirmBooking() {
           'peligro'
         );
         if (!ok) { btnCancelar.disabled = false; return; }
-        const data = await api(`/api/reservations/${data.reservation.id}/cancel`, { method: 'POST', body: { name: data.reservation.name, phone: data.reservation.phone } });
-        if (data && data.state) state = data.state;
+        const resInfo = data.reservation;
+        const resp = await api(`/api/reservations/${resInfo.id}/cancel`, { method: 'POST', body: { name: resInfo.name, phone: resInfo.phone } });
+        if (resp && resp.state) state = resp.state;
         toast('Reserva cancelada. El horario quedó libre.', 'ok');
         sel.range = null; sel.roomId = null; sel.slot = null; sel.bandaNombre = '';
         goStep(1); renderCalendar();
